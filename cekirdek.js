@@ -3,6 +3,7 @@
 'use strict';
 
 const Q = new URLSearchParams(location.search);
+const PIST_TEMA = ['orman', 'kiyi', 'kar'].includes(Q.get('pist')) ? Q.get('pist') : 'orman';
 const ZAMAN = Math.max(0.25, Math.min(12, parseFloat(Q.get('hiz')) || 1)), OTO = Q.has('oto');
 const $ = id => document.getElementById(id);
 const T = THREE, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
@@ -13,14 +14,17 @@ const canvas = $('c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.outputColorSpace = T.SRGBColorSpace;
 let oran = Math.min(window.devicePixelRatio || 1, 2);
+let cizimSurumu = 0;
 const scene = new T.Scene();
 const camera = new T.PerspectiveCamera(62, 1, 0.3, 900);
 function boyut() {
   const w = innerWidth, h = innerHeight;
   renderer.setPixelRatio(oran); renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.fov = w < h ? 78 : 62; camera.updateProjectionMatrix();
+  cizimSurumu++;
 }
 addEventListener('resize', boyut); addEventListener('orientationchange', () => setTimeout(boyut, 250)); boyut();
+canvas.addEventListener('webglcontextrestored', () => { cizimSurumu++; });
 
 function tuvalDoku(w, h, ciz, tekrar) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; ciz(c.getContext('2d'), w, h);
@@ -32,7 +36,12 @@ function tuvalDoku(w, h, ciz, tekrar) {
 
 // ───────── pist ─────────
 const GEN = 14, YARI = GEN / 2, DMAX = YARI - 1.0, TUR = 3;
-const NOKTA = [[0, 0], [55, -4], [100, -30], [118, -80], [95, -128], [45, -140], [10, -112], [-25, -95], [-60, -118], [-105, -110], [-128, -65], [-105, -22], [-55, -2]];
+const PIST_NOKTALARI = {
+  orman: [[0, 0], [55, -4], [100, -30], [118, -80], [95, -128], [45, -140], [10, -112], [-25, -95], [-60, -118], [-105, -110], [-128, -65], [-105, -22], [-55, -2]],
+  kiyi: [[0, 0], [65, 0], [116, -21], [139, -62], [126, -106], [82, -128], [24, -119], [-20, -91], [-66, -104], [-118, -93], [-135, -53], [-114, -12], [-59, 5]],
+  kar: [[0, 0], [48, 8], [91, -4], [121, -35], [111, -72], [77, -87], [53, -122], [4, -141], [-48, -131], [-79, -101], [-121, -83], [-137, -45], [-112, -13], [-61, -8]]
+};
+const NOKTA = PIST_NOKTALARI[PIST_TEMA];
 const egri = new T.CatmullRomCurve3(NOKTA.map(p => new T.Vector3(p[0], 0, p[1])), true, 'centripetal');
 const N = 800, L = egri.getLength(), DS = L / N;
 const PX = new Float32Array(N), PZ = new Float32Array(N), TX = new Float32Array(N), TZ = new Float32Array(N), KAP = new Float32Array(N);
@@ -69,11 +78,55 @@ function cok(geo, malzeme, liste) {   // liste: [x,y,z, sx,sy,sz, ry, renk?]
   im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.frustumCulled = false; scene.add(im); return im;
 }
 const o1 = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };
-// Olaylar: OLAY.on(ad, fn) / OLAY.emit(ad, veri). Adlar: durum(d) · yildiz(n) · tur(n) · roket · hop · tok · bitis(sira) · sayim(n)
+// Olaylar: durum(d), yildiz(y), tur(n), turduzen({tur}), roket(sure), hop, inis, tok, bitis(sira), sonuc, sayim(n).
+// Ek göstergeler: seri({adet,hedef,odul,toplam}), ilerleme({tur,oran,toplam,roket}), ozet({yildiz,roket,ziplama,seri,sira,sure}).
 const OLAY = (() => { const m = {}; return { on(a, f) { (m[a] = m[a] || []).push(f); }, emit(a, v) { const l = m[a]; if (l) for (const f of l) { try { f(v); } catch (e) { console.error(e); } } } }; })();
 // Pist üstü nesnelerin verisi (görselleri pist.js'te): s = pist boyunca metre, d = yanal konum
-const OKLAR = [{ s: L * 0.2, d: 2.5 }, { s: L * 0.52, d: -2.5 }, { s: L * 0.83, d: 0 }];
-const TUMSEK = [{ s: L * 0.36, d: 0 }, { s: L * 0.68, d: 2 }];
-const YILDIZ = []; { for (let k = 0; k < 8; k++) { const s0 = L * (0.07 + k * 0.115), d = [-3.6, 0, 3.6, 0][k % 4]; for (let j = 0; j < 3; j++) YILDIZ.push({ s: s0 + j * 7, d, var: true, pat: 0 }); } }
-for (const y of YILDIZ) { const p = pist(y.s); y.x = p.x - p.tz * y.d; y.z = p.z + p.tx * y.d; }
+const OKLAR = [{ s: L * 0.2, d: 2.5, tur: -1 }, { s: L * 0.52, d: -2.5, tur: -1 }, { s: L * 0.83, d: 0, tur: -1 }];
+const TUMSEK = [{ s: L * 0.36, d: 0, tur: -1 }, { s: L * 0.68, d: 2, tur: -1 }];
+// Görsel rampa ve teker teması aynı ölçüleri kullanır; diğer bütün yol düzdür.
+const RAMPA = { bas: -1.6, tepe: 2.3, son: 3, h: 0.92, yari: 2.9, ucus: 0.95, firlat: 1.1, aks: 1.05, iz: 0.97, temas: 0.2 };
+function rampaYukseklik(yol, d, pay) {
+  let h = 0;
+  for (const r of TUMSEK) {
+    if (Math.abs(d - r.d) > RAMPA.yari + (pay || 0)) continue;
+    const z = (((yol - r.s + L / 2) % L) + L) % L - L / 2;
+    if (z < RAMPA.bas || z > RAMPA.son) continue;
+    const y = z <= RAMPA.tepe ? RAMPA.h * (z - RAMPA.bas) / (RAMPA.tepe - RAMPA.bas) : RAMPA.h * (RAMPA.son - z) / (RAMPA.son - RAMPA.tepe);
+    if (y > h) h = y;
+  }
+  return h;
+}
+function rampaZemin(a, yol) {
+  yol = yol === undefined ? a.yol : yol;
+  const ayak = a.rampaAyak || (a.rampaAyak = new Float32Array(4));
+  const beta = -Math.atan2(a.dv || 0, Math.max(8, a.v || 0)) * 0.9, cs = Math.cos(beta), sn = Math.sin(beta);
+  for (let i = 0; i < 4; i++) {
+    const x = i & 1 ? RAMPA.iz : -RAMPA.iz, z = i < 2 ? -RAMPA.aks : RAMPA.aks;
+    ayak[i] = rampaYukseklik(yol - x * sn + z * cs, a.d - x * cs - z * sn, RAMPA.temas);
+  }
+  const arka = (ayak[0] + ayak[1]) * 0.5, on = (ayak[2] + ayak[3]) * 0.5, xEksi = (ayak[0] + ayak[2]) * 0.5, xArti = (ayak[1] + ayak[3]) * 0.5;
+  a.rampaY = (arka + on) * 0.5; a.rampaEgim = Math.atan2(on - arka, RAMPA.aks * 2); a.rampaYatis = Math.atan2(xArti - xEksi, RAMPA.iz * 2);
+  return a;
+}
+const YILDIZ = [];
+{
+  for (let k = 0; k < 8; k++) {
+    const s0 = L * (0.07 + k * 0.115);
+    for (let j = 0; j < 3; j++) YILDIZ.push({ s: s0 + j * 7, d: 0, grup: k, j, var: true, pat: 0 });
+  }
+}
+// Aynı ormanda üç küçük keşif: düz yıldız sıraları, yumuşak kıvrımlar, karşı şeritte yeni sıralar.
+// Nesneler yerinde güncellenir; pist.js aynı yıldızları çizdiği için yeni ağ/model oluşturulmaz.
+function yildizDuzenle(tur) {
+  const merkezler = tur === 2 ? [0, 3.4, 0, -3.4, 3.4, 0, -3.4, 0] : [-3.6, 0, 3.6, 0, -3.6, 0, 3.6, 0];
+  for (const y of YILDIZ) {
+    const egim = tur === 1 ? (y.j - 1) * (y.grup % 2 ? -1 : 1) * 1.0 : tur === 2 ? Math.sin(y.j * Math.PI / 2) * (y.grup % 2 ? -0.65 : 0.65) : 0;
+    y.d = clamp(merkezler[y.grup] + egim, -4.5, 4.5);
+    y.var = true; y.pat = 0;
+    const p = pist(y.s); y.x = p.x - p.tz * y.d; y.z = p.z + p.tx * y.d;
+  }
+  OLAY.emit('turduzen', { tur });
+}
+yildizDuzenle(0);
 const G = { kutu: new T.BoxGeometry(1, 1, 1), kure: new T.SphereGeometry(1, 16, 12), sil: new T.CylinderGeometry(1, 1, 1, 16), koni: new T.ConeGeometry(1, 1, 10) };
