@@ -1,5 +1,7 @@
 /* Arabalar ve sürücüler: araba(renk, renk2, tur) modeli kurar; arabaYerlestir(a, dt) her karede konum, yatış, teker dönüşü, gölge, sürücü canlandırması.
    a.yol = pist boyunca ilerleme (m), a.d = yanal konum, a.v = hız, a.dv = yanal hız, a.hop = zıplama sayacı. tur: feza | piril | bilbo | anne | baba
+   Araba tipleri: ARABA_TIPLERI (kart, yaris, cip, roket, dondurma, unicorn); araba(renk, renk2, tur, tip); arabaSok(a) eski modeli siler.
+   Tipe özel gövdeler arTipGovde içinde; hareketli ekler (yele, kuyruk, dondurma, alev, kanat) a.arEk içinde ve arabaYerlestir canlandırır.
    Çizim sayısı az kalsın diye sabit parçalar tek geometride birleştirilir (köşe renkleri, tek ortak malzeme arMat):
    araba başına gövde 1 + kafa 1 + savrulan parçalar 0-2 + kollar 2 + direksiyon 1 + tekerler 4 + gölge 1.
    Göz kırpma mevcut kafa geometrisinin tek morph hedefidir; yeni çizim veya kare başına geometri kurmaz. */
@@ -143,7 +145,7 @@ function kafa(tur) {   // yüz +Z'ye bakar; k.userData.sallan = hızla savrulan 
     arKat(y, G.kure, AR_CIKO, 0, 0, 0, 0.5, 0.48, 0.5);
     arKat(y, arK, 0x9a7152, 0, -0.13, 0.37, 0.28, 0.21, 0.28);
     arKat(y, arK, 0x1e1410, 0, -0.04, 0.63, 0.105, 0.078, 0.07);
-    arKat(y, arK, 0xff7d93, 0, -0.3, 0.5, 0.085, 0.13, 0.035, 0.35);
+    { const t = sal(0, -0.2, 0.5, 0.45, 0), ty = arYapi(); t.userData.dil = true; arKat(ty, arK, 0xff7d93, 0, -0.1, 0, 0.085, 0.13, 0.035, 0.35); arKat(ty, arM, 0xe9627c, 0, -0.1, 0.03, 0.012, 0.09, 0.012, 0.35); arBitir(ty, t); }
     arKat(y, arGulus, 0x3a2418, 0, -0.2, 0.57, 0.12, 0.08, 0.08, 0.5, 0, Math.PI);
     for (const x of [-1, 1]) {
       arGoz(y, x * 0.19, 0.11, 0.42, 0.105, true, 0);
@@ -174,10 +176,155 @@ function arSus(y, tur) {   // küçük kişisel süs; yerel düzlemde, yüzü +Z
   else if (tur === 'anne') { for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 + Math.PI / 2; arKat(y, arM, 0xff6fa5, Math.cos(a) * 0.17, Math.sin(a) * 0.17, 0.085, 0.125, 0.125, 0.035); } arKat(y, arM, 0xffd23e, 0, 0, 0.105, 0.1, 0.1, 0.045); }
   else if (tur === 'baba') { for (const x of [-0.1, 0.1]) arKat(y, arTomb, 0xffffff, x, 0, 0.075, 0.055, 0.3, 0.025); }
 }
-function araba(renk, renk2, tur) {   // öne +Z
+// ───────── seçilebilir araba tipleri ─────────
+const arKoniGeo = new T.ConeGeometry(1, 1, 12); arKoniGeo.translate(0, 0.5, 0);
+// Sıra = menüdeki sıra; renkler o arabanın Feza için varsayılan renkleri.
+const ARABA_TIPLERI = [
+  { id: 'kart', renk: 0xf2483a, renk2: 0xffd84a },
+  { id: 'yaris', renk: 0x2b7de9, renk2: 0xffd84a },
+  { id: 'cip', renk: 0x43b04c, renk2: 0xffa62b },
+  { id: 'roket', renk: 0xf3f5fa, renk2: 0xf2483a },
+  { id: 'dondurma', renk: 0xff9fc6, renk2: 0x9fe8d0 },
+  { id: 'unicorn', renk: 0xfff4fb, renk2: 0xff8fc8 }
+];
+// ra/ro: arka/ön teker yarıçapı · ena/eno: lastik eni · yuk: gövdenin yükselmesi · yay: yaylanma katsayısı · sus1/sus2: kişisel süsün yeri [x, y, z, rx, ry]
+const AR_TEKER = {
+  kart: { ra: 0.5, ro: 0.45, ena: 1.5, eno: 1.3, yuk: 0, sus1: [0, 0.93, 0.95, -Math.PI / 2 + 0.15, 0], sus2: [0, 0.72, -1.87, 0, Math.PI] },
+  yaris: { ra: 0.54, ro: 0.43, ena: 1.75, eno: 1.25, yuk: 0, sus1: [0, 0.915, 0.98, -Math.PI / 2 + 0.22, 0], sus2: [0, 0.8, -1.9, 0, Math.PI] },
+  cip: { ra: 0.62, ro: 0.62, ena: 1.45, eno: 1.45, yuk: 0.24, yay: 2.4, sus1: [0, 0.995, 1.05, -Math.PI / 2 + 0.08, 0], sus2: [0, 0.92, -2.06, 0, Math.PI] },
+  roket: { ra: 0.43, ro: 0.43, ena: 1.25, eno: 1.25, yuk: 0, sus1: null, sus2: [0, 1.075, -1.2, -Math.PI / 2 - 0.2, 0] },
+  dondurma: { ra: 0.46, ro: 0.46, ena: 1.3, eno: 1.3, yuk: 0, jant: 0xfff1d6, sus1: [0, 0.975, 0.98, -Math.PI / 2 + 0.12, 0], sus2: [0, 0.66, -1.855, 0, Math.PI] },
+  unicorn: { ra: 0.47, ro: 0.45, ena: 1.25, eno: 1.2, yuk: 0, jant: 0xffe9a8, sus1: null, sus2: [0, 1.0, -1.22, -Math.PI / 2 - 0.3, 0] }
+};
+const arTipF = (() => {
+  const s3 = arSuper(3), s5 = arSuper(5), s22 = arSuper(2.2), s4 = arSuper(4), s26 = arSuper(2.6);
+  return {
+    yaris: (u, w, o) => { s3(u, w, o); const z = o.z; let x = o.x * 0.76, y = o.y * 0.3; if (z > 0) { x *= 1 - 0.6 * z * z; y *= 1 - 0.45 * z; y -= 0.1 * z * z; } else if (y > 0) y *= 1 + 0.32 * -z; o.set(x, y, z * 1.85); },
+    cip: (u, w, o) => { s5(u, w, o); const z = o.z; let y = o.y * 0.42; if (z > 0 && y > 0) y *= 1 - 0.22 * z * z; o.set(o.x * 0.8, y, z * 1.76); },
+    roket: (u, w, o) => { s22(u, w, o); const z = o.z, k = z > 0 ? 1 - 0.3 * z * z * z : 1 + 0.55 * z * z; o.set(o.x * 0.8 * k, o.y * 0.46 * k, z * 1.9); },
+    dondurma: (u, w, o) => { s4(u, w, o); const z = o.z; let y = o.y * 0.44; if (z > 0 && y > 0) y *= 1 - 0.3 * Math.pow(z, 1.5); o.set(o.x * 0.9, y, z * 1.78); },
+    unicorn: (u, w, o) => { s26(u, w, o); const z = o.z; let y = o.y * 0.42; if (z < 0 && y > 0) y *= 1 + 0.1 * -z; o.set(o.x * 0.88, y, z * 1.8); }
+  };
+})();
+const arAlevMat = new T.MeshBasicMaterial({ color: 0xffb02e });
+function arTipGovde(y, ek, tip, renk, renk2, alt, tkr) {   // kart dışındaki gövdeler; hareketli parçalar ek[] içine (userData.ek = tür)
+  const PI = Math.PI, gri = 0xc9cfd9, yuk = tkr.yuk;
+  const far = (x, yy, z, r) => { arKat(y, arK, 0xfff3b0, x, yy, z, r, r * 0.95, r * 0.7); arKat(y, arM, 0xffffff, x, yy + 0.01, z + r * 0.42, r * 0.5, r * 0.47, r * 0.4); };
+  const stop = (x, yy, z, r) => { arKat(y, arK, alt, x, yy - 0.02, z + 0.04, r * 1.4, r * 1.15, 0.05); arKat(y, arM, 0xff5a4a, x, yy, z - 0.01, r, r * 0.66, 0.04); arKat(y, arM, 0xffc9a5, x, yy + r * 0.25, z - 0.045, r * 0.6, r * 0.15, 0.012); };
+  const hareketli = (tr, px, py, pz, kur) => { const gr = new T.Group(), yy = arYapi(); gr.position.set(px, py, pz); gr.userData.ek = tr; kur(yy); arBitir(yy, gr, arBoya); ek.push(gr); return gr; };
+  const camurluk = (renkC, kalin) => { for (const x of [-1, 1]) for (const zz of [-1, 1]) { const r = (zz < 0 ? tkr.ra : tkr.ro) + 0.07; arKat(y, arCamurluk, renkC, x * 0.96, (zz < 0 ? tkr.ra : tkr.ro) - yuk, zz * 1.05, r, r, r * (kalin || 1), 0, PI / 2); } };
+  for (const z of [-1, 1]) arKat(y, G.sil, AR_KOYU, 0, (z < 0 ? tkr.ra : tkr.ro) - yuk, z * 1.05, 0.06, 1.8, 0.06, 0, 0, PI / 2);   // dingiller
+  if (tip === 'yaris') {
+    // alçak, sivri burunlu yarış arabası: ön kanat, yan kutular, iki katlı arka kanat
+    arKat(y, arYuzey(24, 12, arTipF.yaris, i => (i === 5 || i === 6) ? renk2 : i > 12 ? alt : renk), null, 0, 0.68, -0.05, 1, 1, 1);
+    arKat(y, arTomb, renk2, 0, 0.34, 1.74, 1.02, 0.04, 0.2);
+    arKat(y, arK, renk, 0, 0.43, 1.7, 0.17, 0.12, 0.26);
+    for (const x of [-1, 1]) {
+      arKat(y, arTomb, renk, x * 1.02, 0.43, 1.74, 0.035, 0.13, 0.24);
+      arKat(y, arTomb, renk, x * 0.6, 0.6, -0.3, 0.24, 0.2, 0.78);
+      arKat(y, arK, AR_KOYU, x * 0.6, 0.62, 0.45, 0.17, 0.13, 0.07);
+      arKat(y, arTomb, renk2, x * 0.845, 0.62, -0.3, 0.012, 0.07, 0.6);
+      arKat(y, G.kutu, AR_KOYU, x * 0.34, 1.22, -1.62, 0.07, 0.55, 0.14, -0.15);
+      arKat(y, arTomb, renk, x * 0.98, 1.42, -1.68, 0.04, 0.24, 0.34);
+      arKat(y, G.sil, gri, x * 0.42, 0.56, -1.86, 0.09, 0.3, 0.09, PI / 2);
+      arKat(y, G.sil, 0x23262e, x * 0.42, 0.56, -1.875, 0.06, 0.3, 0.06, PI / 2);
+      far(x * 0.27, 0.74, 1.18, 0.085); stop(x * 0.62, 0.84, -1.86, 0.085);
+    }
+    arKat(y, arTomb, renk2, 0, 1.5, -1.68, 0.96, 0.045, 0.27, 0.12);
+    arKat(y, arTomb, renk, 0, 1.33, -1.76, 0.96, 0.03, 0.15, 0.12);
+    arKat(y, arK, renk, 0, 1.12, -1.2, 0.22, 0.26, 0.5);
+  } else if (tip === 'cip') {
+    // yüksek arazi aracı: kocaman tekerler, koruma demiri, tepe lambaları, arkada yedek teker
+    arKat(y, arYuzey(24, 12, arTipF.cip, i => (i > 12 || i === 0 || i === 12) ? alt : renk), null, 0, 0.6, -0.05, 1, 1, 1);
+    for (const x of [-1, 1]) {
+      arKat(y, arHap(0.06, 0.34), gri, x * 0.36, 0.68, 1.8, 1, 1, 1);
+      arKat(y, arHap(0.065, 0.6), gri, x * 0.92, 0.33, 0, 1, 1, 1, PI / 2);
+      far(x * 0.5, 0.8, 1.66, 0.15); stop(x * 0.66, 0.66, -1.8, 0.09);
+      arKat(y, arTomb, renk2, x * 0.808, 0.72, 0, 0.012, 0.05, 0.36);
+      for (const xx of [0.17, 0.5]) { arKat(y, arK, renk2, x * xx, 2.07 - xx * xx * 0.72, -1.0, 0.13, 0.13, 0.13); arKat(y, arK, 0xfff3b0, x * xx, 2.07 - xx * xx * 0.72, -0.93, 0.1, 0.1, 0.08); }
+    }
+    camurluk(alt, 3.4);
+    arKat(y, arHap(0.07, 1.25), gri, 0, 0.52, 1.8, 1, 1, 1, 0, 0, PI / 2);
+    arKat(y, arHap(0.07, 1.05), gri, 0, 0.84, 1.8, 1, 1, 1, 0, 0, PI / 2);
+    arKat(y, arCamurluk, AR_KOYU, 0, 1.0, -1.0, 0.7, 1.0, 1.5);                                     // koruma demiri (kafanın çevresinde kemer)
+    arKat(y, arTomb, renk2, 0, 1.03, 0.95, 0.12, 0.012, 0.62);
+    arKat(y, arLastik, AR_KOYU, 0, 0.92, -1.9, 1.2, 1.2, 1.25);                                   // yedek teker
+    for (let q = 0; q < 10; q++) { const an = q * PI / 5; arKat(y, G.kutu, 0x414954, Math.cos(an) * 0.53, 0.92 + Math.sin(an) * 0.53, -1.9, 0.07, 0.15, 0.4, 0, 0, an + PI / 2); }
+    arKat(y, G.sil, 0xeef1f6, 0, 0.92, -1.92, 0.3, 0.3, 0.3, PI / 2);
+    arKat(y, arHap(0.09, 1.3), AR_KOYU, 0, 0.36, -1.82, 1, 1, 1, 0, 0, PI / 2);
+  } else if (tip === 'roket') {
+    // roket: kırmızı burun, yuvarlak pencereler, kanatçıklar, arkada egzoz ve hep yanan minik alev
+    arKat(y, arYuzey(24, 12, arTipF.roket, (i, j) => (j >= 9 || j === 2) ? renk2 : i > 12 ? alt : renk), null, 0, 0.6, -0.05, 1, 1, 1);
+    arKat(y, arK, 0xffd84a, 0, 0.6, 1.84, 0.1, 0.1, 0.12);
+    for (const x of [-1, 1]) {
+      arKat(y, arTomb, renk2, x * 1.02, 0.6, -1.4, 0.36, 0.045, 0.5, 0, x * 0.5, 0);               // yan kanatçıklar
+      arKat(y, arK, 0xffd84a, x * 1.3, 0.6, -1.72, 0.09, 0.09, 0.14);
+      arKat(y, arTomb, renk2, x * 0.6, 1.2, -1.62, 0.045, 0.36, 0.4, -0.45, 0, -x * 0.55);         // üst kanatçıklar
+      arKat(y, arK, 0xffd84a, x * 0.82, 1.52, -1.86, 0.08, 0.08, 0.12);
+      arKat(y, arInceHalka, gri, x * 0.755, 0.72, 0.62, 0.19, 0.19, 0.19, 0, PI / 2 - x * 0.1);
+      arKat(y, arK, 0x8fd8ff, x * 0.74, 0.72, 0.62, 0.03, 0.17, 0.17, 0, -x * 0.1);
+      arKat(y, arM, 0xffffff, x * 0.765, 0.78, 0.67, 0.012, 0.05, 0.04);
+      far(x * 0.3, 0.82, 1.22, 0.085);
+    }
+    camurluk(renk2, 1.3);
+    arKat(y, G.sil, gri, 0, 0.6, -1.93, 0.44, 0.3, 0.44, PI / 2);
+    arKat(y, arInceHalka, 0xeef1f6, 0, 0.6, -2.08, 0.44, 0.44, 0.44);
+    arKat(y, G.sil, 0x23262e, 0, 0.6, -1.945, 0.36, 0.3, 0.36, PI / 2);
+    const al = new T.Mesh(arKoniGeo, arAlevMat); al.position.set(0, 0.6, -2.02); al.rotation.x = -PI / 2; al.scale.set(0.26, 0.4, 0.26); al.userData.ek = 'alev'; ek.push(al);
+  } else if (tip === 'dondurma') {
+    // dondurma arabası: külah rengi alt, şeritli tente, arkada kocaman sallanan dondurma
+    const kulah = 0xe2a95f, kulahK = 0xc98a45;
+    arKat(y, arYuzey(24, 12, arTipF.dondurma, (i, j) => (i > 12 || i === 0 || i === 12) ? kulah : (j % 2 ? 0xfffaf2 : renk)), null, 0, 0.58, -0.05, 1, 1, 1);
+    arKat(y, arHap(0.11, 1.3), kulahK, 0, 0.4, 1.76, 1, 1, 1, 0, 0, PI / 2);
+    arKat(y, arHap(0.1, 1.3), kulahK, 0, 0.4, -1.84, 1, 1, 1, 0, 0, PI / 2);
+    for (const x of [-1, 1]) { far(x * 0.5, 0.7, 1.64, 0.14); stop(x * 0.66, 0.84, -1.8, 0.09); arKat(y, arHap(0.05, 1.5), renk2, x * 0.905, 0.6, 0, 1, 1, 1, PI / 2); }
+    camurluk(renk2, 1.5);
+    arKat(y, G.koni, kulah, 0, 0.99, 1.5, 0.1, 0.26, 0.1, PI);                                     // burunda minik külah
+    arKat(y, arK, renk2, 0, 1.17, 1.5, 0.13, 0.12, 0.13); arKat(y, arM, 0xf2483a, 0, 1.3, 1.5, 0.045);
+    hareketli('top', 0, 0.98, -1.37, yy => {
+      arKat(yy, G.sil, kulah, 0, 0.06, 0, 0.5, 0.2, 0.46);
+      arKat(yy, arInceHalka, kulahK, 0, 0.16, 0, 0.5, 0.46, 0.5, PI / 2);
+      arKat(yy, arK, renk, 0, 0.36, 0, 0.55, 0.4, 0.5);
+      for (let i = 0; i < 7; i++) { const an = i / 7 * PI * 2 + 0.3; arKat(yy, arM, renk, Math.cos(an) * 0.47, 0.13 - (i % 2) * 0.07, Math.sin(an) * 0.43, 0.12, 0.15 + (i % 2) * 0.06, 0.12); }
+      arKat(yy, arK, renk2, 0.02, 0.75, 0, 0.33, 0.27, 0.32);
+      arKat(yy, arM, 0xf2483a, 0, 1.03, 0, 0.1); arKat(yy, G.sil, 0x5b8a3a, 0.03, 1.16, 0, 0.012, 0.14, 0.012, 0, 0, -0.3);
+      arKat(yy, G.sil, kulah, 0.3, 0.86, -0.05, 0.045, 0.5, 0.045, 0, 0, -0.55);
+      const sr = [0xffd84a, 0x6fc3ff, 0xffffff, 0xff6f91, 0x8fe07a];
+      for (let i = 0; i < 10; i++) { const an = i * 2.4, yk = 0.42 + (i % 3) * 0.09, rr = 0.5 * Math.sqrt(Math.max(0, 1 - Math.pow((yk - 0.36) / 0.4, 2))); arKat(yy, arTomb, sr[i % 5], Math.cos(an) * rr * 1.08, yk, Math.sin(an) * rr * 0.98, 0.045, 0.014, 0.014, 0, -an + i, 0.6); }
+    });
+  } else if (tip === 'unicorn') {
+    // tek boynuzlu at: önde baş ve altın boynuz, savrulan gökkuşağı yele, arkada kuyruk
+    const yele = [0xff8fb1, 0xffc06a, 0xfff07a, 0x9fe89a, 0x8fd0ff, 0xc7a5ff], altin = 0xffd23e;
+    arKat(y, arYuzey(24, 12, arTipF.unicorn, i => i > 12 ? alt : renk), null, 0, 0.6, -0.05, 1, 1, 1);
+    arKat(y, arHap(0.25, 0.5), renk, 0, 1.2, 1.3, 1, 1, 1, 0.5);                                     // boyun
+    arKat(y, arK, renk, 0, 1.62, 1.6, 0.31, 0.31, 0.4, 0.5);                                       // baş
+    arKat(y, arK, 0xffd3e6, 0, 1.47, 1.88, 0.21, 0.18, 0.21, 0.4);
+    arKat(y, G.koni, altin, 0, 2.12, 1.62, 0.08, 0.52, 0.08, 0.3);                                 // boynuz
+    for (let i = 0; i < 3; i++) arKat(y, arInceHalka, 0xfff3b0, 0, 1.96 + i * 0.12, 1.57 + i * 0.037, 0.075 - i * 0.02, 0.075 - i * 0.02, 0.12, PI / 2 + 0.3);
+    arKat(y, arHalka, renk2, 0, 1.0, 1.22, 0.3, 0.3, 0.3, PI / 2 + 0.5);                           // tasma
+    arKat(y, arYildizGeo, altin, 0, 0.93, 1.56, 0.1, 0.1, 0.1, 0.3);
+    for (const x of [-1, 1]) {
+      arKat(y, G.koni, renk, x * 0.19, 1.95, 1.47, 0.085, 0.24, 0.055, 0.2, 0, -x * 0.25);         // kulaklar
+      arKat(y, G.koni, 0xffb3d4, x * 0.19, 1.94, 1.495, 0.05, 0.16, 0.04, 0.2, 0, -x * 0.25);
+      arKat(y, arM, 0x2a2230, x * 0.275, 1.68, 1.7, 0.035, 0.085, 0.075); arKat(y, arM, 0xffffff, x * 0.3, 1.72, 1.73, 0.015, 0.028, 0.028);
+      arKat(y, arM, 0xff9fc6, x * 0.24, 1.53, 1.82, 0.035, 0.06, 0.07);
+      arKat(y, arM, 0xd9769f, x * 0.08, 1.46, 2.07, 0.022, 0.03, 0.02);
+      stop(x * 0.6, 0.72, -1.8, 0.09);
+      for (let i = 0; i < 3; i++) arKat(y, arK, i === 1 ? 0xffe3f1 : 0xffffff, x * (0.93 + i * 0.04), 1.08 - i * 0.1, -0.5 - i * 0.2, 0.06, 0.17 - i * 0.02, 0.5 - i * 0.07, 0.5 + i * 0.16, 0, x * 0.4);   // minik kanatlar
+    }
+    camurluk(renk2, 1.5);
+    arKat(y, arHap(0.1, 0.9), renk2, 0, 0.42, -1.8, 1, 1, 1, 0, 0, PI / 2);
+    hareketli('yele', 0, 1.86, 1.4, yy => { for (let i = 0; i < 6; i++) arKat(yy, arK, yele[i], (i % 2 ? 0.035 : -0.035), -0.02 - i * 0.14, -0.06 - i * 0.07, 0.13, 0.15, 0.22 + (i % 2) * 0.04, 0.5); });
+    hareketli('kuyruk', 0, 0.98, -1.72, yy => { for (let i = 0; i < 6; i++) arKat(yy, arK, yele[i], Math.sin(i * 1.9) * 0.06, 0.06 + i * 0.16 - i * i * 0.008, -0.08 - i * 0.09 - i * i * 0.014, 0.2 - i * 0.015, 0.18, 0.21 - i * 0.01, -0.25 - i * 0.16); arKat(yy, arK, renk2, 0, -0.03, 0, 0.19, 0.13, 0.17); });   // kabarık, yukarı kıvrık kuyruk
+  }
+}
+function araba(renk, renk2, tur, tip) {   // öne +Z; tip: ARABA_TIPLERI içindeki id (verilmezse 'kart')
+  tip = AR_TEKER[tip] ? tip : 'kart';
+  const tkr = AR_TEKER[tip], yuk = tkr.yuk, ek = [];
   const g = new T.Group(), govde = new T.Group(); g.rotation.order = 'YXZ'; g.add(govde);
   const y = arYapi(), alt = arKoyult(renk, 0.72), gri = 0xc9cfd9;
-  const aile = tur === 'anne' || tur === 'baba', arazi = tur === 'bilbo' || tur === 'baba';
+  const aile = tur === 'anne' || tur === 'baba', arazi = tip === 'cip' || (tip === 'kart' && (tur === 'bilbo' || tur === 'baba'));
+  if (tip !== 'kart') arTipGovde(y, ek, tip, renk, renk2, alt, tkr); else {
   // tombul gövde: üstte yarış şeridi, yanda ince şerit, altı bir ton koyu
   arKat(y, arYuzey(24, 12, arGovdeF, i => (i === 5 || i === 6 || i === 0 || i === 12) ? renk2 : i > 11 ? alt : renk), null, 0, 0.62, -0.05, 1, 1, 1);
   arKat(y, arHap(0.11, 1.3), renk2, 0, 0.42, 1.8, 1, 1, 1, 0, 0, Math.PI / 2);                       // ön tampon
@@ -203,13 +350,14 @@ function araba(renk, renk2, tur) {   // öne +Z
   arKat(y, arTomb, renk2, 0, 1.46, -1.62, 1.02, 0.055, 0.27, 0.1);                                  // arka kanat
   arKat(y, arHap(0.08, 1.2), AR_KOYU, 0, 0.4, -1.86, 1, 1, 1, 0, 0, Math.PI / 2);                     // arka tampon
   for (const z of [-1.05, 1.05]) arKat(y, G.sil, AR_KOYU, 0, 0.46, z, 0.06, 1.8, 0.06, 0, 0, Math.PI / 2);   // dingiller
+  }
   arKat(y, arHalka, AR_KOYU, 0, 0.985, -0.22, 0.5, 0.62, 0.45, Math.PI / 2);                       // kabin kenarı
-  arKat(y, arTomb, AR_KOYU, 0, 1.13, -0.7, 0.45, 0.42, 0.12, -0.12);                                // koltuk
-  arKat(y, arTomb, renk2, 0, 1.13, -0.83, 0.38, 0.34, 0.03, -0.12);
+  arKat(y, arTomb, AR_KOYU, 0, 1.06, -0.72, 0.45, 0.33, 0.12, -0.12);                               // koltuk (kafanın altında kalır)
+  arKat(y, arTomb, renk2, 0, 1.06, -0.85, 0.38, 0.26, 0.03, -0.12);
   arKat(y, arTomb, renk, 0, 0.97, 0.66, 0.4, 0.15, 0.2);                                            // ön kaput çıkıntısı
   arKat(y, G.sil, AR_KOYU, 0, 1.05, 0.52, 0.035, 0.3, 0.035, 0.9);                                  // direksiyon
   // Renk kadar siluet de kişisel: alçak spor kanat, yapraklar, arazi tamponu, yuvarlak aile aracı.
-  if (tur === 'feza') {
+  if (tip !== 'kart') { /* süsler arTipGovde içinde */ } else if (tur === 'feza') {
     for (const x of [-1, 1]) {
       arKat(y, arTomb, renk2, x * 0.59, 0.93, 0.73, 0.16, 0.07, 0.64, -0.18, 0, x * 0.08);
       arKat(y, arTomb, alt, x * 0.82, 0.44, -0.23, 0.1, 0.1, 0.62);
@@ -254,8 +402,10 @@ function araba(renk, renk2, tur) {   // öne +Z
   if (tur === 'piril') {
     arKat(y, arK, 0xc8ec8c, 0, 1.08, -0.1, 0.27, 0.36, 0.2);
     for (let i = 0; i < 3; i++) arKat(y, arTomb, 0x8fcf62, 0, 1.2 - i * 0.11, 0.085 - i * 0.012, 0.19 - i * 0.012, 0.022, 0.03);
-    for (const x of [-1, 1]) arKat(y, G.koni, 0x2f8a4a, x * 0.42, 1.42, -0.5, 0.16, 0.5, 0.04, -0.5, 0, -x * 0.9);   // minik kanatlar
-    for (let i = 0; i < 3; i++) arKat(y, arK, 0x2f8a4a, 0, 1.08 - i * 0.03, -1.05 - i * 0.26, 0.05, 0.16 - i * 0.02, 0.14);   // arabada ibik
+    { const kn = new T.Group(), ky = arYapi(); kn.position.set(0, 1.3, -0.47); kn.userData.ek = 'kanat';   // minik kanatlar (çırpar)
+      for (const x of [-1, 1]) { arKat(ky, G.koni, 0x2f8a4a, x * 0.45, 0.14, -0.04, 0.2, 0.58, 0.045, -0.5, 0, -x * 0.9); arKat(ky, G.koni, 0x8fd87a, x * 0.43, 0.1, -0.075, 0.12, 0.4, 0.03, -0.5, 0, -x * 0.9); }
+      arBitir(ky, kn); ek.push(kn); }
+    if (tip === 'kart') for (let i = 0; i < 3; i++) arKat(y, arK, 0x2f8a4a, 0, 1.08 - i * 0.03, -1.05 - i * 0.26, 0.05, 0.16 - i * 0.02, 0.14);   // arabada ibik
   } else if (tur === 'bilbo') {
     arKat(y, arHalka, 0xe8433a, 0, 1.36, -0.24, 0.27, 0.27, 0.3, Math.PI / 2 - 0.15);
     arKat(y, arM, 0xffd23e, 0, 1.3, 0.04, 0.06, 0.06, 0.03);
@@ -264,11 +414,12 @@ function araba(renk, renk2, tur) {   // öne +Z
     arKat(y, arHalka, tur === 'baba' ? 0xffffff : 0xffe07a, 0, 1.4, -0.24, 0.2, 0.2, 0.25, Math.PI / 2 - 0.15);   // yaka
   }
   // süs: burunda (yukarı bakar) ve arkada (geriye bakar)
-  arTaban(y, 0, 0.93, 0.95, -Math.PI / 2 + 0.15, 0, 0); arSus(y, tur);
-  arTaban(y, 0, 0.72, -1.87, 0, Math.PI, 0); arSus(y, tur);
-  if (tur === 'feza') for (const x of [-1, 1]) { arTaban(y, x * 1.055, 1.4, -1.6, 0, x * Math.PI / 2, 0); arKat(y, arYildizGeo, 0xffc400, 0, 0, -0.02, 0.15, 0.15, 0.15); }
+  if (tkr.sus1) { arTaban(y, tkr.sus1[0], tkr.sus1[1], tkr.sus1[2], tkr.sus1[3], tkr.sus1[4], 0); arSus(y, tur); }
+  if (tkr.sus2) { arTaban(y, tkr.sus2[0], tkr.sus2[1], tkr.sus2[2], tkr.sus2[3], tkr.sus2[4], 0); arSus(y, tur); }
+  if (tur === 'feza' && tip === 'kart') for (const x of [-1, 1]) { arTaban(y, x * 1.055, 1.4, -1.6, 0, x * Math.PI / 2, 0); arKat(y, arYildizGeo, 0xffc400, 0, 0, -0.02, 0.15, 0.15, 0.15); }
   y.taban = null;
   arBitir(y, govde, arBoya);
+  for (const e of ek) govde.add(e);
   // Direksiyon ayrı tek parça: el ile aynı yönde döner, sürüşte donuk kalmaz.
   const direksiyon = new T.Group(), dy = arYapi(); direksiyon.position.set(0, 1.13, 0.41); direksiyon.rotation.x = -0.65;
   arKat(dy, arHalka, AR_KOYU, 0, 0, 0, 0.17, 0.17, 0.17);
@@ -286,35 +437,45 @@ function araba(renk, renk2, tur) {   // öne +Z
   // tekerler: [dönüş grubu] > [dönen grup]
   const teker = [], on = [];
   for (const z of [-1, 1]) for (const x of [-1, 1]) {
-    const r = z < 0 ? 0.5 : 0.45, s = r / 0.46, d = new T.Group(), t = new T.Group(), ty = arYapi();
+    const r = z < 0 ? tkr.ra : tkr.ro, s = r / 0.46, en = z < 0 ? tkr.ena : tkr.eno, of = Math.max(0, 0.16 * s * en - 0.26), d = new T.Group(), t = new T.Group(), ty = arYapi();
     d.position.set(x * 0.97, r, z * 1.05); g.add(d); d.add(t); t.userData.r = r;
-    arKat(ty, arLastik, AR_KOYU, 0, 0, 0, s, s, s * (z < 0 ? 1.5 : 1.3), 0, Math.PI / 2);
-    arKat(ty, G.sil, 0xeef1f6, 0, 0, 0, 0.21 * s, 0.4, 0.21 * s, 0, 0, Math.PI / 2);
-    arKat(ty, arM, renk2 === 0xffffff ? renk : renk2, x * 0.2, 0, 0, 0.05, 0.1 * s, 0.1 * s);
-    for (let q = 0; q < 3; q++) arKat(ty, G.kutu, 0x9aa3b0, x * 0.203, 0, 0, 0.012, 0.38 * s, 0.06, q * Math.PI / 3);
-    arKat(ty, arInceHalka, 0xf0e9db, x * 0.223, 0, 0, 0.235 * s, 0.235 * s, 0.235 * s, 0, Math.PI / 2);
+    arKat(ty, arLastik, AR_KOYU, 0, 0, 0, s, s, s * en, 0, Math.PI / 2);
+    arKat(ty, G.sil, tkr.jant || 0xeef1f6, 0, 0, 0, 0.21 * s, 0.4 + of * 2, 0.21 * s, 0, 0, Math.PI / 2);
+    arKat(ty, arM, renk2 === 0xffffff ? renk : renk2, x * (0.2 + of), 0, 0, 0.05, 0.1 * s, 0.1 * s);
+    for (let q = 0; q < 3; q++) arKat(ty, G.kutu, 0x9aa3b0, x * (0.203 + of), 0, 0, 0.012, 0.38 * s, 0.06, q * Math.PI / 3);
+    arKat(ty, arInceHalka, 0xf0e9db, x * (0.223 + of), 0, 0, 0.235 * s, 0.235 * s, 0.235 * s, 0, Math.PI / 2);
     for (let q = 0; q < 5; q++) {
       const an = q * Math.PI * 2 / 5;
-      arKat(ty, arCivi, 0xf1d386, x * 0.244, Math.cos(an) * 0.122 * s, Math.sin(an) * 0.122 * s, 0.017, 0.02, 0.02);
+      arKat(ty, arCivi, 0xf1d386, x * (0.244 + of), Math.cos(an) * 0.122 * s, Math.sin(an) * 0.122 * s, 0.017, 0.02, 0.02);
     }
     // Seyrek kabartma dişler: ayrı cisim/çizim olmadan lastiğin dönüşünü okunur kılar.
     for (let q = 0; q < 12; q++) {
       const an = q * Math.PI * 2 / 12;
-      arKat(ty, G.kutu, arazi ? 0x414954 : 0x363c47, 0, Math.cos(an) * (r - 0.025), Math.sin(an) * (r - 0.025), arazi ? 0.4 : 0.3, 0.052, 0.124, an);
+      arKat(ty, G.kutu, arazi ? 0x414954 : 0x363c47, 0, Math.cos(an) * (r - 0.025), Math.sin(an) * (r - 0.025), (arazi ? 0.4 : 0.3) * Math.max(1, en / 1.4), 0.052, 0.124, an);
     }
     arBitir(ty, t); teker.push(t); if (z > 0) on.push(d);
   }
   const golge = new T.Mesh(new T.PlaneGeometry(3.4, 4.6), golgeMat.clone()); golge.rotation.x = -Math.PI / 2; golge.position.y = 0.07; golge.renderOrder = 2; scene.add(golge);
   scene.add(g);
-  return { g, govde, teker, golge, arOn: on, arKol: kol, arKafa: kf, arGoz: kf.userData.gozMesh, arSallan: kf.userData.sallan, arDireksiyon: direksiyon, arAlev: null,
+  return { g, govde, teker, golge, arTip: tip, arEk: ek, arYuk: yuk, arYayK: tkr.yay || 1, arOn: on, arKol: kol, arKafa: kf, arGoz: kf.userData.gozMesh, arSallan: kf.userData.sallan, arDireksiyon: direksiyon, arAlev: null,
     ar: { t: 0, v0: 0, ivme: 0, don: 0, egx: 0, egz: 0, sev: 0, sal: 0, bak: 0, yay: 0, ayak: new Float32Array(4), havada: false, inis: 9, sek: 9, tok: 9 } };
 }
-const arKoniGeo = new T.ConeGeometry(1, 1, 12); arKoniGeo.translate(0, 0.5, 0);
 function roketAlevi(a) {   // iç içe iki koni; oyun.js görünürlüğü ve ölçeği ayarlar, içteki koni arabaYerlestir içinde titreşir
   const m = new T.Group(); m.position.set(0, 0.58, -1.9); m.rotation.x = -Math.PI / 2;
   const ic = new T.Mesh(arKoniGeo, new T.MeshBasicMaterial({ color: 0xfff6b0 })); ic.scale.set(0.58, 0.66, 0.58); m.add(ic);
   const dis = new T.Mesh(arKoniGeo, new T.MeshBasicMaterial({ color: 0xff7a14, transparent: true, opacity: 0.55, depthWrite: false })); dis.renderOrder = 3; m.add(dis);
   m.userData.ic = ic; m.userData.dis = dis; m.visible = false; a.govde.add(m); a.arAlev = m; return m;
+}
+function arabaSok(a) {   // arabayı sahneden kaldırır; yalnız o arabaya ait geometri/malzemeyi bırakır (ortak olanlara dokunmaz)
+  if (!a || !a.g) return;
+  const birak = o => {
+    if (!o.isMesh) return;
+    if (o.geometry && o.geometry !== arKoniGeo) o.geometry.dispose();
+    const m = o.material; if (m && m !== arMat && m !== arBoya && m !== arAlevMat && m !== golgeMat) m.dispose();
+  };
+  a.g.traverse(birak); if (a.g.parent) a.g.parent.remove(a.g);
+  if (a.golge) { birak(a.golge); if (a.golge.parent) a.golge.parent.remove(a.golge); }
+  a.arAlev = null;
 }
 OLAY.on('yildiz', () => { if (typeof A !== 'undefined' && A[0].ar) A[0].ar.sek = 0; });
 OLAY.on('tok', () => { if (typeof A !== 'undefined' && A[0].ar) A[0].ar.tok = 0; });
@@ -339,7 +500,7 @@ function arabaYerlestir(a, dt) {
   if (havada) {
     hu = 1 - clamp(a.hop / ucus, 0, 1); const kalan = 1 - hu;
     // Sayacı fizik ilerletir. Rampa yüksekliği kalkışta korunur, yere inişte kesintisiz sıfıra iner.
-    y = Math.sin(hu * Math.PI) * 1.9 + (a.hopBasY || 0) * kalan;
+    y = Math.sin(hu * Math.PI) * ((typeof RAMPA !== 'undefined' && RAMPA.yuk) || 1.9) + (a.hopBasY || 0) * kalan;
     egim = (a.hopBasEgim || 0) * kalan * kalan; yatis = (a.hopBasYatis || 0) * kalan * kalan;
   }
   if (s.havada && !havada) s.inis = 0;
@@ -353,15 +514,17 @@ function arabaYerlestir(a, dt) {
   // gövde: yatma, yaylanma, zıplarken gerilme, inişte ezilme, sevinç zıplaması
   const egz = clamp(a.dv * 0.014, -0.13, 0.13) + clamp(p.k * a.v * 0.05, -0.08, 0.08) + (s.tok < 0.5 ? Math.sin(s.tok * 30) * 0.06 * (1 - s.tok * 2) : 0);
   s.egz += (egz - s.egz) * k; a.govde.rotation.z = s.egz;
-  const egx = havada ? -0.16 + hu * 0.3 : -s.ivme * 0.005 + (s.inis < 0.6 ? Math.sin(s.inis * 15) * 0.05 * (1 - s.inis / 0.6) : 0);
+  const egx = havada ? -0.16 + hu * 0.3 : -s.ivme * 0.005 * (a.arYayK || 1) + (s.inis < 0.6 ? Math.sin(s.inis * 15) * 0.05 * (a.arYayK > 1 ? 1.7 : 1) * (1 - s.inis / 0.6) : 0)
+    + (a.arYayK > 1 ? Math.sin(t * 6.1 + a.faz) * 0.014 * Math.min(1, a.v / 10) : 0);
   s.egx += (egx - s.egx) * k; a.govde.rotation.x = s.egx;
   let es = havada ? 0.065 * Math.sin(Math.PI * Math.pow(hu, 0.6)) : s.inis < 0.7 ? -0.095 * Math.exp(-7 * s.inis) * Math.cos(s.inis * 16) : 0;
   const zs = Math.abs(Math.sin(t * 6.5 + a.faz));
   es += s.sev * (zs - 0.5) * 0.07 + (s.sek < 0.35 ? Math.sin(s.sek / 0.35 * Math.PI) * 0.07 : 0);
   a.govde.scale.set(1 - es * 0.5, 1 + es, 1 - es * 0.5);
-  const yayHedef = havada ? 0.035 : s.inis < 0.65 ? -0.1 * Math.exp(-8 * s.inis) * Math.cos(s.inis * 17) : 0;
+  const yk = a.arYayK || 1, yayHedef = havada ? 0.035 * yk : s.inis < 0.65 * yk ? -0.1 * yk * Math.exp(-8 / yk * s.inis) * Math.cos(s.inis * (yk > 1 ? 11 : 17)) : 0;
   s.yay += (yayHedef - s.yay) * arYumusak(dt, 24);
-  a.govde.position.y = Math.sin(t * 22 + a.faz) * 0.009 * Math.min(1, a.v / 10) + Math.sin(t * 2.6 + a.faz) * 0.009 + s.sev * zs * 0.13 + s.yay;
+  a.govde.position.y = Math.sin(t * 22 + a.faz) * 0.009 * Math.min(1, a.v / 10) + Math.sin(t * 2.6 + a.faz) * 0.009 + s.sev * zs * 0.13 + s.yay + (a.arYuk || 0)
+    + (yk > 1 ? (Math.sin(t * 8.3 + a.faz) * 0.022 + Math.sin(t * 13.1 + a.faz * 2) * 0.012) * Math.min(1, a.v / 10) + Math.abs(s.egz) * 0.25 : 0);
   // tekerler
   const aks = typeof RAMPA !== 'undefined' ? RAMPA.aks : 1.05, yan = typeof RAMPA !== 'undefined' ? RAMPA.iz : 0.97;
   const boyEgim = Math.sin(yerEgim), yanEgim = Math.cos(yerEgim) * Math.sin(yerYatis), dikPay = Math.max(0.65, Math.cos(yerEgim) * Math.cos(yerYatis));
@@ -400,6 +563,19 @@ function arabaYerlestir(a, dt) {
     const sp = a.arSallan[i], u = sp.userData;
     sp.rotation.x = (s.sal + Math.sin(t * 13 + a.faz + i * 1.9) * 0.1 * (hiz + s.sev * 0.6)) * u.kx * (u.yukari ? -1 : 1);
     sp.rotation.z = u.yon * (s.sal * 0.35 + s.sev * 0.2) - clamp(a.dv * 0.03, -0.3, 0.3) * u.kx;
+    if (u.dil) { sp.rotation.x += Math.sin(t * 5 + a.faz) * 0.12; sp.scale.y = 1 + Math.sin(t * 5 + a.faz) * 0.12 + s.sev * 0.15; }
+  }
+  // tipe ve sürücüye özel hareketli parçalar: yele, kuyruk, dondurma, roket alevi, Pırıl'ın kanatları
+  for (let i = 0; i < a.arEk.length; i++) {
+    const e = a.arEk[i], tr = e.userData.ek, yanal = clamp(a.dv * 0.05, -0.45, 0.45);
+    if (tr === 'yele') { e.rotation.x = s.sal * 0.75 + Math.sin(t * 9 + a.faz) * 0.07 * (0.3 + hiz); e.rotation.z = -yanal * 1.2 - s.don * 0.5 + Math.sin(t * 5.3 + a.faz) * 0.08; e.rotation.y = Math.sin(t * 6.7 + a.faz) * 0.12 * (0.3 + hiz); }
+    else if (tr === 'kuyruk') { e.rotation.x = -(s.sal * 0.8 + (havada ? 0.3 : 0) + Math.sin(t * 8 + a.faz) * 0.1 * (0.3 + hiz) + s.sev * Math.sin(t * 13) * 0.25); e.rotation.y = -yanal * 1.5 - s.don * 0.6 + Math.sin(t * 6.1 + a.faz) * 0.2 * (0.35 + hiz); }
+    else if (tr === 'top') {
+      e.rotation.z = -s.egz * 1.6 - yanal * 0.35 + Math.sin(t * 3.1 + a.faz) * 0.035 + s.sev * Math.sin(t * 6.5 + a.faz) * 0.12;
+      e.rotation.x = clamp(s.ivme * 0.007, -0.2, 0.2) + (s.inis < 0.7 ? Math.sin(s.inis * 17) * 0.16 * (1 - s.inis / 0.7) : 0) + Math.sin(t * 4.3 + a.faz) * 0.02 * (0.4 + hiz);
+      const ez = (havada ? 0.06 : s.inis < 0.5 ? -Math.sin(s.inis / 0.5 * Math.PI) * 0.12 : 0) + Math.sin(t * 7.9 + a.faz) * 0.012; e.scale.set(1 - ez * 0.5, 1 + ez, 1 - ez * 0.5);
+    } else if (tr === 'alev') { const f = Math.sin(t * 67 + a.faz) * 0.5 + Math.sin(t * 41) * 0.5, u = 0.32 + hiz * 0.75; e.visible = a.v > 0.6 && !(a.arAlev && a.arAlev.visible); e.scale.set(0.27 + f * 0.03, u * (1 + f * 0.16), 0.27 + f * 0.03); }
+    else if (tr === 'kanat') { const cp = Math.sin(t * (7 + hiz * 9) + a.faz); e.rotation.x = cp * (0.16 + hiz * 0.2 + s.sev * 0.25) - (havada ? 0.35 : 0); e.scale.x = 1 + cp * 0.07 + (havada ? 0.15 : 0); }
   }
   if (a.arAlev && a.arAlev.visible) { const ic = a.arAlev.userData.ic, f = Math.sin(t * 71) * 0.5 + Math.sin(t * 43) * 0.5; ic.scale.set(0.58 + f * 0.08, 0.66 + f * 0.14, 0.58 + f * 0.08); }
   a.golge.position.set(x, 0.07, z); a.golge.rotation.z = a.g.rotation.y;

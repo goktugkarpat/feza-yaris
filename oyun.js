@@ -10,9 +10,43 @@ const SURUCU = [
 ];
 const IZGARA = [[-7, 0], [-1.5, -3.6], [-1.5, 3.6], [-11, -4.1], [-11, 4.1]];   // [yol, yanal]: önde 2, ortada Feza, arkada 2 – üst üste binmez
 const OYV = 23.5;   // Feza'nın düz hızı (m/sn)
-const A = SURUCU.map((s, i) => Object.assign(araba(s.renk, s.renk2, s.tur), s, { i, yol: 0, d: 0, v: 0, dv: 0, hop: 0, hopBasY: 0, hopBasEgim: 0, hopBasYatis: 0, rampaY: 0, rampaEgim: 0, rampaYatis: 0, rampaAyak: new Float32Array(4), rampaSon: -1, rampaYolOnce: 0, faz: i * 1.7, bitti: false, sira: i + 1, it: 0, tepki: 0.04 + i * 0.05 }));
+// ───────── araba seçimi (araba.js: ARABA_TIPLERI, araba(renk, renk2, tur, tip), arabaSok; yoksa eski tek model) ─────────
+const oyTipler = () => (typeof ARABA_TIPLERI !== 'undefined' && Array.isArray(ARABA_TIPLERI) && ARABA_TIPLERI.length ? ARABA_TIPLERI : null);
+const oyTipBul = id => { const t = oyTipler(); if (t) for (const x of t) if (x && x.id === id) return x; return null; };
+let oyArabaId = (() => {
+  const t = oyTipler(); if (!t) return 'kart';
+  let s = Q.get('araba');
+  if (!oyTipBul(s)) { try { s = localStorage.getItem('feza-yaris-araba'); } catch (e) { s = null; } }
+  return oyTipBul(s) ? s : t[0].id;
+})();
+function oyRakipTip(i) {   // rakip i (1…4): Feza'nın seçtiği dışındaki tipler, her açılışta aynı sırayla
+  const t = oyTipler(); if (!t) return undefined;
+  const d = t.filter(x => x.id !== oyArabaId); return d.length ? d[(i - 1) % d.length].id : t[0].id;
+}
+{ const t = oyTipBul(oyArabaId); if (t && t.renk !== undefined) { SURUCU[0].renk = t.renk; if (t.renk2 !== undefined) SURUCU[0].renk2 = t.renk2; } }
+const oyIlkTip = i => (i ? oyRakipTip(i) : (oyTipler() ? oyArabaId : undefined));
+const A = SURUCU.map((s, i) => Object.assign(araba(s.renk, s.renk2, s.tur, oyIlkTip(i)), s, { tip: oyIlkTip(i), okT: 0, okSon: -1, korYan: 0, korE: 0, bitYan: 0, i, yol: 0, d: 0, v: 0, dv: 0, hop: 0, hopBasY: 0, hopBasEgim: 0, hopBasYatis: 0, rampaY: 0, rampaEgim: 0, rampaYatis: 0, rampaAyak: new Float32Array(4), rampaSon: -1, rampaYolOnce: 0, faz: i * 1.7, bitti: false, sira: i + 1, it: 0, tepki: 0.04 + i * 0.05 }));
 const P = A[0];
-const alev = roketAlevi(P);
+let alev = roketAlevi(P);
+function oyModelYenile(a, renk, renk2, tip) {   // nesnenin kimliği aynı kalır; yalnız model alanları (g, govde, teker, golge…) yenilenir
+  const yeni = araba(renk, renk2, a.tur, tip);
+  if (typeof arabaSok === 'function') arabaSok(a); else { scene.remove(a.g); scene.remove(a.golge); }
+  Object.assign(a, yeni); a.renk = renk; a.renk2 = renk2; a.tip = tip;
+}
+function oyAraba() { return oyArabaId; }
+function oyArabaSec(id) {   // yalnız başlıkta: Feza'nın arabasını anında değiştirir; rakipler kalan tiplere dağılır
+  const tip = oyTipBul(id); if (!tip || durum !== 'baslik') return false;
+  if (id === oyArabaId) return true;
+  const onceki = oyArabaId; oyArabaId = id;
+  try {
+    oyModelYenile(P, tip.renk !== undefined ? tip.renk : P.renk, tip.renk2 !== undefined ? tip.renk2 : P.renk2, id);
+    alev = roketAlevi(P);
+    for (let i = 1; i < A.length; i++) { const rt = oyRakipTip(i); if (rt !== A[i].tip) oyModelYenile(A[i], A[i].renk, A[i].renk2, rt); }
+  } catch (e) { console.error(e); oyArabaId = onceki; return false; }
+  for (const a of A) arabaYerlestir(a, 0);
+  try { localStorage.setItem('feza-yaris-araba', id); } catch (e) { /* gizli sekmede kayıt olmayabilir */ }
+  OLAY.emit('araba', id); return true;
+}
 const oySira = A.slice();   // sıralama için kalıcı dizi (her karede yeni dizi yok)
 
 // ───────── durum ─────────
@@ -28,7 +62,7 @@ const oyUs = (dt, k) => 1 - Math.exp(-dt * k);   // kare hızından bağımsız 
 
 function elGoster(a) { if (a !== oyElAcik) { oyElAcik = a; HUD.el.classList.toggle('gizli', !a); } }
 function izgarayaDiz() {
-  A.forEach((a, i) => { a.yol = IZGARA[i][0]; a.d = IZGARA[i][1]; a.v = 0; a.dv = 0; a.hop = 0; a.hopBasY = 0; a.hopBasEgim = 0; a.hopBasYatis = 0; a.rampaY = 0; a.rampaEgim = 0; a.rampaYatis = 0; a.rampaAyak.fill(0); a.rampaSon = -1; a.rampaYolOnce = a.yol; a.bitti = false; a.it = 0; });
+  A.forEach((a, i) => { a.yol = IZGARA[i][0]; a.d = IZGARA[i][1]; a.v = 0; a.dv = 0; a.hop = 0; a.hopBasY = 0; a.hopBasEgim = 0; a.hopBasYatis = 0; a.rampaY = 0; a.rampaEgim = 0; a.rampaYatis = 0; a.rampaAyak.fill(0); a.rampaSon = -1; a.rampaYolOnce = a.yol; a.bitti = false; a.it = 0; a.okT = 0; a.okSon = -1; a.korYan = 0; a.bitYan = 0; });
   siralama();
   yildizDuzenle(0); for (const o of OKLAR) o.tur = -1; for (const o of TUMSEK) o.tur = -1;
   girdiTemizle();
@@ -45,10 +79,11 @@ function gec(d) { durum = d; durumT = 0; if (d === 'sayim') dongu.n = -1; OLAY.e
 function basla() {
   SES.hazirla(); izgarayaDiz(); molaAyar(false);
   $('baslik').classList.add('gizli'); $('sonuc').classList.add('gizli'); HUD.hud.classList.remove('gizli');
-  if (ilkYaris) { gec('giris'); SES.soyle('giris'); } else gec('sayim');
+  if (ilkYaris) { gec('giris'); SES.soyle(SES.CUMLE && SES.CUMLE['giris_' + PIST_TEMA] ? 'giris_' + PIST_TEMA : 'giris'); } else gec('sayim');
 }
+function oyBaslikDiz() { A[1].yol = A[2].yol = 3; A[3].yol = A[4].yol = -18; }   // seçim ekranında arkadaşlar biraz açılır: Feza'nın arabası rahat görünür
 function basligaDon() {
-  SES.sus(); izgarayaDiz(); molaAyar(false);
+  SES.sus(); izgarayaDiz(); oyBaslikDiz(); molaAyar(false);
   HUD.hud.classList.add('gizli'); $('sonuc').classList.add('gizli'); $('baslik').classList.remove('gizli');
   gec('baslik');
 }
@@ -139,12 +174,52 @@ function oyuncuAdim(dt) {
   P.yol += P.v * dt;
   roketT = Math.max(0, roketT - dt); roketBekle = Math.max(0, roketBekle - dt);
 }
+// Kamera koridoru: Feza'nın 0–14 m gerisinde, şeridinin ±2,65 m'sinde rakip durmaz (kamerayla Feza arasına araba girmez).
+const OY_KOR_GERI = 14, OY_KOR_YAN = 2.65;
+const oyOzel = [];   // rakiplerin de kullandığı oklar ve rampalar (aynı nesneler; pist.js'in çizdiği yerler)
+for (const o of OKLAR) oyOzel.push({ n: o, ok: true }); for (const r of TUMSEK) oyOzel.push({ n: r, ok: false });
+function oyKoridor(a, dt) {
+  const ds = P.yol - a.yol;
+  if (ds <= -3 || ds >= 34) return;   // yan yana gelen (3 m öndeki) rakip de yana açılır: Feza'nın arkasına düştüğünde koridor zaten boştur
+  // e = rakibin kamera–Feza doğrusuna yanal uzaklığı (+ = d artı yanı). Virajda bu doğru şeritten kayar; iki ölçü de korunur.
+  const kx = camera.position.x, kz = camera.position.z, dx = P.x - kx, dz = P.z - kz, uz = Math.hypot(dx, dz) || 1, cx = a.x - kx, cz = a.z - kz;
+  const e = (dx * cz - dz * cx) / uz, t = (cx * dx + cz * dz) / uz;
+  a.korE = e;
+  if (ds >= OY_KOR_GERI + 0.6) return;
+  const yan = a.d >= P.d ? 1 : -1, acik = (a.d - P.d) * yan - OY_KOR_YAN, eAcik = t < uz - 2.2 ? e * yan - 2.3 : 1;   // ikisi de Feza'ya göre aynı yana doğru ölçülür
+  if (ds >= OY_KOR_GERI) {   // koridorun gerisinde: yana açılmadan yaklaşamaz
+    if (acik < 0.25 || eAcik < 0.2) { a.yol = P.yol - OY_KOR_GERI - 0.6; if (a.v > P.v) a.v = P.v; }
+    return;
+  }
+  a.korYan = yan;
+  const it = Math.max(0, -acik, -eAcik) * yan;
+  if (it) {
+    if (a.dv * it < 0) a.dv = 0;
+    if (Math.abs(a.d + it) > DMAX) {   // o yanda yer kalmadı: rakip kenarda kalıp geriye çekilir
+      a.d = clamp(a.d + clamp(it, -16 * dt, 16 * dt), -DMAX, DMAX);
+      if (ds > 0) { a.yol -= 22 * dt; if (a.v > P.v - 2) a.v = P.v - 2; }
+    } else a.d += clamp(it, -16 * dt, 16 * dt);
+  }
+}
 function rakipAdim(a, dt, onde, gecebilir) {
   const fark = P.yol - a.yol;   // + = rakip geride
-  let hv = a.taban + (fark > 0 ? clamp(fark * 0.1, 0, 3.2) : clamp(fark * 0.08, -4.5, 0));   // gerideyse yetişir, öndeyse bekler
+  if (a.okT > 0) a.okT -= dt;
+  let hv = a.taban + (fark > 0 ? clamp(fark * 0.1, 0, 3.2) : clamp(fark * 0.08, -4.5, 0)) + (a.okT > 0 ? 4 : 0);   // gerideyse yetişir, öndeyse bekler; ok kısa süre hızlandırır
+  // sıradaki ok/rampa: rakipler de üstünden geçer (her rakip her turda başka olanları seçer)
+  let oz = null, ozU = 34;
+  if (durum === 'yaris') {
+    const s = ((a.yol % L) + L) % L, tur = Math.max(0, Math.floor(a.yol / L));
+    for (let j = 0; j < oyOzel.length; j++) {
+      const n = oyOzel[j].n, u = (((n.s - s) % L) + L) % L;
+      if (oyOzel[j].ok && u > L - 3.5 && Math.abs(n.d - a.d) < 2.9 && a.okSon !== tur * 8 + j) { a.okSon = tur * 8 + j; a.okT = 1.1; }
+      if (u < ozU && (j + a.i + tur) % 2 === 0) { ozU = u; oz = n; }
+    }
+  }
+  const bitisOnde = a.yol > P.yol - 3;
   if (durum === 'bitis' || P.bitti) {
-    const kutlamaYol = P.yol - 8 - Math.floor((a.i - 1) / 2) * 5.5;
-    hv = clamp(9 + (kutlamaYol - a.yol) * 0.65, 1.5, 22);   // Feza'nın arkasında iki sıra; öne yığılıp kamerayı kapatmazlar
+    // Öndekiler ileride uzaklaşıp bekler; gerideki arkadaşlar önce geri açılır, kamera öne geçince iki sıra halinde yaklaşır.
+    const kutlamaYol = bitisOnde ? P.yol + 60 : P.yol - lerp(17, 9.5, clamp((durumT - 2.2) / 2.5, 0, 1)) - Math.floor((a.i - 1) / 2) * 5.5;
+    hv = clamp(9 + (kutlamaYol - a.yol) * 0.65, 1.5, bitisOnde ? 26 : 22);
   }
   else if (fark >= 0) {
     if (a !== gecebilir) hv = Math.min(hv, P.v + clamp((fark - 17) * 0.6, -3.5, 6));   // geçmeyecek olanlar kameranın arkasında bekler, görüşü kapatmaz          // Feza hep ilk üçte: en çok iki rakip öne geçebilir
@@ -166,11 +241,32 @@ function rakipAdim(a, dt, onde, gecebilir) {
   }
   a.it += (it - a.it) * oyUs(dt, 5);
   a.v += (hv - a.v) * oyUs(dt, hv < a.v ? 2.6 : 1.6);
-  const gezi = clamp((zaman - 3) / 5, 0, 1), serit = durum === 'bitis' ? (a.yol > P.yol - 3 ? -4.7 : (a.i % 2 ? -3.7 : 3.7)) : clamp(IZGARA[a.i][1] * (1 - 0.3 * gezi) + Math.sin(zaman * 0.21 + a.faz) * 2.1 * gezi + a.it, -DMAX + 0.5, DMAX - 0.5);
+  const gezi = clamp((zaman - 3) / 5, 0, 1);
+  let serit;
+  if (durum === 'bitis') {
+    if (!a.bitYan) a.bitYan = a.d >= P.d ? 1 : -1;   // herkes kendi yanında kalır: kimse Feza'nın önünden/arkasından karşıya geçmez
+    serit = bitisOnde ? a.d : clamp(P.d + a.bitYan * (a.i % 2 ? 3.8 : 5.6), -DMAX + 0.3, DMAX - 0.3);
+  } else {
+    let hat = IZGARA[a.i][1] * (1 - 0.3 * gezi) + Math.sin(zaman * 0.21 + a.faz) * 2.1 * gezi;
+    if (oz && (fark < -8 || fark > 40)) hat = lerp(hat, clamp(oz.d + (a.i % 2 ? 0.7 : -0.7), -DMAX + 0.5, DMAX - 0.5), clamp((34 - ozU) / 14, 0, 1));
+    if (durum === 'yaris' && fark > 0.3 && fark < 34) {   // Feza'nın gerisinde: hep yandan gelir, kamera hattına girmez
+      if (fark > OY_KOR_GERI || !a.korYan) {
+        let yan = Math.abs(P.d) > 1.2 ? (P.d > 0 ? -1 : 1) : a.korYan || (a.korE >= 0 ? 1 : -1);   // Feza kenara yakınsa geniş yandan gelir
+        if (((a.d + yan * 3.9 - a.korE) * yan > DMAX + 0.6 || P.d * yan + 3.1 > DMAX) && (a.d - yan * 3.9 - a.korE) * -yan < DMAX + 0.6) yan = -yan;   // o yanda yer yoksa (koridorun gerisindeyken) öbür yana
+        a.korYan = yan;
+      }
+      hat = a.d + a.korYan * 3.9 - a.korE;   // kamera doğrusundan 3,9 m yana
+      if ((hat - P.d) * a.korYan < 3.3) hat = P.d + a.korYan * 3.3;
+    } else if (fark <= 0.3 || fark >= 34) a.korYan = 0;
+    serit = clamp(hat + a.it, -DMAX + 0.5, DMAX - 0.5);
+  }
   a.dv += (clamp((serit - a.d) * 2, -3.4, 3.4) - a.dv) * oyUs(dt, 4);   // şerit değiştirme yumuşak
   a.d = clamp(a.d + a.dv * dt, -DMAX, DMAX);
   a.yol += a.v * dt;
-  if (!P.bitti && durum === 'yaris' && fark >= 0 && a !== gecebilir && a.yol > P.yol - 4.3) { a.yol = P.yol - 4.3; if (a.v > P.v) a.v = P.v; }
+  if (!P.bitti && durum === 'yaris' && fark >= 0 && a !== gecebilir && a.yol > P.yol - 4.3) {
+    if (fark >= 4.2) { a.yol = P.yol - 4.3; if (a.v > P.v) a.v = P.v; }   // arkadan yaklaşan: 4,3 m geride tutulur
+    else { if (a.v > P.v - 2) a.v = P.v - 2; if (a.yol > P.yol - 0.05) a.yol = P.yol - 0.05; }   // Feza'nın az önce geçtiği: ışınlanmadan, yavaşça geride kalır
+  }
   if (!a.bitti && a.yol >= TUR * L) a.bitti = true;
 }
 function carpisma(dt) {   // değme: ışınlanma yok, yumuşak ayrılma; rakip daha çok kenara çekilir
@@ -219,6 +315,7 @@ function yarisAdim(dt) {
   if (onde >= 2) gecebilir = null;   // önde iki rakip varsa başka kimse Feza'yı geçemez
   oyuncuAdim(dt); for (const a of A) if (a !== P) rakipAdim(a, dt, onde, gecebilir);
   carpisma(dt);
+  if (durum === 'yaris' || durum === 'bitis') for (const a of A) if (a !== P) oyKoridor(a, dt);
   for (const a of A) rampaAdim(a, dt);
   if (durum === 'yaris') {
     const tur = Math.floor(Math.max(0, P.yol) / L);
@@ -268,12 +365,13 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   if (oySars > 0) oySars -= gdt;
   oyRoketK += ((roketT > 0 && durum === 'yaris' ? 1 : 0) - oyRoketK) * oyUs(gdt, 3.5);
   if (durum === 'baslik') {
-    const a = yT * 0.2 + 0.75, ri = (dik ? 16 : 12.5) * Math.cos(a), ry = 6.2 * Math.sin(a);   // oval dönüş: kamera yolun üstünde kalır, ağaçlara girmez
-    kamH.set(P.x + P.tx * ri + P.tz * ry, dik ? 8 : 5.2, P.z + P.tz * ri - P.tx * ry); kamB.set(P.x + P.tx * 2, 1.1, P.z + P.tz * 2); k = 2.5;
+    // Araba seçimi: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır; araba ekranın üst-ortasında (menü altta).
+    const a = 1.25 + Math.sin(yT * 0.3) * 0.42, r = dik ? 9.2 : 7.6, ri = r * Math.cos(a), ry = Math.min(6.4, r * Math.sin(a));
+    kamH.set(P.x + P.tx * ri - P.tz * ry, dik ? 4 : 3.1, P.z + P.tz * ri + P.tx * ry); kamB.set(P.x, dik ? -2 : -1, P.z); k = 2.5;
   } else if (durum === 'bitis') {   // bir kez öne kayan kutlama kamerası; sonra yüzleri gösteren açık kadrajda durur
     const u = clamp((durumT - 1.7) / 2.4, 0, 1), acil = u * u * (3 - 2 * u), r0 = dik ? 13 : 10.8, r1 = dik ? 11.2 : 8.7;
     // Doğrusal koridor, geniş bir yörüngeye çıkmadan sağ yandan geçer; enine uzaklık dar tutulur.
-    const ri = lerp(-r0 * 0.905, r1 * 0.62, acil), ry = lerp(-r0 * 0.426, dik ? -6.6 : -r1 * 0.785, acil), yatay = Math.hypot(ri, ry), cerceve = dik ? 0 : 1.6 * acil;
+    const ri = lerp(-r0 * 0.905, r1 * 0.62, acil), ry = lerp(-r0 * 0.13, dik ? -6.6 : -r1 * 0.785, acil), yatay = Math.hypot(ri, ry), cerceve = dik ? 0 : 1.6 * acil;
     kamH.set(P.x + P.tx * ri + P.tz * ry, lerp(dik ? 6.8 : 5.6, dik ? 5.8 : 4.4, acil), P.z + P.tz * ri - P.tx * ry);
     kamB.set(P.x + (P.tz * ri - P.tx * ry) / yatay * cerceve, 1.45, P.z + (-P.tx * ri - P.tz * ry) / yatay * cerceve);
     fov = lerp(dik ? 78 : 62, dik ? 66 : 55, acil); k = 3.5;
@@ -332,13 +430,13 @@ function dongu(simdi) {
   renderer.render(scene, camera);
 }
 dongu.n = -1;
-izgarayaDiz(); for (const a of A) arabaYerlestir(a, 0);
+izgarayaDiz(); oyBaslikDiz(); for (const a of A) arabaYerlestir(a, 0);
 if (Q.has('atla')) basla();
 requestAnimationFrame(dongu);
 
 window.YARIS = {
   get durum() { return durum; }, get zaman() { return zaman; }, get mola() { return mola; }, pist: PIST_TEMA, P, A, L, TUR, renderer, scene, camera,
-  get kareMs() { return kareOrt; }, get oran() { return oran; }, basla, basligaDon, roket: roketDugme,
+  get kareMs() { return kareOrt; }, get oran() { return oran; }, basla, basligaDon, roket: roketDugme, get araba() { return oyArabaId; }, arabaSec: oyArabaSec,
   surukle(d) { hedefD = d; },
-  bilgi() { return { pist: PIST_TEMA, durum, tur: Math.floor(Math.max(0, P.yol) / L), sira: P.sira, yildiz: yildizSay, seri: oySeriSay, seriAdet: oySeriAdet, roket: oyRoketSay, ziplama: oyHopSay, roketKalan: +roketT.toFixed(2), roketBekle: +roketBekle.toFixed(2), v: +P.v.toFixed(1), d: +P.d.toFixed(2), sure: +(durum === 'bitis' ? oySure : zaman).toFixed(1), el: oyElAcik, mola, cizim: renderer.info.render.calls, ucgen: renderer.info.render.triangles, oran, kareMs: +kareOrt.toFixed(2) }; }
+  bilgi() { return { pist: PIST_TEMA, araba: oyArabaId, durum, tur: Math.floor(Math.max(0, P.yol) / L), sira: P.sira, yildiz: yildizSay, seri: oySeriSay, seriAdet: oySeriAdet, roket: oyRoketSay, ziplama: oyHopSay, roketKalan: +roketT.toFixed(2), roketBekle: +roketBekle.toFixed(2), v: +P.v.toFixed(1), d: +P.d.toFixed(2), sure: +(durum === 'bitis' ? oySure : zaman).toFixed(1), el: oyElAcik, mola, cizim: renderer.info.render.calls, ucgen: renderer.info.render.triangles, oran, kareMs: +kareOrt.toFixed(2) }; }
 };

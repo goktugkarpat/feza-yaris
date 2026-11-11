@@ -135,3 +135,106 @@ OLAY.on('durum', d => {
   if (d === 'giris' || d === 'sayim') uiOdak(uiEl('c'));
 });
 OLAY.on('sonuc', () => uiOdak(uiEl('tekrar')));
+
+// ───────── Araba seçimi: ARABA_TIPLERI'nden (araba.js) yazısız, resimli kartlar. oyArabaSec/oyAraba (oyun.js) yoksa şerit gizli kalır. ─────────
+const uiArabaSec = uiEl('araba-sec');
+const UI_CIZGI = 'stroke="#17335c" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"';
+function uiRenk(r, yedek) {
+  if (typeof r === 'number' && Number.isFinite(r)) return '#' + ('00000' + (r & 0xffffff).toString(16)).slice(-6);
+  return typeof r === 'string' && /^(#[0-9a-f]{3,8}|rgb|hsl|[a-z]+$)/i.test(r) ? r : yedek;
+}
+function uiTeker(x, y, r, gobek) {
+  return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#2b3550" stroke="#17335c" stroke-width="2.6"/><circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.42).toFixed(1) + '" fill="' + (gobek || '#dfe6ee') + '"/>';
+}
+// Yandan görünüş (sağa bakar), 96×60. c1 = gövde, c2 = süs rengi.
+function uiArabaCiz(id, c1, c2) {
+  const cam = '#bfe9ff';
+  let g;
+  if (id === 'kart') {
+    g = '<g ' + UI_CIZGI + '><rect x="11" y="27" width="13" height="12" rx="3" fill="#9aa7b8"/><path d="M27 39V25q0-5 5-5h5v19z" fill="' + c2 + '"/>' +
+      '<path d="M12 39h60q11 0 13 8v2H10v-6q0-4 2-4z" fill="' + c1 + '"/><path d="M62 39 55 25" fill="none" stroke-width="3.4"/><circle cx="54" cy="23" r="5" fill="' + c2 + '"/>' +
+      '<path d="M76 39l8-7h5v9" fill="' + c2 + '"/></g>' + uiTeker(24, 48, 9.5, c2) + uiTeker(70, 49, 8.5, c2);
+  } else if (id === 'yaris') {
+    g = '<g ' + UI_CIZGI + '><path d="M5 17h17v7H5zM11 24h6v11h-6z" fill="' + c2 + '"/>' +
+      '<path d="M7 46q0-9 10-10l17-3q9-11 23-10 10 1 15 10l14 3q6 2 6 9v3H7z" fill="' + c1 + '"/><path d="M39 32q7-8 17-7 7 1 10 7z" fill="' + cam + '"/>' +
+      '<path d="M7 42h85" fill="none" stroke="' + c2 + '" stroke-width="3.4"/><circle cx="50" cy="40" r="6" fill="#fff"/></g>' + uiTeker(25, 48, 9.5, c2) + uiTeker(74, 48, 9.5, c2);
+  } else if (id === 'cip') {
+    g = '<g ' + UI_CIZGI + '><path d="M27 21 32 7h27l8 14z" fill="' + c1 + '"/><path d="M33 19l3-8h8v8zM48 11h9l5 8H48z" fill="' + cam + '"/>' +
+      '<rect x="9" y="20" width="78" height="16" rx="6" fill="' + c1 + '"/><rect x="5" y="23" width="7" height="12" rx="3" fill="#2b3550"/><path d="M80 25h7" fill="none" stroke="#ffe14d" stroke-width="5"/>' +
+      '<path d="M14 30h68" fill="none" stroke="' + c2 + '" stroke-width="3.4"/><path d="M36 7V4h20v3" fill="none" stroke-width="3"/></g>' + uiTeker(25, 43, 14, c2) + uiTeker(71, 43, 14, c2);
+  } else if (id === 'roket') {
+    g = '<g ' + UI_CIZGI + '><path d="M20 27 3 35l17 8z" fill="#ffb53d"/><path d="M20 31l-9 4 9 4z" fill="#ffe14d" stroke="none"/>' +
+      '<path d="M22 22 13 9h15l11 13zM22 46l-8 9h13l9-9z" fill="' + c2 + '"/><path d="M20 22h44q20 2 28 12-8 10-28 12H20z" fill="' + c1 + '"/>' +
+      '<path d="M66 22q18 3 26 12-8 9-26 12z" fill="' + c2 + '"/><circle cx="47" cy="34" r="7.5" fill="' + cam + '"/><path d="M28 23v22" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' +
+      uiTeker(34, 51, 6.5, c2) + uiTeker(66, 51, 6.5, c2);
+  } else if (id === 'dondurma') {
+    g = '<g ' + UI_CIZGI + '><path d="M30 6l7 13 7-13z" fill="#e8a95b"/><circle cx="37" cy="5" r="6.5" fill="' + c2 + '"/>' +
+      '<path d="M8 23q0-5 5-5h52q4 0 4 4v25H8z" fill="' + c1 + '"/><path d="M69 26h9q10 2 11 13v8H69z" fill="' + c1 + '"/><path d="M72 29h6q6 2 7 9H72z" fill="' + cam + '"/>' +
+      '<rect x="15" y="27" width="32" height="12" rx="2" fill="' + cam + '"/><path d="M12 22h38v4q-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.500 0z" fill="' + c2 + '"/>' +
+      '<path d="M8 44h81" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(24, 49, 8.5, c2) + uiTeker(72, 49, 8.5, c2);
+  } else if (id === 'unicorn') {
+    g = '<g ' + UI_CIZGI + '><path d="M15 34Q3 32 5 17q5 8 13 8z" fill="' + c2 + '"/><path d="M10 34q0-9 9-9h43l6 21H16q-6 0-6-6z" fill="' + c1 + '"/>' +
+      '<path d="M79 15 86 1l2 15z" fill="#ffd23f"/><path d="M71 15l1-8 6 6z" fill="' + c1 + '"/><path d="M60 46V31q0-15 14-17 10-1 13 9l3 9q1 6-5 6h-7l-2 8z" fill="' + c1 + '"/>' +
+      '<circle cx="80" cy="24" r="2" fill="#17335c" stroke="none"/><path d="M84 33q2 1 4 0" fill="none" stroke-width="2"/></g>' +
+      '<g stroke="#17335c" stroke-width="2.2"><circle cx="65" cy="16" r="5.5" fill="#ff7fb5"/><circle cx="60" cy="23" r="5.500" fill="#ffd23f"/><circle cx="57" cy="31" r="5.500" fill="#6fd27a"/><circle cx="56" cy="39" r="5" fill="#56bdf0"/></g>' +
+      uiTeker(26, 49, 8.5, c2) + uiTeker(62, 49, 8.5, c2);
+  } else {
+    g = '<g ' + UI_CIZGI + '><path d="M8 46V35q0-5 6-6l12-2 9-11h24l12 12 11 2q6 1 6 7v9z" fill="' + c1 + '"/><path d="M31 27l6-8h9v8zM50 19h8l8 8H50z" fill="' + cam + '"/>' +
+      '<path d="M8 40h80" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(25, 48, 9, c2) + uiTeker(71, 48, 9, c2);
+  }
+  return '<svg viewBox="0 0 96 60" aria-hidden="true"><ellipse cx="48" cy="57" rx="38" ry="3" fill="#17335c" opacity=".16"/>' + g + '</svg>';
+}
+function uiArabaIsaretle(id) {
+  let var_ = false;
+  uiArabaSec.querySelectorAll('.araba-kart').forEach(b => { const s = b.dataset.araba === id; var_ = var_ || s; b.setAttribute('aria-pressed', s ? 'true' : 'false'); });
+  return var_;
+}
+function uiArabaKur() {
+  const hazir = typeof ARABA_TIPLERI !== 'undefined' && Array.isArray(ARABA_TIPLERI) && ARABA_TIPLERI.length > 1 && typeof oyArabaSec === 'function';
+  uiArabaSec.classList.toggle('gizli', !hazir);
+  if (!hazir || uiArabaSec.firstChild) return;
+  const onay = '<i class="pist-onay"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></i>';
+  const n = ARABA_TIPLERI.length;
+  uiArabaSec.style.setProperty('--an', n); uiArabaSec.style.setProperty('--ak', Math.max(3, Math.ceil(n / 2)));
+  for (const t of ARABA_TIPLERI) {
+    if (!t || !t.id) continue;
+    const b = document.createElement('button');
+    b.className = 'araba-kart'; b.dataset.araba = t.id; b.setAttribute('aria-label', 'Araba: ' + t.id); b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = uiArabaCiz(String(t.id), uiRenk(t.renk, '#f2553f'), uiRenk(t.renk2, '#ffd23f')) + onay;
+    b.addEventListener('click', () => {
+      try { if (oyArabaSec(t.id) === false) return; } catch (_) { return; }
+      uiArabaIsaretle(t.id); uiZipla(b.firstElementChild, 1.22, 420, -5);
+    });
+    uiArabaSec.appendChild(b);
+  }
+  let simdi = null;
+  try { if (typeof oyAraba === 'function') simdi = oyAraba(); } catch (_) { /* seçim isteğe bağlı */ }
+  if (!uiArabaIsaretle(simdi)) uiArabaIsaretle(ARABA_TIPLERI[0].id);
+}
+// oyun.js bu dosyadan sonra yüklenir: kartlar bütün betikler hazır olunca kurulur.
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiArabaKur); else uiArabaKur();
+OLAY.on('araba', id => uiArabaIsaretle(id && id.id ? id.id : id));
+OLAY.on('durum', d => { if (d === 'baslik') uiArabaKur(); });
+
+// ───────── Sonuç: yıldız sayısı sıfırdan sayarak artar (saniyede ~18 yazma; kare başına değil). ─────────
+let uiSayBekle = 0, uiSayTimer = 0;
+function uiSayDur(son) {
+  clearTimeout(uiSayBekle); clearInterval(uiSayTimer); uiSayBekle = uiSayTimer = 0;
+  uiEl('sonuc-yildiz').classList.remove('ui-sayiyor');
+  if (son !== undefined) uiEl('sonuc-yildiz-say').textContent = son;
+}
+OLAY.on('sonuc', () => {
+  const el = uiEl('sonuc-yildiz-say'), hedef = Math.max(0, Math.floor(uiSonOzet ? uiSonOzet.yildiz : +el.textContent) || 0);
+  uiSayDur();
+  if (hedef < 2) return;
+  const adim = Math.max(1, Math.ceil(hedef / 26)); let n = 0;
+  el.textContent = '0';
+  uiSayBekle = setTimeout(() => {
+    uiEl('sonuc-yildiz').classList.add('ui-sayiyor');
+    uiSayTimer = setInterval(() => {
+      n = Math.min(hedef, n + adim); el.textContent = n;
+      if (n >= hedef) { uiSayDur(hedef); uiZipla(uiEl('sonuc-yildiz'), 1.3, 460, -5); }
+    }, 55);
+  }, 1150);
+});
+OLAY.on('durum', d => { if (d !== 'bitis') uiSayDur(); });

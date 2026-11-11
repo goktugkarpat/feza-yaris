@@ -1,12 +1,14 @@
 /* Ses: önceden kaydedilmiş Türkçe anlatım (sesler/*.mp3, tr-TR-EmelNeural) + kodla üretilen müzik, efektler ve motor sesi.
    ?sessiz ile her şey kapalı (AudioContext hiç kurulmaz). Cümle değişirse: python gen_voice.py
    Müzik: Do majör, 32 ölçülük A-A'-B-A'' döngüsü; ses saatine göre önceden planlanır (kare döngüsüne bağlı değil).
+   Altı pistin her birinin temposu, çalgısı, vurmalı düzeni ve B bölümü ayrıdır (SES_BPM, SES_B, adim içindeki tema dalları).
    Kipler: baslik (sakin) · yaris (canlı) · son (son tur: daha hızlı, bir ton yukarı) · sonuc (bitişten sonra sakin). */
 const SES = (() => {
   'use strict';
   const sessiz = new URLSearchParams(location.search).has('sessiz');
   const sesPist = new URLSearchParams(location.search).get('pist');
-  const sesTema = sesPist === 'kiyi' || sesPist === 'kar' ? sesPist : 'orman';
+  const SES_TEMALAR = ['orman', 'kiyi', 'kar', 'seker', 'uzay', 'col'];   // cekirdek.js'teki PIST_TEMALARI ile aynı adlar (ses.js ondan önce yüklenir)
+  const sesTema = SES_TEMALAR.indexOf(sesPist) >= 0 ? sesPist : 'orman';
   /*SESLER*/
   const CUMLE = {
     giris: 'Parmağını sağa sola sürükle, araban oraya gitsin.',
@@ -22,7 +24,13 @@ const SES = (() => {
     ovgu2: 'Ne güzel sürüyorsun!',
     ovgu3: 'Süpersin!',
     hop: 'Hop! Uçtun!',
-    tekrar: 'Bir daha yarışalım mı?'
+    tekrar: 'Bir daha yarışalım mı?',
+    giris_orman: 'Feza, orman yarışı başlıyor! Parmağını sağa sola sürükle, araban oraya gitsin.',
+    giris_kiyi: 'Feza, sahil yarışı başlıyor! Parmağını sağa sola sürükle, araban oraya gitsin.',
+    giris_kar: 'Feza, kar yarışı başlıyor! Parmağını sağa sola sürükle, araban oraya gitsin.',
+    giris_seker: 'Feza, şeker diyarı yarışı başlıyor! Parmağını sağa sola sürükle, araban oraya gitsin.',
+    giris_uzay: 'Feza, ay yarışı başlıyor! Parmağını sağa sola sürükle, araban oraya gitsin.',
+    giris_col: 'Feza, çöl yarışı başlıyor! Parmağını sağa sola sürükle, araban oraya gitsin.'
   };
   /*SESLER-SON*/
   const kayit = {};
@@ -41,12 +49,25 @@ const SES = (() => {
     'eggeC-g-', 'a.age-a-', 'faafC-a-', 'g-b-D-b-', 'faCaf-a-', 'g-bDb-g-', 'C.C.E.G.', 'C-g-C---'
   ];
   const NOTA = { x: 67, y: 69, z: 71, c: 72, d: 74, e: 76, f: 77, g: 79, a: 81, b: 83, C: 84, D: 86, E: 88, F: 89, G: 91, A: 93 };
-  const MOD = {
-    baslik: { bpm: 96, sakin: true, tr: 0, guc: 0.6, tema: sesTema },
-    sonuc: { bpm: 100, sakin: true, tr: 0, guc: 0.5, tema: sesTema },
-    yaris: { bpm: sesTema === 'kiyi' ? 124 : sesTema === 'kar' ? 116 : 120, tr: 0, guc: 0.62, tema: sesTema },
-    son: { bpm: sesTema === 'kiyi' ? 136 : sesTema === 'kar' ? 128 : 132, tr: 2, guc: 0.66, son: true, tema: sesTema }
+  // Pist başına B bölümü (17–24. ölçüler): [akor dizisi, ezgi]. Orman özgün B bölümünü çalar.
+  const SES_B = {
+    kiyi: ['FCFCDGCG', ['a--C--a-', 'g--e--c-', 'a--C--D-', 'E--C--g-', 'f--a--D-', 'D--b--g-', 'e-gC-ge-', 'd-g-b-D-']],     // kalipso: kayık ritim
+    kar: ['AEFCAEFG', ['e---c-e-', 'g---e-g-', 'a---f-a-', 'g-----e-', 'C---a-e-', 'b---g-e-', 'f-a-C-a-', 'g-b-D---']],      // uzun, sakin sesler
+    seker: ['CFCGCFGC', ['cegCgCge', 'faCFCFCa', 'egCECEge', 'dgbDbDbg', 'CgCgEgCg', 'CaCaFaCa', 'DbgbDbgD', 'CEGEC-g-']],    // müzik kutusu: koşan sekizlikler
+    uzay: ['FCGAFCGG', ['C---a---', 'g---E---', 'D---b---', 'C---e-a-', 'F---C---', 'E---g---', 'D-b-g-b-', 'D-----..']],     // süzülen geniş aralıklar
+    col: ['FCGCFCDG', ['f-fga-f-', 'e-efg-e-', 'd-dgb-g-', 'C-bCg-e-', 'a-aCa-f-', 'g-gag-e-', 'f-fed-f-', 'g-abD-b-']]       // tekrar eden vuruşlu ezgi
   };
+  const SES_BPM = { orman: 120, kiyi: 126, kar: 108, seker: 138, uzay: 100, col: 114 };
+  const sesModlar = tema => {
+    const b = SES_BPM[tema] || 120, z = tema === 'seker' ? 1.4 : tema === 'uzay' ? 0.8 : tema === 'col' ? 1.08 : 1;   // pistler arası düzey dengesi
+    return {
+      baslik: { bpm: 96, sakin: true, tr: 0, guc: 0.6, tema },
+      sonuc: { bpm: 100, sakin: true, tr: 0, guc: 0.5, tema },
+      yaris: { bpm: b, tr: 0, guc: 0.62 * z, tema },
+      son: { bpm: b + 12, tr: 2, guc: 0.66 * z, son: true, tema }
+    };
+  };
+  const MOD = sesModlar(sesTema);
   const ADIM = 16 * MEL.length;
 
   // ---------- Ses grafiği (canlı ve çevrimdışı deneme aynı kodu kullanır) ----------
@@ -108,12 +129,14 @@ const SES = (() => {
   const davul = (g, t, guc) => ton(g, g.muzik, t, 150, 0.16, { f2: 50, kay: 0.09, guc });
   const trampet = (g, t, guc) => { his(g, g.muzik, t, 0.1, { tip: 'bandpass', f: 1900, q: 0.8, guc }); ton(g, g.muzik, t, 200, 0.06, { tip: 'triangle', guc: guc * 0.5 }); };
   const zil = (g, t, guc) => his(g, g.muzik, t, 0.035, { f: 7000, guc });
+  const cingirak = (g, hedef, t, guc) => { his(g, hedef, t, 0.05, { tip: 'bandpass', f: 8200, q: 2.5, guc }); ton(g, hedef, t, 4400, 0.05, { guc: guc * 0.3, at: 0.002 }); };
 
   // müziğin bir on altılık adımı: n = döngüdeki adım (0..511), t = çalma anı, sd = adım süresi
   function adim(g, m, n, t, sd) {
-    const olcu = (n >> 4) % MEL.length, s = n & 15, ak = AKOR[DIZI[olcu]], tr = m.tr, bolumB = olcu >= 16 && olcu < 24;
+    const olcu = (n >> 4) % MEL.length, s = n & 15, tr = m.tr, bolumB = olcu >= 16 && olcu < 24;
+    const ozelB = bolumB && SES_B[m.tema], ak = AKOR[ozelB ? ozelB[0][olcu - 16] : DIZI[olcu]];
     if (!(s & 1)) {                                                         // ezgi
-      const satir = MEL[olcu], i = s >> 1, no = NOTA[satir[i]];
+      const satir = ozelB ? ozelB[1][olcu - 16] : MEL[olcu], i = s >> 1, no = NOTA[satir[i]];
       if (no) {
         let u = 1; while (i + u < 8 && satir[i + u] === '-') u++;
         const f = mf(no + tr), sure = u * 2 * sd;
@@ -124,6 +147,15 @@ const SES = (() => {
         } else if (m.tema === 'kar') { // Karda kısa kristal/celesta vuruşları; sert tizler yerine yumuşak çınlama.
           ton(g, g.ezgi, t, f, sure * .9, { guc: .15, at: .01 });
           ton(g, g.ezgi, t, f * 2, sure * .55, { guc: .038 }); ton(g, g.ezgi, t, f * 3, sure * .35, { guc: .009 });
+        } else if (m.tema === 'seker') { // Müzik kutusu: kısa, parlak çınlama; üstünde minik çan.
+          ton(g, g.ezgi, t, f, Math.min(sure, .34), { guc: .13, at: .003 });
+          ton(g, g.ezgi, t, f * 2, .16, { guc: .06, at: .003 }); ton(g, g.ezgi, t, f * 4, .07, { guc: .02, at: .002 });
+        } else if (m.tema === 'uzay') { // Yumuşak sentezleyici: bir sekizli aşağıda, yavaş giriş, hafif akortsuz çift dalga, bol yankı.
+          ton(g, g.ezgi, t, f * .5, sure, { guc: .13, tut: .85, at: .05 }); ton(g, g.ezgi, t, f * .5025, sure, { tip: 'triangle', guc: .05, tut: .85, at: .07 });
+          ton(g, g.ezgi, t, f, sure, { guc: .03, tut: .6, at: .05 }); ton(g, g.yanki, t, f * .5, sure, { guc: .09, tut: .8, at: .05 });
+        } else if (m.tema === 'col') { // Sıcak, kamış benzeri ses: bir sekizli aşağıda.
+          ton(g, g.ezgi, t, f * .5, sure * .9, { tip: 'triangle', guc: .15, tut: .7, at: .014 });
+          ton(g, g.ezgi, t, f * .5, sure * .9, { tip: 'square', guc: .03, tut: .6, at: .02 }); ton(g, g.ezgi, t, f * 1.5, sure * .5, { guc: .018, at: .014 });
         } else { ton(g, g.ezgi, t, f, sure * 0.92, { tip: 'triangle', guc: 0.17, tut: 0.6 }); ton(g, g.ezgi, t, f * 2, sure * 0.7, { guc: m.son ? 0.06 : 0.035 }); }
       }
     }
@@ -134,33 +166,84 @@ const SES = (() => {
       if (s === 4 || s === 12) zil(g, t, 0.022);
       return;
     }
-    if (!(s & 3)) ton(g, g.muzik, t, mf(ak[0] + ((s & 4) ? 7 : 0) + tr), 3 * sd, { tip: m.tema === 'kar' ? 'sine' : 'triangle', guc: m.tema === 'kar' ? .17 : 0.2, tut: 0.6 });   // zıplayan bas
+    if (m.tema === 'seker') {                                               // "um-pa" eşlik; davul yerine tahta tık ve çıngırak
+      if (!(s & 3)) ton(g, g.muzik, t, mf(ak[0] + ((s & 4) ? 7 : 0) + 12 + tr), 1.4 * sd, { guc: .17, at: .004 });
+      if ((s & 3) === 2) for (const a of ak[1]) ton(g, g.muzik, t, mf(a + 12 + tr), 1.1 * sd, { guc: .034, at: .003 });
+      if (s === 0 || s === 8) ton(g, g.muzik, t, 190, .07, { f2: 90, kay: .05, guc: .15 });
+      if (s === 4 || s === 12) ton(g, g.muzik, t, 1050, .035, { guc: .07, at: .002 });
+      if (s === 6 || s === 14) ton(g, g.muzik, t, 790, .03, { guc: .045, at: .002 });
+      if ((s & 3) === 2 || (m.son && (s & 1))) cingirak(g, g.muzik, t, (s & 1) ? .016 : .032);
+      if ((olcu & 7) === 7 && s >= 12) ton(g, g.ezgi, t, mf([84, 88, 91, 96][s - 12] + tr), .2, { guc: .05 });   // bölüm sonu: minik çan merdiveni
+      return;
+    }
+    if (m.tema === 'uzay') {                                                // uzun akor yastığı, sakin bas, yankılı pırıltılar; trampet yok
+      if (s === 0) {
+        for (const a of ak[1]) { ton(g, g.muzik, t, mf(a + tr), 15 * sd, { guc: .04, tut: 1, at: .25 }); ton(g, g.muzik, t, mf(a + tr) * 1.004, 15 * sd, { tip: 'triangle', guc: .013, tut: 1, at: .3 }); }
+        ton(g, g.muzik, t, mf(ak[0] + tr), 7 * sd, { guc: .2, tut: .8, at: .03 });
+      }
+      if (s === 8) ton(g, g.muzik, t, mf(ak[0] + 7 + tr), 6 * sd, { guc: .15, tut: .8, at: .03 });
+      if (!(s & 1)) { const f = mf(ak[1][[0, 2, 1, 2, 0, 1, 2, 1][s >> 1]] + 24 + tr); ton(g, g.yanki, t, f, 1.5 * sd, { guc: .05 }); ton(g, g.muzik, t, f, 1.5 * sd, { guc: .02 }); }
+      if (s === 0 || s === 8 || (m.son && (s === 4 || s === 12))) ton(g, g.muzik, t, 110, .2, { f2: 48, kay: .12, guc: .2 });
+      if (s === 4 || s === 12) his(g, g.muzik, t, .22, { tip: 'bandpass', f: 1200, f2: 2600, q: 1.2, guc: .035, at: .05 });
+      if ((s & 3) === 2 || (m.son && !(s & 1))) zil(g, t, .012);
+      return;
+    }
+    if (m.tema === 'col') {                                                 // darbuka (düm tek . tek düm . tek .) + tef pulları + tıngırtı
+      const dum = s === 0 || s === 8 || (m.son && s === 10), tek = s === 2 || s === 6 || s === 12 || ((olcu & 1) && s === 14) || ((olcu & 7) === 7 && s > 12);
+      if (dum) { ton(g, g.muzik, t, 135, .14, { f2: 68, kay: .07, guc: .3 }); his(g, g.muzik, t, .05, { tip: 'lowpass', f: 420, guc: .07 }); }
+      if (tek) { his(g, g.muzik, t, .045, { tip: 'bandpass', f: 2600, q: 2.2, guc: .15 }); ton(g, g.muzik, t, 560, .03, { tip: 'triangle', guc: .06, at: .002 }); }
+      if (s === 3 || s === 11) his(g, g.muzik, t, .03, { tip: 'bandpass', f: 3400, q: 2, guc: .05 });
+      if (s & 1) his(g, g.muzik, t, .03, { tip: 'bandpass', f: 6800, q: 3, guc: (s & 3) === 3 ? .034 : .02 });
+      if (s === 4 || s === 12) his(g, g.muzik, t, .07, { tip: 'bandpass', f: 6800, q: 3, guc: .045 });
+      if (s === 0 || s === 8) ton(g, g.muzik, t, mf(ak[0] + (s ? 7 : 0) + tr), 2.5 * sd, { tip: 'triangle', guc: .2, tut: .6 });
+      if (s === 6) ton(g, g.muzik, t, mf(ak[0] + tr), 1.5 * sd, { tip: 'triangle', guc: .14, tut: .6 });
+      if (s === 4 || s === 10 || s === 12) ak[1].forEach((a, i) => { ton(g, g.muzik, t + i * .018, mf(a + tr), .2, { tip: 'triangle', guc: .045, at: .003 }); ton(g, g.muzik, t + i * .018, mf(a + tr), .12, { tip: 'sawtooth', guc: .014, at: .003 }); });
+      return;
+    }
+    if (m.tema === 'kiyi') { if (s === 0 || s === 6 || s === 12) ton(g, g.muzik, t, mf(ak[0] + (s === 6 ? 7 : s ? 12 : 0) + tr), 3 * sd, { tip: 'triangle', guc: 0.2, tut: 0.6 }); }   // sahilde 3-3-2 kayık bas
+    else if (!(s & 3)) ton(g, g.muzik, t, mf(ak[0] + ((s & 4) ? 7 : 0) + tr), 3 * sd, { tip: m.tema === 'kar' ? 'sine' : 'triangle', guc: m.tema === 'kar' ? .17 : 0.2, tut: 0.6 });   // zıplayan bas
     else if (s === 14) ton(g, g.muzik, t, mf(ak[0] + tr), 1.6 * sd, { tip: 'triangle', guc: 0.15, tut: 0.6 });
     if (bolumB) { if (!(s & 1)) ton(g, g.muzik, t, mf(ak[1][[0, 1, 2, 1][(s >> 1) & 3]] + 12 + tr), 2 * sd, { tip: 'triangle', guc: 0.05 }); }
-    else if ((s & 3) === 2) for (const a of ak[1]) ton(g, g.muzik, t, mf(a + tr), 1.6 * sd, { tip: 'triangle', guc: 0.05 });   // ara vuruş akorları
-    const ritimGuc = m.tema === 'kar' ? .72 : m.tema === 'kiyi' ? .9 : 1;
-    if (s === 0 || s === 8 || (m.son && (s === 4 || s === 12)) || (s === 10 && (olcu & 1))) davul(g, t, 0.3 * ritimGuc);
-    if (s === 4 || s === 12) trampet(g, t, 0.1 * ritimGuc);
+    else if (m.tema === 'kar') { if (s === 0) for (const a of ak[1]) ton(g, g.muzik, t, mf(a + 12 + tr), 15 * sd, { guc: 0.026, tut: 1, at: 0.16 }); }   // karda uzun, yumuşak akor
+    else if ((s & 3) === 2) for (const a of ak[1]) ton(g, g.muzik, t, mf(a + tr), 1.6 * sd, { tip: 'triangle', guc: m.tema === 'kiyi' ? 0.065 : 0.05 });   // ara vuruş akorları
+    const ritimGuc = m.tema === 'kar' ? .58 : m.tema === 'kiyi' ? .9 : 1;
+    if (s === 0 || s === 8 || (m.son && (s === 4 || s === 12)) || (s === 10 && (olcu & 1) && m.tema !== 'kar')) davul(g, t, 0.3 * ritimGuc);
+    if (s === 4 || s === 12) { if (m.tema === 'kar') his(g, g.muzik, t, 0.12, { tip: 'bandpass', f: 4600, q: 0.5, guc: 0.03, at: 0.02 }); else trampet(g, t, 0.1 * ritimGuc); }   // karda fırça
     if ((olcu & 7) === 7 && s > 12) trampet(g, t, 0.05 + (s - 12) * 0.015);   // bölüm sonu küçük geçiş
     if (!(s & 1)) zil(g, t, ((s & 3) === 2 ? 0.045 : 0.025) * ritimGuc); else if (m.son) zil(g, t, 0.018 * ritimGuc);
     if (m.tema === 'kiyi' && (s & 1) && !m.son) his(g, g.muzik, t, .04, { tip: 'bandpass', f: 3800, q: .65, guc: .012 });
+    if (m.tema === 'kiyi' && (s === 3 || s === 6 || s === 11 || s === 14)) { const f = (s === 6 || s === 14) ? 392 : 294; ton(g, g.muzik, t, f, .08, { f2: f * .82, kay: .06, guc: .1, at: .003 }); }   // el davulu
+    if (m.tema === 'kar' && !(s & 3)) his(g, g.muzik, t, .06, { tip: 'bandpass', f: 7400, q: 4, guc: .03 });              // kızak çıngırağı
+    if (m.tema === 'orman' && (s === 6 || s === 14)) ton(g, g.muzik, t, s === 6 ? 880 : 660, .035, { guc: .05, at: .002 });   // tahta tık
   }
 
   // ---------- Efektler: E.ad(grafik, an, ...) ----------
   const YILDIZ = [84, 86, 88, 91, 93, 96];
   const E = {
-    yildiz(g, t, k) {                                                       // tatlı çıngırak; k = art arda kaçıncı (0..5)
+    yildiz(g, t, k, tm) {                                                       // tatlı çıngırak; k = art arda kaçıncı (0..5)
       const a = YILDIZ[Math.min(5, k || 0)], f = mf(a), z = 1 - 0.07 * (k || 0);
       ton(g, g.can, t, f, 0.28, { guc: 0.2 * z }); ton(g, g.can, t, f * 2, 0.16, { guc: 0.05 * z });
       ton(g, g.can, t + 0.075, mf(a + 7), 0.4, { guc: 0.17 * z }); ton(g, g.can, t + 0.075, mf(a + 19), 0.2, { guc: 0.03 * z });
+      tm = tm || sesTema;
+      if (tm === 'seker') cingirak(g, g.can, t + 0.03, 0.03 * z);                                    // şekerde çıngıraklı
+      else if (tm === 'uzay') ton(g, g.yanki, t + 0.16, mf(a + 12), 0.5, { guc: 0.07 * z });         // uzayda yankılı kuyruk
     },
     roket(g, t) {
       his(g, g.efekt, t, 0.75, { tip: 'bandpass', f: 320, f2: 2800, q: 1.3, guc: 0.3, at: 0.22 });
       ton(g, g.efekt, t, 190, 0.6, { f2: 760, kay: 0.55, guc: 0.09, at: 0.15, tut: 0.8 });
     },
-    hop(g, t) {
-      const o = ton(g, g.efekt, t, 210, 0.36, { f2: 640, kay: 0.13, guc: 0.2, tut: 0.7 }); o.frequency.exponentialRampToValueAtTime(400, t + 0.38);
-      ton(g, g.efekt, t, 105, 0.2, { tip: 'triangle', f2: 320, kay: 0.13, guc: 0.08 });
+    hop(g, t, tm) {
+      tm = tm || sesTema;
+      if (tm === 'uzay') {                                                  // süzülen: yavaşça yükselir, yankıda asılı kalır
+        const u = ton(g, g.can, t, 170, 0.62, { f2: 520, kay: 0.34, guc: 0.15, tut: 0.75, at: 0.04 }); u.frequency.exponentialRampToValueAtTime(390, t + 0.7);
+        ton(g, g.can, t + 0.1, 1040, 0.5, { f2: 1320, kay: 0.4, guc: 0.03, at: 0.08 });
+        return;
+      }
+      const z = tm === 'kar' ? 0.7 : 1;                                     // karda yumuşak
+      const o = ton(g, g.efekt, t, 210, 0.36, { f2: 640, kay: 0.13, guc: 0.2 * z, tut: 0.7 }); o.frequency.exponentialRampToValueAtTime(400, t + 0.38);
+      ton(g, g.efekt, t, 105, 0.2, { tip: 'triangle', f2: 320, kay: 0.13, guc: 0.08 * z });
+      if (tm === 'kar') his(g, g.efekt, t, 0.18, { tip: 'lowpass', f: 900, f2: 300, guc: 0.06, at: 0.02 });
+      else if (tm === 'seker') [91, 96, 100].forEach((a, i) => ton(g, g.can, t + 0.05 + i * 0.05, mf(a), 0.16, { guc: 0.05 }));   // şekerde minik çanlar
     },
     tok(g, t) { ton(g, g.efekt, t, 165, 0.15, { f2: 62, kay: 0.1, guc: 0.3 }); his(g, g.efekt, t, 0.07, { tip: 'lowpass', f: 520, guc: 0.16 }); },
     bip(g, t) { ton(g, g.efekt, t, 587.3, 0.2, { guc: 0.17, tut: 0.8 }); ton(g, g.efekt, t, 587.3, 0.2, { tip: 'triangle', guc: 0.05, tut: 0.8 }); },
@@ -184,7 +267,13 @@ const SES = (() => {
       [79, 84, 88, 91].forEach((n, i) => ton(g, g.can, t + i * .065, mf(n), .24 + i * .025, { guc: .11, tip: 'triangle' }));
       ton(g, g.can, t + .2, mf(96), .38, { guc: .045 });
     },
-    inis(g, t) { ton(g, g.efekt, t, 110, .13, { f2: 48, kay: .09, guc: .16 }); his(g, g.efekt, t, .11, { tip: 'lowpass', f: 700, f2: 250, guc: .07 }); },
+    inis(g, t, tm) { tm = tm || sesTema; const z = tm === 'uzay' ? .5 : tm === 'kar' ? .65 : 1; ton(g, g.efekt, t, 110, .13, { f2: 48, kay: .09, guc: .16 * z }); his(g, g.efekt, t, .11, { tip: 'lowpass', f: 700, f2: 250, guc: .07 * z }); },
+    secim(g, t, tm) {                                                       // araba seçildi: kısa neşeli yükseliş
+      [84, 88, 91, 96].forEach((a, i) => ton(g, g.can, t + i * .055, mf(a), i === 3 ? .3 : .15, { tip: 'triangle', guc: .12 }));
+      ton(g, g.can, t + .165, mf(108), .22, { guc: .035 });
+      if ((tm || sesTema) === 'seker') cingirak(g, g.can, t + .165, .028);
+    },
+    kart(g, t) { ton(g, g.efekt, t, 660, .05, { guc: .13 }); ton(g, g.efekt, t + .045, 990, .07, { guc: .1 }); },   // pist kartı: iki sesli düğme tıkı
     gecis(g, t) { [79, 84].forEach((n, i) => ton(g, g.can, t + i * .085, mf(n), .19, { guc: .075 })); },
     tik(g, t) { ton(g, g.efekt, t, 1100, 0.045, { f2: 780, guc: 0.12 }); }
   };
@@ -260,6 +349,7 @@ const SES = (() => {
         OLAY.on('roket', sure => { roketSon = ac.currentTime + (sure > 0 ? sure : 1.5); });
         OLAY.on('seri', o => { if (o.odul && canli()) E.seri(G, ac.currentTime + .012); });
         OLAY.on('inis', o => { if (o.i === 0 && canli()) E.inis(G, ac.currentTime + .012); });
+        OLAY.on('araba', () => { if (canli()) E.secim(G, ac.currentTime + .012); });
         OLAY.on('sira', n => {
           if (oncekiSira && n < oncekiSira && canli() && ac.currentTime - gecisT > 4) { E.gecis(G, ac.currentTime + .012); gecisT = ac.currentTime; }
           oncekiSira = n;
@@ -270,7 +360,7 @@ const SES = (() => {
         if (document.hidden) { const p = ac.suspend(); if (p && p.catch) p.catch(() => {}); anlatimBeklet(); }
         else { uyandir(); anlatimSurdur(); }
       });
-      document.addEventListener('click', e => { const b = e.target && e.target.closest && e.target.closest('button'); if (b && b.id !== 'hizlan') efekt.tik(); }, true);
+      document.addEventListener('click', e => { const b = e.target && e.target.closest && e.target.closest('button'); if (b && b.id !== 'hizlan') { if (b.classList.contains('pist-kart')) efekt.kart(); else efekt.tik(); } }, true);
     } catch (e) { ac = null; G = null; }
   }
   // iPad: ses ilk dokunuşta açılır; sonradan kesilirse (arama, kilit) bir sonraki dokunuşta geri gelir
@@ -298,7 +388,7 @@ const SES = (() => {
       const t = ac.currentTime; yildizK = t - yildizT < 1.8 ? Math.min(5, yildizK + 1) : 0; yildizT = t;
       E.yildiz(G, t + 0.012, yildizK);
     },
-    roket: cal('roket'), hop: cal('hop'), tok: cal('tok'), bip: cal('bip'), git: cal('git'), tur: cal('tur'), bitis: cal('bitis'), tik: cal('tik')
+    roket: cal('roket'), hop: cal('hop'), tok: cal('tok'), bip: cal('bip'), git: cal('git'), tur: cal('tur'), bitis: cal('bitis'), tik: cal('tik'), secim: cal('secim'), kart: cal('kart')
   };
   function motorAyar(hiz, acik) {
     if (!canli()) return;
@@ -312,5 +402,5 @@ const SES = (() => {
     if (ac) { if (d) { const p = ac.suspend(); if (p && p.catch) p.catch(() => {}); } else uyandir(); }
     if (d) anlatimBeklet(); else anlatimSurdur();
   }
-  return { hazirla, soyle, sus, konusuyor, efekt, motorAyar, durdur, sessiz, CUMLE, _ic: { kur, adim, E, MOD, ADIM, MEL, DIZI, NOTA } };
+  return { hazirla, soyle, sus, konusuyor, efekt, motorAyar, durdur, sessiz, CUMLE, _ic: { kur, adim, E, MOD, ADIM, MEL, DIZI, NOTA, SES_B, SES_BPM, SES_TEMALAR, sesModlar, tema: sesTema } };
 })();
