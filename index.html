@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Feza'nın Yarışı</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Feza'nın Yarışı">
+<meta name="theme-color" content="#7cc8f2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<svg class="ui-depo" width="0" height="0" aria-hidden="true">
+  <symbol id="ui-yildiz" viewBox="0 0 48 48"><path d="M24 4.5l5.9 12.3 13.4 1.8-9.8 9.4 2.4 13.4L24 34.9 12.1 41.4l2.4-13.4-9.8-9.4 13.4-1.8z" fill="#ffd23f" stroke="#e08a00" stroke-width="3.5" stroke-linejoin="round"/><path d="M19.5 17.5l2.6-5.4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".75"/></symbol>
+  <symbol id="ui-kupa" viewBox="0 0 120 120"><g stroke="var(--k3)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M30 26H13v9c0 15 10 23 23 25M90 26h17v9c0 15-10 23-23 25" fill="none" stroke-width="15"/>
+    <path d="M30 26H13v9c0 15 10 23 23 25M90 26h17v9c0 15-10 23-23 25" fill="none" stroke="var(--k2)" stroke-width="6"/>
+    <rect x="51" y="72" width="18" height="22" fill="var(--k2)"/>
+    <path d="M27 12h66v32c0 21-14 35-33 35S27 65 27 44z" fill="var(--k1)"/>
+    <rect x="34" y="90" width="52" height="14" rx="6" fill="var(--k1)"/>
+    <rect x="26" y="101" width="68" height="14" rx="6" fill="var(--k2)"/></g>
+    <path d="M37 19h9v25c0 9 3 16 8 22-11-4-17-12-17-23z" fill="#fff" opacity=".5"/></symbol>
+  <symbol id="ui-bayrak" viewBox="0 0 32 32"><rect x="4" y="3" width="4" height="27" rx="2" fill="var(--b3)"/><rect x="8.5" y="5" width="19" height="14" rx="2.5" fill="var(--b1)" stroke="var(--b2)" stroke-width="2"/>
+    <path d="M9.5 6h4.5v4.3H9.5zM18.5 6H23v4.3h-4.5zM14 10.3h4.5v3.4H14zM23 10.3h3.5v3.4H23zM9.5 13.7h4.5V18H9.5zM18.5 13.7H23V18h-4.5z" fill="var(--b2)"/></symbol>
+  <symbol id="ui-oyna" viewBox="2 0 24 24"><path d="M8.5 5v14l11.5-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div id="hud" class="gizli">
+  <div id="sol-ust">
+    <div id="turlar" class="ui-kart"><span class="bayrak"><svg viewBox="0 0 32 32"><use href="#ui-bayrak"/></svg></span><span class="bayrak"><svg viewBox="0 0 32 32"><use href="#ui-bayrak"/></svg></span><span class="bayrak"><svg viewBox="0 0 32 32"><use href="#ui-bayrak"/></svg></span></div>
+    <div id="yildiz-kutu" class="ui-kart"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><span id="yildiz-say">0</span></div>
+  </div>
+  <div id="sira" class="ui-kart s1"><svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg><span id="sira-say">1</span></div>
+  <button id="dur" class="ui-kart" aria-label="Duraklat"><svg viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="5" height="15" rx="2.2"/><rect x="13.5" y="4.5" width="5" height="15" rx="2.2"/></svg></button>
+  <button id="hizlan" aria-label="Hızlan"><span class="ui-roket-ic"><svg viewBox="0 0 48 48"><path class="ui-alev" d="M19 37c0 5 5 9.5 5 9.5s5-4.5 5-9.5z" fill="#ffe14d" stroke="#e8483a" stroke-width="2" stroke-linejoin="round"/><g stroke="#17335c" stroke-width="2.4" stroke-linejoin="round"><path d="M14 26l-7.5 9v5.5L14 37zM34 26l7.5 9v5.5L34 37z" fill="#e8483a"/><path d="M24 2.5c7 6 10 14 10 22.5v12H14V25c0-8.500 3-16.5 10-22.5z" fill="#fff"/><path d="M24 2.5c3 2.600 5.300 5.800 6.900 9.5H17.100c1.600-3.700 3.900-6.900 6.900-9.5z" fill="#e8483a"/><circle cx="24" cy="21.5" r="4.800" fill="#49b6ff"/></g></svg><i id="hizlan-dolum"></i></span></button>
+</div>
+
+<div id="el" class="gizli"><div class="ui-iz"></div>
+  <div class="ok sol"><svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="#17335c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4l-8 8 8 8" fill="none" stroke="#fff" stroke-width="4.500" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="ok sag"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" fill="none" stroke="#17335c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 4l8 8-8 8" fill="none" stroke="#fff" stroke-width="4.500" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="parmak"><svg viewBox="0 0 72 92"><circle class="ui-dokun" cx="30" cy="14" r="12" fill="#fff" opacity=".55"/><path d="M23 44V14a7 7 0 0 1 14 0v22l17 3.500a9 9 0 0 1 7 10l-2.500 20A14 14 0 0 1 44.500 82H32a14 14 0 0 1-11.500-6L6.500 57a6.500 6.500 0 0 1 10-8.300z" fill="#fff" stroke="#17335c" stroke-width="4.500" stroke-linejoin="round"/></svg></div>
+</div>
+
+<div id="isiklar" class="gizli"><i></i><i></i><i></i></div>
+
+<div id="baslik" class="perde">
+  <h1 aria-label="Feza'nın Yarışı"><span class="ui-ust">Feza'nın</span><span class="ui-alt">Yarışı</span></h1>
+  <div class="ui-serit"></div>
+  <button id="oyna" class="buyuk" aria-label="Oyna"><svg viewBox="0 0 24 24"><use href="#ui-oyna"/></svg></button>
+</div>
+
+<div id="mola" class="perde gizli">
+  <button id="devam" class="buyuk" aria-label="Devam"><svg viewBox="0 0 24 24"><use href="#ui-oyna"/></svg></button>
+</div>
+
+<div id="sonuc" class="perde gizli">
+  <div class="ui-odul">
+    <div class="ui-isin"></div>
+    <div id="kupa"><svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg><b id="sonuc-sira">1</b></div>
+    <i class="ui-piril p1"></i><i class="ui-piril p2"></i><i class="ui-piril p3"></i><i class="ui-piril p4"></i><i class="ui-piril p5"></i><i class="ui-piril p6"></i>
+  </div>
+  <div id="sonuc-yildiz" class="ui-kart"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><span id="sonuc-yildiz-say">0</span></div>
+  <button id="tekrar" class="buyuk" aria-label="Bir daha"><svg viewBox="0 0 24 24"><path d="M19.5 12.5a7.5 7.5 0 1 1-3-6" fill="none" stroke="currentColor" stroke-width="3.400" stroke-linecap="round"/><path d="M19.5 2.5v6.500H13z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+</div>
+
+<script src="vendor/three.js"></script>
+<script src="ses.js"></script>
+<script src="cekirdek.js"></script>
+<script src="cevre.js"></script>
+<script src="pist.js"></script>
+<script src="araba.js"></script>
+<script src="arayuz.js"></script>
+<script src="oyun.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
