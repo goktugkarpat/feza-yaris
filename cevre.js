@@ -11,7 +11,7 @@ scene.background = tuvalDoku(8, 512, (g, w, h) => {
 });
 scene.fog = new T.Fog(0xdaf2ff, 330, 950);
 // Yeşil zemin ışığı yüzleri yeşertmesin; ten ve beyazlar nötr, ortam yine aydınlık kalır.
-scene.add(new T.HemisphereLight(0xffffff, cvTema==='kiyi'?0xd1bda0:cvTema==='kar'?0xc4dbe4:0xb8aa94, cvTema==='kar'?.85:1.18));
+const cvGokIsik = new T.HemisphereLight(0xffffff, cvTema==='kiyi'?0xd1bda0:cvTema==='kar'?0xc4dbe4:0xb8aa94, cvTema==='kar'?.85:1.18); scene.add(cvGokIsik);   // seker/uzay/col pistleri kendi dosyalarında (cevre_<ad>.js) gök, ışık ve zemini değiştirir
 const gunes = new T.DirectionalLight(0xfff2d0, cvTema==='kar'?1.05:1.5); gunes.position.set(95, 120, -45); scene.add(gunes);
 
 const cvZ = { value: 0 };   // ortak zaman (gölgelendiriciler için)
@@ -488,7 +488,7 @@ if(cvTema==='orman') {
     for (let i = 0; i < 9; i++) { const a = (i < 5 ? 0.4 + i * 0.16 : 3.4 + (i - 5) * 0.2) + R() * 0.05, r = (i < 5 ? 95 : 60) + (i % 3) * 9 + R() * 6, s = 2.3 + R() * 0.8; kus.push([Math.cos(a) * r, 30 + (i % 4) * 4 + R() * 5, Math.sin(a) * r, s, s, s, Math.atan2(Math.sin(a), -Math.cos(a))]); }
     cvKus = cok(B.geo(), cvMalz(3), kus); cvKus.position.set(0, 0, -70);
   }
-} else {
+} else if (cvTema === 'kiyi' || cvTema === 'kar') {
   // Yeni pistlerin coğrafyası ayrı kurulur: kıyıda gerçek su/ada, karda buzlu çamlık.
   const S=cvYapi(), beyaz=mat(0xffffff), kisin=cvTema==='kar', agaclar=[], seyirci=[], daglar=[], bulutlar=[];
   const koy=(f,yan,uz,r)=>{
@@ -622,4 +622,5 @@ function cevreGuncelle(dt, t) {
   for(let i=0;i<cvDegirmen.length;i++)cvDegirmen[i].mesh.rotation.z=t*cvDegirmen[i].hiz;
   if(cvBulut)cvBulut.rotation.y = t * 0.004;if(cvKus)cvKus.rotation.y = t * 0.1;
   cvGunes.position.set(camera.position.x + cvGY.x * 640, cvGY.y * 640, camera.position.z + cvGY.z * 640);
+  if (typeof cevreEkGuncelle === 'function') cevreEkGuncelle(dt, t);   // cevre_<ad>.js (seker, uzay, col) kendi hareketli süslerini burada günceller
 }

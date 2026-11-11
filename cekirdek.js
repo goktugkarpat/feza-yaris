@@ -3,7 +3,8 @@
 'use strict';
 
 const Q = new URLSearchParams(location.search);
-const PIST_TEMA = ['orman', 'kiyi', 'kar'].includes(Q.get('pist')) ? Q.get('pist') : 'orman';
+const PIST_TEMALARI = ['orman', 'kiyi', 'kar', 'seker', 'uzay', 'col'];   // yeni pist = buraya ad + PIST_NOKTALARI + cevre_<ad>.js + index.html kartı
+const PIST_TEMA = PIST_TEMALARI.includes(Q.get('pist')) ? Q.get('pist') : 'orman';
 const ZAMAN = Math.max(0.25, Math.min(12, parseFloat(Q.get('hiz')) || 1)), OTO = Q.has('oto');
 const $ = id => document.getElementById(id);
 const T = THREE, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
@@ -39,6 +40,9 @@ const GEN = 14, YARI = GEN / 2, DMAX = YARI - 1.0, TUR = 3;
 const PIST_NOKTALARI = {
   orman: [[0, 0], [55, -4], [100, -30], [118, -80], [95, -128], [45, -140], [10, -112], [-25, -95], [-60, -118], [-105, -110], [-128, -65], [-105, -22], [-55, -2]],
   kiyi: [[0, 0], [65, 0], [116, -21], [139, -62], [126, -106], [82, -128], [24, -119], [-20, -91], [-66, -104], [-118, -93], [-135, -53], [-114, -12], [-59, 5]],
+  seker: [[0, 0], [50, -6], [95, -28], [112, -70], [90, -108], [48, -118], [20, -150], [-30, -160], [-75, -140], [-90, -100], [-70, -65], [-110, -40], [-100, -8], [-50, 2]],
+  uzay: [[0, 0], [60, 4], [115, -12], [140, -55], [120, -98], [75, -110], [40, -88], [0, -105], [-45, -128], [-100, -118], [-135, -80], [-125, -35], [-85, -10], [-45, -4]],
+  col: [[0, 0], [70, 0], [125, -18], [135, -60], [100, -95], [55, -100], [25, -135], [-25, -150], [-80, -135], [-115, -95], [-95, -55], [-125, -25], [-90, 2], [-45, 4]],
   kar: [[0, 0], [48, 8], [91, -4], [121, -35], [111, -72], [77, -87], [53, -122], [4, -141], [-48, -131], [-79, -101], [-121, -83], [-137, -45], [-112, -13], [-61, -8]]
 };
 const NOKTA = PIST_NOKTALARI[PIST_TEMA];

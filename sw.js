@@ -3,7 +3,7 @@
 const ONEK = 'feza-yaris-';
 const CACHE = ONEK + 'v4';
 const SESLER = ['giris', 'hazir', 'basla', 'yildiz', 'roket', 'sontur', 'bir', 'iki', 'uc', 'ovgu1', 'ovgu2', 'ovgu3', 'hop', 'tekrar'];
-const CORE = ['./', 'index.html', 'style.css', 'ses.js', 'cekirdek.js', 'cevre.js', 'pist.js', 'araba.js', 'arayuz.js', 'oyun.js', 'vendor/three.js', 'manifest.webmanifest',
+const CORE = ['./', 'index.html', 'style.css', 'ses.js', 'cekirdek.js', 'cevre.js', 'cevre_seker.js', 'cevre_uzay.js', 'cevre_col.js', 'pist.js', 'araba.js', 'arayuz.js', 'oyun.js', 'vendor/three.js', 'manifest.webmanifest',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'].concat(SESLER.map(s => 'sesler/' + s + '.mp3'));
 
 self.addEventListener('install', e => {
