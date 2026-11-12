@@ -509,12 +509,12 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 
 /* ───────── yarış sonu: sıralama (1–5) tek yumuşak panelde. Üstte büyük liste, net boşluk, ortada yıldız/rekor/anı rozetleri, en altta "bir daha" + "ev" ───────── */
 #sonuc.sirali .ui-odul{display:none}
-#sonuc.sirali{padding:2vh 3vw}
+#sonuc.sirali{padding:calc(5vh + env(safe-area-inset-top)) 3vw calc(5vh + env(safe-area-inset-bottom))}
 #sonuc.sirali .sonuc-icerik{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:0;width:min(600px,50vw);max-width:none;box-sizing:border-box;
   padding:clamp(14px,2.8vh,28px) clamp(16px,2.4vw,30px);border-radius:40px;background:rgba(22,48,90,.42);border:3px solid rgba(255,255,255,.55);
   box-shadow:0 10px 30px rgba(10,25,55,.25),inset 0 1px 0 rgba(255,255,255,.35);animation:ui-pop-gel .35s ease-out backwards}
 #sonuc.sirali .sonuc-icerik>*{grid-column:auto;grid-row:auto;margin:0}
-#siralama{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:clamp(7px,1.5vh,14px);width:100%;--sh:clamp(50px,10.2vh,96px)}
+#siralama{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,11px);width:100%;--sh:clamp(46px,8.2vh,76px)}
 .sr-satir{position:relative;display:flex;align-items:center;gap:calc(var(--sh)*.2);height:var(--sh);padding:0 calc(var(--sh)*.3) 0 calc(var(--sh)*.1);box-sizing:border-box;
   background:linear-gradient(#ffffff,#eef4fa);border:4px solid var(--lac);border-radius:999px;box-shadow:0 5px 0 rgba(15,35,70,.32);
   animation:sr-gel .5s cubic-bezier(.3,1.4,.5,1) calc(.25s + var(--i)*.2s) backwards}
@@ -540,7 +540,7 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 .sr-feza .sr-yuz{animation:sr-zipla .7s ease-in-out 2s infinite alternate}
 @keyframes sr-zipla{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-6px) rotate(5deg)}}
 /* rozetler: eşit boy, tek hizada, ortalı; yıldız ve rekor yan yana önde */
-.sonuc-satir{--rb:clamp(42px,6.4vh,54px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 12px;margin-top:clamp(18px,3.4vh,32px)!important}
+.sonuc-satir{--rb:clamp(38px,5.4vh,46px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 12px;margin-top:clamp(12px,2.2vh,20px)!important}
 #sonuc.sirali #sonuc-anilar{display:contents}
 #sonuc.sirali #sonuc-yildiz{order:1;height:var(--rb);font-size:calc(var(--rb)*.6);padding:0 18px 0 8px;gap:6px;box-sizing:border-box;animation-delay:1.35s}
 #sonuc.sirali #sonuc-yildiz svg{width:calc(var(--rb)*.72);height:calc(var(--rb)*.72)}
@@ -550,9 +550,9 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 #sonuc.sirali .ani{order:3;height:var(--rb);min-width:0;padding:0 12px 0 8px;box-sizing:border-box;border-radius:999px;animation:ui-pop-gel .45s ease-out 1.6s backwards}
 #sonuc.sirali .ani svg{width:calc(var(--rb)*.6);height:calc(var(--rb)*.68)}
 #sonuc.sirali .ani b{font-size:calc(var(--rb)*.46)}
-#sonuc.sirali .sonuc-dugmeler{gap:20px;margin-top:clamp(14px,2.8vh,26px)!important}
-#sonuc.sirali #tekrar{width:clamp(78px,13vh,122px);height:clamp(78px,13vh,122px);margin:0;animation-delay:1.7s,2.3s}
-#sonuc.sirali .sonuc-dugmeler .ev-dugme{width:clamp(62px,9vh,82px);height:clamp(62px,9vh,82px);padding:clamp(10px,1.5vh,13px);animation-delay:1.85s}
+#sonuc.sirali .sonuc-dugmeler{gap:20px;margin-top:clamp(10px,1.8vh,16px)!important}
+#sonuc.sirali #tekrar{width:clamp(72px,10.5vh,98px);height:clamp(72px,10.5vh,98px);margin:0;animation-delay:1.7s,2.3s}
+#sonuc.sirali .sonuc-dugmeler .ev-dugme{width:clamp(58px,7.6vh,70px);height:clamp(58px,7.6vh,70px);padding:clamp(10px,1.5vh,13px);animation-delay:1.85s}
 /* dikey: panel altta, neredeyse tam genişlik; kutlayan arabalar üstte açıkta */
 @media (orientation:portrait){
   #sonuc.sirali{justify-content:flex-end;align-items:center;padding:0 3vw calc(18px + env(safe-area-inset-bottom))}
