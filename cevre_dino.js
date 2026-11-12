@@ -19,15 +19,26 @@ if (cvTema === 'dino') {
   let dnT = 48151; const Rd = () => { dnT = (dnT * 1664525 + 1013904223) >>> 0; return dnT / 4294967296; };   // yeni süslerin kendi sayı üreteci: eski yerleşimi kaydırmaz
   { // zemin: yemyeşil çimene koyu yeşil ve ılık toprak lekeleri
     const c = cimDoku.image, g = c.getContext('2d'), w = c.width, h = c.height;
-    for (let i = 0; i < 26; i++) { const x = R() * w, y = R() * h, r = 16 + R() * 30; g.globalAlpha = 0.13; g.fillStyle = i % 3 ? '#3f9a3a' : '#d9c27a'; for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) { g.beginPath(); g.ellipse(x + ox, y + oy, r, r * 0.6, 0, 0, 7); g.fill(); } }
+    g.globalAlpha = 0.34; g.fillStyle = '#69bf4c'; g.fillRect(0, 0, w, h);   // ince benekler sakinleşir, çim tek tonda boğulmaz
+    for (let i = 0; i < 26; i++) { const x = R() * w, y = R() * h, r = 16 + R() * 30; g.globalAlpha = 1; for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) { const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r * 1.3); gr.addColorStop(0, i % 3 ? 'rgba(63,154,58,.16)' : 'rgba(217,194,122,.14)'); gr.addColorStop(1, 'rgba(63,154,58,0)'); g.fillStyle = gr; g.fillRect(x + ox - r * 1.3, y + oy - r * 1.3, r * 2.6, r * 2.6); } }
     g.globalAlpha = 1; cimDoku.needsUpdate = true;
+    // geniş ton geçişi: yol kenarında ılık toprak-yeşili, uzakta serin, derin yeşil (köşe renkleri; ek çizim yok)
+    const p = zemin.geometry.attributes.position, col = zemin.geometry.attributes.color;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = -p.getY(i) - 70, d = yakin(x, z), u = clamp((d - YARI - 4) / 34, 0, 1), y = clamp((d - 60) / 260, 0, 1), v = 0.97 + 0.04 * Math.sin(x * 0.019 + z * 0.023);
+      col.setXYZ(i, lerp(lerp(1.06, 0.95, u), 0.9, y) * v, lerp(lerp(0.98, 1, u), 0.98, y) * v, lerp(lerp(0.8, 0.9, u), 0.96, y) * v);
+    }
+    col.needsUpdate = true;
   }
 
   // ───────── ortak parçalar ─────────
+  const dnTon = (g, h) => { const p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.24 * Math.min(1, Math.max(0, p.getY(i) / h)); c.setXYZ(i, Math.min(1, c.getX(i) * k), Math.min(1, c.getY(i) * k), Math.min(1, c.getZ(i) * k)); } return g; };   // ton geçişi: dipte koyu, yukarı doğru açık (düz karton boya yerine)
   const S = cvYapi(), PI = Math.PI;
   const s = (g, x, y, z, sx, sy, sz, c, rx, ry, rz, kz, ke) => S.ekle(g, x, y, z, sx, sy, sz, c, rx, ry, rz, 0, kz || 0, ke || 0);
   const dnSal = cvHAREKET.length;   // yumuşak salınım: cvK.z = yana, cvK.y = yukarı aşağı (boyun, kuyruk, yaprak, yavru başı)
   cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 0.37 + instanceMatrix[3].z * 0.53;\n#else\nfloat cvF = position.x * 0.21 + position.z * 0.17;\n#endif\ntransformed.x += sin(cvT * 1.25 + cvF) * cvK.z; transformed.y += sin(cvT * 1.6 + cvF * 1.3) * cvK.y;');
+  const dnDuvar = (() => { const g = new T.CylinderGeometry(1, 1, 1, 20, 3), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i), k = 1 + 0.06 * (1 - 4 * y * y) - 0.04 * (y + 0.5); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } g.computeVertexNormals(); g.userData.cvTon = true; return g; })();   // taş ev duvarı: bombeli, yuvarlak
+  const dnBacak = new T.CylinderGeometry(1, 1, 1, 8, 1, true);   // dinozor bacağı: beş köşeli değil, yuvarlak
   const dnCati = new T.ConeGeometry(1, 1, 16, 2), dnKoni = new T.CylinderGeometry(0.72, 1, 1, 16, 1, true), dnSil = new T.CylinderGeometry(1, 1, 1, 7, 1, true);
   const GOZ = 0x2a2030, BEYAZ = 0xffffff, KREM = 0xfff3d0, YANAK = 0xff9fb5, AHSAP = 0xb9824c, KOYU = 0x8f5c34, SU = 0x3fb6e8;
   const TAS = [0xb9b3a6, 0xcbc4b4, 0xa7a196, 0xd8d0be], YESIL = [0x4fb85a, 0x5ec766, 0x42a650, 0x6fcf5e, 0x3f9f58], PASTEL = [0x7fd08a, 0xffa25e, 0x7cc4f0, 0xf59ac0, 0xc9a6f0, 0xffd166];
@@ -43,7 +54,7 @@ if (cvTema === 'dino') {
   // iri göz, gülümseme ve pembe yanak: bütün dinozorlar aynı sevimli yüzü taşır (diş yok)
   const yuz = (e, x, y, z, r, kz, ke, aw) => {
     for (const q of [-1, 1]) {
-      e(cvG.kureK, q * x, y, z, r, r * 1.12, r * 0.7, BEYAZ, 0, 0, 0, 0, kz, ke); e(cvG.okt, q * x, y, z + r * 0.52, r * 0.56, r * 0.66, r * 0.4, GOZ, 0, 0, 0, 0, kz, ke);
+      e(cvG.kureK, q * x, y, z, r, r * 1.12, r * 0.7, BEYAZ, 0, 0, 0, 0, kz, ke); e(cvG.kureK, q * x, y, z + r * 0.5, r * 0.56, r * 0.66, r * 0.4, GOZ, 0, 0, 0, 0, kz, ke);
       e(cvG.okt, q * x + r * 0.16, y + r * 0.26, z + r * 0.86, r * 0.27, r * 0.27, r * 0.14, BEYAZ, 0, 0, 0, 0, kz, ke); e(cvG.okt, q * x - r * 0.18, y - r * 0.2, z + r * 0.84, r * 0.12, r * 0.12, r * 0.08, BEYAZ, 0, 0, 0, 0, kz, ke);
       e(cvG.okt, q * (x + r * 0.9), y - r * 1.5, z + r * 0.35, r * 0.62, r * 0.36, r * 0.3, YANAK, 0, 0, 0, 0, kz, ke);
       e(cvG.kutu, q * aw * 0.55, y - r * 1.72, z + r * 1.52, aw * 0.34, r * 0.24, r * 0.2, GOZ, 0, 0, q * 0.75, 0, kz, ke);
@@ -56,7 +67,7 @@ if (cvTema === 'dino') {
   const tirnak = (e, x, z, r, h) => { e(cvG.okt, x, 0.08, z + r * 0.85, r * 0.75, r * 0.22, r * 0.3, KREM, 0, 0, 0, 0, h, 0); };
   // uzun boyunlu: h = zıplama payı (seyirci yavru 1), sw = salınım (yetişkin), wg = kuyruk sallama, nb = boyun boyu, hs = baş büyüklüğü
   const brontoKur = (e, h, sw, wg, nb, hs) => {
-    for (const x of [-0.62, 0.62]) for (const z of [-0.95, 0.95]) e(cvG.sil5, x, 0.8, z, 0.36, 1.6, 0.36, BEYAZ, 0, 0, 0, 1, h, 0);
+    for (const x of [-0.62, 0.62]) for (const z of [-0.95, 0.95]) e(dnBacak, x, 0.8, z, 0.36, 1.6, 0.36, BEYAZ, 0, 0, 0, 1, h, 0);
     e(cvG.kure, 0, 2.15, 0, 1.15, 1.0, 1.85, BEYAZ, 0, 0, 0, 1, h, 0); e(cvG.kureK, 0, 1.9, 0.12, 0.98, 0.8, 1.62, KREM, 0, 0, 0, 0, h, 0);
     benek(e, 0, 2.15, 0, 1.15, 1.0, 1.85, 9, 0.3, h); for (const x of [-0.62, 0.62]) for (const z of [-0.95, 0.95]) tirnak(e, x, z, 0.36, h);
     for (let k = 0; k < 5; k++) e(cvG.okt, (k % 2 - 0.5) * 0.95, 2.98 - Math.abs(k - 2) * 0.1, -1 + k * 0.5, 0.24, 0.1, 0.24, 0xfff3a0, 0, 0, 0, 0, h, 0);
@@ -69,7 +80,7 @@ if (cvTema === 'dino') {
   };
   // sırtı plakalı
   const stegoKur = (e, h, sw, wg, hs) => {
-    for (const x of [-0.55, 0.55]) for (const z of [-0.8, 0.8]) e(cvG.sil5, x, 0.5, z, 0.32, 1.0, 0.32, BEYAZ, 0, 0, 0, 1, h, 0);
+    for (const x of [-0.55, 0.55]) for (const z of [-0.8, 0.8]) e(dnBacak, x, 0.5, z, 0.32, 1.0, 0.32, BEYAZ, 0, 0, 0, 1, h, 0);
     e(cvG.kure, 0, 1.55, 0, 1.0, 0.95, 1.7, BEYAZ, 0, 0, 0, 1, h, 0); e(cvG.kureK, 0, 1.3, 0.1, 0.86, 0.72, 1.5, KREM, 0, 0, 0, 0, h, 0);
     e(cvG.ufak, 0, 1.35, 1.5, 0.52, 0.5, 0.6, BEYAZ, 0, 0, 0, 1, h, 0);
     benek(e, 0, 1.55, 0, 1.0, 0.95, 1.7, 8, 0.26, h); for (const x of [-0.55, 0.55]) for (const z of [-0.8, 0.8]) tirnak(e, x, z, 0.32, h);
@@ -81,7 +92,7 @@ if (cvTema === 'dino') {
   };
   // üç boynuzlu
   const triKur = (e, h, sw, wg, hs) => {
-    for (const x of [-0.55, 0.55]) for (const z of [-0.7, 0.7]) e(cvG.sil5, x, 0.45, z, 0.32, 0.9, 0.32, BEYAZ, 0, 0, 0, 1, h, 0);
+    for (const x of [-0.55, 0.55]) for (const z of [-0.7, 0.7]) e(dnBacak, x, 0.45, z, 0.32, 0.9, 0.32, BEYAZ, 0, 0, 0, 1, h, 0);
     e(cvG.kure, 0, 1.3, 0, 0.95, 0.9, 1.45, BEYAZ, 0, 0, 0, 1, h, 0); e(cvG.kureK, 0, 1.08, 0.1, 0.82, 0.7, 1.28, KREM, 0, 0, 0, 0, h, 0);
     benek(e, 0, 1.3, 0, 0.95, 0.9, 1.45, 7, 0.24, h); for (const x of [-0.55, 0.55]) for (const z of [-0.7, 0.7]) tirnak(e, x, z, 0.32, h);
     for (let k = 0; k <= 2; k++) { const u = k / 2; e(cvG.ufak, 0, 1.25 - u * 0.4, -1.3 - u * 0.75, 0.5 - 0.3 * u, 0.48 - 0.28 * u, 0.5, BEYAZ, 0, 0, 0, 1, h, -sw * u + (wg && u > 0.4 ? 1 : 0)); }
@@ -107,9 +118,9 @@ if (cvTema === 'dino') {
   // ───────── yapılar ─────────
   const tasEv = (p, b, c) => {
     S.yer(p.x, p.z, p.ry, b);
-    s(cvG.sil, 0, 1.1, 0, 2.7, 2.2, 2.7, TAS[1]); for (let k = 0; k < 11; k++) { const a = k / 11 * 6.2832 + 0.28; if (Math.abs(Math.sin(a)) < 0.3 && Math.cos(a) > 0) continue; s(cvG.ufak, Math.sin(a) * 2.75, 0.45 + (k % 2) * 0.85, Math.cos(a) * 2.75, 0.7, 0.5, 0.4, TAS[k % 4], 0, a); }
+    s(dnDuvar, 0, 1.1, 0, 2.7, 2.2, 2.7, TAS[1]); for (let k = 0; k < 11; k++) { const a = k / 11 * 6.2832 + 0.28; if (Math.abs(Math.sin(a)) < 0.3 && Math.cos(a) > 0) continue; s(cvG.kureK, Math.sin(a) * 2.75, 0.45 + (k % 2) * 0.85, Math.cos(a) * 2.75, 0.7, 0.5, 0.4, TAS[k % 4], 0, a); }
     s(dnCati, 0, 3.25, 0, 3.4, 2.3, 3.4, 0xe3c26a); s(dnCati, 0, 4.0, 0, 2.2, 1.7, 2.2, 0xd2ad55); s(cvG.sil, 0, 2.2, 0, 3.0, 0.22, 3.0, 0xc9a44e); s(cvG.okt, 0.2, 5.1, 0, 0.6, 0.12, 0.3, c, 0, 0.4, 0.5); s(cvG.okt, -0.2, 5.05, 0, 0.6, 0.12, 0.3, c, 0, -0.5, -0.5);
-    s(cvG.kutu, 0, 0.8, 2.6, 1.2, 1.6, 0.3, 0x5a4636); s(cvG.kureK, 0, 1.6, 2.6, 0.6, 0.6, 0.16, 0x5a4636); for (const x of [-1, 1]) { s(cvG.ufak, x * 0.85, 0.5, 2.75, 0.34, 0.5, 0.3, TAS[3]); s(cvG.ufak, x * 0.8, 1.45, 2.75, 0.32, 0.45, 0.3, TAS[0]); } s(cvG.ufak, 0, 2.15, 2.72, 0.75, 0.3, 0.3, TAS[3]);
+    s(cvG.kutu, 0, 0.8, 2.6, 1.2, 1.6, 0.3, 0x5a4636); s(cvG.kureK, 0, 1.6, 2.6, 0.6, 0.6, 0.16, 0x5a4636); for (const x of [-1, 1]) { s(cvG.kureK, x * 0.85, 0.5, 2.75, 0.34, 0.5, 0.3, TAS[3]); s(cvG.kureK, x * 0.8, 1.45, 2.75, 0.32, 0.45, 0.3, TAS[0]); } s(cvG.kureK, 0, 2.15, 2.72, 0.75, 0.3, 0.3, TAS[3]);
     s(cvG.kureK, 1.75, 1.45, 2.02, 0.36, 0.36, 0.14, 0x5a4636, 0, 0.72);
     s(cvG.ufak, 3.4, 0.4, 1.6, 0.6, 0.45, 0.6, TAS[2]); s(cvG.sil, 3.4, 0.86, 1.6, 0.75, 0.14, 0.75, TAS[3]); s(cvG.kureK, 3.4, 1.12, 1.6, 0.28, 0.24, 0.28, 0xff8a4a); s(cvG.kureK, 3.0, 1.08, 1.75, 0.2, 0.18, 0.2, 0xffd166);
   };
@@ -249,7 +260,7 @@ if (cvTema === 'dino') {
     else if (tur === 2) { const k = 0.62 + R() * 0.14; sTri.push([x, 0, z, k, k, k, ry + 0.3, c]); golge.push([x, 0.012, z, 1.9 * k, 1, 1.9 * k, 0]); }
     else { const k = 0.55 + R() * 0.12; sStego.push([x, 0, z, k, k, k, ry + 0.5, c]); golge.push([x, 0.012, z, 2.2 * k, 1, 2.2 * k, 0]); }
   }
-  const hayvan = (liste, mod, kur) => { if (!liste.length) return; const B = cvYapi(); kur(B.ekle); cok(B.geo(), cvMalz(mod), liste); };
+  const hayvan = (liste, mod, kur) => { if (!liste.length) return; const B = cvYapi(); kur(B.ekle); const g = B.geo(); g.computeBoundingBox(); cok(dnTon(g, g.boundingBox.max.y * 0.8), cvMalz(mod, { emissive: 0x1c1a14 }), liste); };   // deri: dipte hafif koyu, sırtta açık; gölge yüzü yumuşak
   hayvan(bronto, dnSal, e => brontoKur(e, 0, 0.42, 0, 1, 1)); hayvan(stego, dnSal, e => stegoKur(e, 0, 0.4, 0, 1)); hayvan(tri, dnSal, e => triKur(e, 0, 0.3, 0, 1.15));
   hayvan(sRex, 2, rexKur); hayvan(sBronto, 2, e => brontoKur(e, 1, 0, 1, 0.55, 1.9)); hayvan(sTri, 2, e => triKur(e, 1, 0, 1, 1.25)); hayvan(sStego, 2, e => stegoKur(e, 1, 0, 1, 1.5));
 
@@ -315,7 +326,8 @@ if (cvTema === 'dino') {
   { // pamuk bulutlar
     const B = cvYapi(), l = []; B.ekle(cvG.tac, 0, 0, 0, 12, 4.5, 8, 0xffffff); B.ekle(cvG.tac, -9, -1, 0, 8, 3.2, 6, 0xf4fbff); B.ekle(cvG.tac, 9, -1, 1, 8, 3.2, 6, 0xf4fbff);
     for (let k = 0; k < 10; k++) { const a = k / 10 * 6.2832 + 0.3, r = 210 + (k % 3) * 70, b = 1.3 + (k % 4) * 0.4; l.push([Math.cos(a) * r, 100 + (k % 4) * 14, -70 + Math.sin(a) * r, b, b, b, -a]); }
-    cok(B.geo(), new T.MeshBasicMaterial({ vertexColors: true, fog: false }), l);
+    const g = B.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { let t = clamp((p.getY(i) + 3.6) / 7.5, 0, 1); t = t * t * (3 - 2 * t); c.setXYZ(i, lerp(0.84, 1, t), lerp(0.9, 1, t), lerp(0.97, 1, t)); }   // pofuduk: altı yumuşak gölgeli
+    cok(g, new T.MeshBasicMaterial({ vertexColors: true, fog: false }), l);
   }
   { // gökte süzülen pterozorlar: geniş bir çemberde yavaşça döner, kanat çırpar
     let ox = 0, oz = 0; for (let i = 0; i < N; i++) { ox += PX[i] / N; oz += PZ[i] / N; }
@@ -328,7 +340,6 @@ if (cvTema === 'dino') {
   }
 
   // ───────── tek parça yapılar ve gölgeler ─────────
-  const dnTon = (g, h) => { const p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.24 * Math.min(1, Math.max(0, p.getY(i) / h)); c.setXYZ(i, Math.min(1, c.getX(i) * k), Math.min(1, c.getY(i) * k), Math.min(1, c.getZ(i) * k)); } return g; };   // ton geçişi: dipte koyu, yukarı doğru açık (düz karton boya yerine)
   { const m = new T.Mesh(dnTon(S.geo(), 6), cvMalz(dnSal)); m.frustumCulled = false; scene.add(m); }
   { const d = tuvalDoku(64, 64, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(30,70,40,.30)'); r.addColorStop(0.45, 'rgba(30,70,40,.15)'); r.addColorStop(1, 'rgba(30,70,40,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
     const g = new T.PlaneGeometry(2, 2); g.rotateX(-PI / 2); const sh = cok(g, new T.MeshBasicMaterial({ map: d, transparent: true, depthWrite: false }), golge); sh.renderOrder = 1; }

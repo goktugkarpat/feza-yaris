@@ -16,12 +16,29 @@ const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference:
 renderer.outputColorSpace = T.SRGBColorSpace;
 // Renk: sakin, temiz palet için çok hafif doygunluk + yumuşak omuz (0,8'e kadar renk aynı, üstü 1'e yavaşça yaklaşır: kar/beyazlar patlamaz, ton korunur).
 // Ek çizim geçişi yok; her malzemenin sonunda birkaç işlem. Sis ton eşlemeden SONRA karıştığı için ufuk/gök renkleri değişmez.
+// Pist başına renk eğrisi (ışık karakteri): doy = doygunluk, gol = gölgelere çok hafif renk (koyular biraz kalkar: yüz/arka yüzler kararmaz),
+// isk = aydınlık yerlerin tonu (sıcak/serin), poz = pozlama. Değerler bilerek küçük; gök dokusu ve sis bundan etkilenmez.
+const ISIK_TON = {
+  orman:     { doy: 1.08, gol: [0.004, 0.018, 0.010], isk: [1.04, 1.0, 0.94], poz: 1.0, kenar: 0.32 },    // sıcak sabah, yeşil dolgu
+  kiyi:      { doy: 1.10, gol: [0.000, 0.018, 0.024], isk: [1.01, 1.0, 0.985], poz: 1.02, kenar: 0.28 },    // parlak öğle, turkuaz gölge
+  kar:       { doy: 1.07, gol: [0.000, 0.012, 0.040], isk: [1.03, 1.0, 0.95], poz: 0.97, kenar: 0.32 },     // serin mavi gölge, sıcak güneş
+  seker:     { doy: 1.07, gol: [0.024, 0.006, 0.018], isk: [1.01, 0.99, 0.99], poz: 0.97, kenar: 0.24 },    // yumuşak pastel, pembe
+  uzay:      { doy: 1.07, gol: [0.014, 0.004, 0.030], isk: [0.975, 0.995, 1.035], poz: 1.04, kenar: 0.4 },   // serin ana ışık, mor dolgu
+  col:       { doy: 1.08, gol: [0.016, 0.004, 0.020], isk: [1.035, 1.0, 0.93], poz: 1.0, kenar: 0.45 },     // altın gün batımı, menekşe gölge
+  gokkusagi: { doy: 1.03, gol: [0.024, 0.022, 0.030], isk: [1.0, 1.0, 1.0], poz: 1.0, kenar: 0.22 },        // süt gibi yumuşak, aydınlık
+  dino:      { doy: 1.10, gol: [0.006, 0.014, 0.004], isk: [1.04, 1.0, 0.94], poz: 1.0, kenar: 0.32 },      // sıcak tropik
+  sehir:     { doy: 1.10, gol: [0.002, 0.008, 0.020], isk: [1.01, 1.0, 0.98], poz: 1.02, kenar: 0.28 },     // canlı, temiz gündüz
+}[PIST_TEMA];
+const glV = a => 'vec3( ' + a.map(v => v.toFixed(4)).join(', ') + ' )';
 T.ShaderChunk.tonemapping_pars_fragment = T.ShaderChunk.tonemapping_pars_fragment.replace('vec3 CustomToneMapping( vec3 color ) { return color; }',
-  'vec3 CustomToneMapping( vec3 color ) {\n\tcolor *= toneMappingExposure;\n\tfloat l = dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n\tcolor = max( vec3( l ) + ( color - vec3( l ) ) * 1.06, vec3( 0.0 ) );\n\tfloat p = max( color.r, max( color.g, color.b ) );\n\tif ( p > 0.8 ) color *= ( 1.0 - 0.04 / ( p - 0.6 ) ) / p;\n\treturn color;\n}');
-renderer.toneMapping = T.CustomToneMapping; renderer.toneMappingExposure = 1;
+  'vec3 CustomToneMapping( vec3 color ) {\n\tcolor *= toneMappingExposure;\n\tfloat l = dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n\tcolor = max( vec3( l ) + ( color - vec3( l ) ) * ' + ISIK_TON.doy.toFixed(3) + ', vec3( 0.0 ) );\n' +
+  '\tcolor += ' + glV(ISIK_TON.gol) + ' * ( 1.0 - smoothstep( 0.0, 0.6, l ) );\n\tcolor *= mix( vec3( 1.0 ), ' + glV(ISIK_TON.isk) + ', smoothstep( 0.25, 0.85, l ) );\n' +
+  '\tfloat p = max( color.r, max( color.g, color.b ) );\n\tif ( p > 0.8 ) color *= ( 1.0 - 0.04 / ( p - 0.6 ) ) / p;\n\treturn color;\n}');
+renderer.toneMapping = T.CustomToneMapping; renderer.toneMappingExposure = ISIK_TON.poz;
 // Hacim: dik yüzlerin kenarında çok hafif açık vurgu (rim) → kutu/karton yüzler yuvarlak ve hacimli okunur. Yer ve çatı gibi yatay yüzlere değmez (uzakta yol/çimen ağarmaz).
+// Güneş kenarı: güneş nesnenin arkasındayken (yarış kamerasında çoğu zaman) silüete güneş renginde ince bir parlaklık → arabalar/sürücüler zeminden ayrışır.
 // Lambert/Phong/Standard ortak parçası; ek ışık, doku ya da geçiş yok.
-T.ShaderChunk.lights_fragment_end += '\n{\n\tfloat rimK = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );\n\tfloat rimD = 1.0 - abs( dot( geometryNormal, normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz ) ) );\n\treflectedLight.indirectDiffuse += diffuseColor.rgb * ( rimK * rimK * rimK * rimD * 0.3 );\n}\n';
+T.ShaderChunk.lights_fragment_end += '\n{\n\tfloat rimK = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );\n\tfloat rimD = 1.0 - abs( dot( geometryNormal, normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz ) ) );\n\treflectedLight.indirectDiffuse += diffuseColor.rgb * ( rimK * rimK * rimK * rimD * 0.3 );\n#if NUM_DIR_LIGHTS > 0\n\tfloat rimS = saturate( dot( directionalLights[ 0 ].direction, - geometryViewDir ) * 0.7 + 0.3 );\n\treflectedLight.directDiffuse += diffuseColor.rgb * directionalLights[ 0 ].color * ( rimK * rimK * rimD * rimS * ' + ISIK_TON.kenar.toFixed(3) + ' );\n#endif\n}\n';
 // Çizim oranı: en çok 2 ve ekran başına ~4,6 milyon piksel (12,9" iPad'de ≈1,8; 11"de 2). Kare uzarsa oyun.js daha da düşürür.
 const oranTavan = () => clamp(Math.sqrt(4.6e6 / Math.max(1, innerWidth * innerHeight)), 1, 2);
 let oran = Math.min(window.devicePixelRatio || 1, oranTavan());
@@ -41,14 +58,28 @@ canvas.addEventListener('webglcontextrestored', () => { cizimSurumu++; });
 // Pist dosyaları sis rengini ve uzaklığını kurar; burada yalnız yakın/uzak sınırlar daraltılır (renk aynı kalır), bir kez, yüklenince.
 addEventListener('load', () => {
   const f = scene.fog; if (!f || f.isFogExp2) return;
-  if (PIST_TEMA === 'uzay') { f.near = Math.min(f.near, 260); f.far = Math.min(f.far, 880); }
-  else { f.near = Math.min(f.near, 90); f.far = Math.min(f.far, 820); }
-  // Işık: güneş biraz daha sıcak ve biraz daha yandan (yüzler ayrışır), gök dolgusu biraz az (renk tonu değişmez: pembeler gölgede leylağa kaymasın), alt yüzler biraz koyu → karton düzlüğü yerine hacim.
-  if (PIST_TEMA !== 'uzay' && typeof cvGokIsik !== 'undefined' && typeof gunes !== 'undefined') {
-    gunes.color.multiply(new T.Color(0xfff3e6)); gunes.intensity *= 1.2; gunes.position.y *= 0.7;
-    cvGokIsik.intensity *= 0.88; cvGokIsik.groundColor.multiplyScalar(0.8);
+  const A = ISIK_AYAR[PIST_TEMA];
+  f.near = Math.min(f.near, A.sis[0]); f.far = Math.min(f.far, A.sis[1]);
+  // Işık karakteri: pist dosyasının güneş/gök ayarının üstüne yumuşak bir dokunuş (tonu çevirir, yerine geçmez). Işık sayısı aynı (2).
+  // Güneşin yönü (yatay) gökteki güneşle aynı kalır; yalnız yüksekliği değişir. Gök dolgusu yüksek tutulur: arabaların arkası ve yüzler kararmaz.
+  if (typeof cvGokIsik !== 'undefined' && typeof gunes !== 'undefined') {
+    gunes.color.multiply(new T.Color(A.gr)); gunes.intensity *= A.gi; gunes.position.y *= A.gy;
+    cvGokIsik.color.lerp(new T.Color(A.ust), 0.5); cvGokIsik.groundColor.lerp(new T.Color(A.alt), 0.5).multiplyScalar(A.altK); cvGokIsik.intensity *= A.di;
   }
 });
+// gr = güneş rengi çarpanı, gi = güneş gücü çarpanı, gy = güneş yüksekliği çarpanı, ust/alt = gök/zemin dolgu renk hedefi (yarı yarıya), altK = alt dolgu koyuluğu,
+// di = dolgu gücü çarpanı, sis = [yakın, uzak] en çok (renk pist dosyasının).
+const ISIK_AYAR = {
+  orman:     { gr: 0xffe8c8, gi: 1.2,  gy: 0.62, ust: 0xfff6e2, alt: 0xa9bd8c, altK: 0.85, di: 0.9,  sis: [90, 820] },
+  kiyi:      { gr: 0xfffaf0, gi: 1.22, gy: 0.8,  ust: 0xeafcff, alt: 0xb4dcd2, altK: 0.9,  di: 0.92, sis: [120, 860] },
+  kar:       { gr: 0xffe2bc, gi: 1.2,  gy: 0.6,  ust: 0xd8e6ff, alt: 0xa6bedf, altK: 0.85, di: 0.9,  sis: [90, 820] },
+  seker:     { gr: 0xfff0e8, gi: 1.12, gy: 0.75, ust: 0xfff2f8, alt: 0xf2b4cc, altK: 0.88, di: 0.93, sis: [90, 800] },
+  uzay:      { gr: 0xccdcff, gi: 1.02, gy: 0.8,  ust: 0xe8e6ff, alt: 0xa490d6, altK: 0.9,  di: 1.0,  sis: [260, 880] },
+  col:       { gr: 0xffe0b0, gi: 1.15, gy: 0.72, ust: 0xffecd8, alt: 0xd49470, altK: 0.85, di: 0.9,  sis: [80, 780] },
+  gokkusagi: { gr: 0xfff8f0, gi: 1.05, gy: 0.9,  ust: 0xffffff, alt: 0xf6dcea, altK: 0.95, di: 1.0,  sis: [70, 720] },
+  dino:      { gr: 0xffe6b4, gi: 1.2,  gy: 0.7,  ust: 0xf6ffe8, alt: 0xb4bc86, altK: 0.85, di: 0.9,  sis: [90, 820] },
+  sehir:     { gr: 0xfff6ea, gi: 1.2,  gy: 0.8,  ust: 0xf4faff, alt: 0xc8c8bc, altK: 0.85, di: 0.9,  sis: [100, 840] },
+};
 
 function tuvalDoku(w, h, ciz, tekrar) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; ciz(c.getContext('2d'), w, h);

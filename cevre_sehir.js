@@ -17,6 +17,7 @@ if (cvTema === 'sehir') {
   const BLOK = [KIRMIZI, SARI, MAVI, KIRMIZI, SARI, MAVI], PASTEL = [0xffb3a8, 0xffe89a, 0xa8d8ff, KREM, 0xffe89a, 0xa8d8ff, KREM, 0xffb3a8];   // sade: 3 ana renk (kırmızı, sarı, mavi) + krem; yeşil zeminde
   const sec = l => l[(R() * l.length) | 0], PI = Math.PI;
   const shDaire = new T.CircleGeometry(1, 10), shTorus = new T.TorusGeometry(1, 0.36, 6, 14), shRay = new T.TorusGeometry(1, 0.004, 4, 72), shCember = new T.TorusGeometry(1, 0.028, 5, 28);
+  const shBoru = new T.CylinderGeometry(1, 1, 1, 10, 1, true);   // pencere çerçevesinin duvardan taşan kalınlığı
   const shPiramit = new T.ConeGeometry(0.72, 1, 4); shPiramit.rotateY(PI / 4);
   const shKutu = (() => {   // yuvarlak köşeli, pahlı tombul kutu (bina gövdeleri karton gibi durmasın); birim boyut
     const sh = new T.Shape(), r = 0.22, w = 0.5 - 0.07; sh.moveTo(-w + r, -w); sh.lineTo(w - r, -w); sh.quadraticCurveTo(w, -w, w, -w + r); sh.lineTo(w, w - r); sh.quadraticCurveTo(w, w, w - r, w); sh.lineTo(-w + r, w); sh.quadraticCurveTo(-w, w, -w, w - r); sh.lineTo(-w, -w + r); sh.quadraticCurveTo(-w, -w, -w + r, -w);
@@ -41,10 +42,16 @@ if (cvTema === 'sehir') {
   {
     const c = cimDoku.image, g = c.getContext('2d'), w = c.width, h = c.height, k = w / 4;
     g.globalAlpha = 1; g.fillStyle = '#8ed868'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) { g.fillStyle = '#a2e37c'; g.fillRect(i * k + 4, j * k + 4, k - 8, k - 8); }
-    for (let i = 0; i < 900; i++) { g.globalAlpha = 0.5; g.fillStyle = ['#7bcb58', '#b4ec8e', '#84d262', '#c0f09a'][i % 4]; g.fillRect(R() * w, R() * h, 1.6, 3 + R() * 4); }
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) { g.fillStyle = '#9bdf74'; g.fillRect(i * k + 4, j * k + 4, k - 8, k - 8); }
+    for (let i = 0; i < 900; i++) { g.globalAlpha = 0.3; g.fillStyle = ['#7bcb58', '#b4ec8e', '#84d262', '#c0f09a'][i % 4]; g.fillRect(R() * w, R() * h, 1.6, 3 + R() * 4); }
     for (let i = 0; i < 70; i++) { g.globalAlpha = 0.95; g.fillStyle = ['#ffffff', '#ffe46b', '#ffb3d6', '#ffffff'][i % 4]; g.beginPath(); g.arc(4 + R() * (w - 8), 4 + R() * (h - 8), 1.6 + R() * 1.4, 0, 7); g.fill(); }
     g.globalAlpha = 1; cimDoku.needsUpdate = true;
+    const p = zemin.geometry.attributes.position, col = zemin.geometry.attributes.color;   // geniş, yumuşak ton geçişi: yol çevresi taze açık yeşil, uzak çimen serin ve sakin
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = -p.getY(i) - 70, d = yakin(x, z), u = clamp((d - YARI - 6) / 60, 0, 1), y = clamp((d - 90) / 240, 0, 1), v = 0.975 + 0.03 * Math.sin(x * 0.017 + z * 0.021);
+      col.setXYZ(i, lerp(lerp(1.03, 0.95, u), 0.92, y) * v, lerp(1.01, 0.99, u) * v, lerp(lerp(0.9, 0.95, u), 1.0, y) * v);
+    }
+    col.needsUpdate = true;
   }
   // ───────── kaldırım: yolun iki yanında gri karo şerit (ortası saydam, yolun altında kalır) ─────────
   {
@@ -69,8 +76,8 @@ if (cvTema === 'sehir') {
     }
     return null;
   };
-  const pencere = (B, x, y, z, r) => { B.ekle(shDaire, x, y, z, r, r, 1, BEYAZ); B.ekle(shDaire, x, y, z + 0.03, r * 0.72, r * 0.72, 1, 0xffe9a6); B.ekle(cvG.kutu, x, y, z + 0.05, r * 1.44, r * 0.13, 0.03, BEYAZ); B.ekle(cvG.kutu, x, y, z + 0.05, r * 0.13, r * 1.44, 0.03, BEYAZ); B.ekle(cvG.kutu, x, y - r * 1.02, z + 0.06, r * 1.7, r * 0.2, 0.22, BEYAZ); };   // artı çerçeveli yuvarlak pencere + denizlik
-  const kapi = (B, x, z, c) => { B.ekle(cvG.kutu, x, 0.95, z, 1.1, 1.9, 0.14, c); B.ekle(shDaire, x, 1.9, z + 0.08, 0.55, 0.55, 1, c); B.ekle(cvG.kureK, x + 0.33, 1.0, z + 0.1, 0.08, 0.08, 0.06, SARI); };
+  const pencere = (B, x, y, z, r) => { B.ekle(shBoru, x, y, z, r, 0.1, r, BEYAZ, PI / 2); B.ekle(shDaire, x, y, z + 0.05, r, r, 1, BEYAZ); B.ekle(shDaire, x, y, z + 0.065, r * 0.72, r * 0.72, 1, 0xffdf8f); B.ekle(cvG.kutu, x, y, z + 0.085, r * 1.44, r * 0.13, 0.03, BEYAZ); B.ekle(cvG.kutu, x, y, z + 0.085, r * 0.13, r * 1.44, 0.03, BEYAZ); B.ekle(cvG.kutu, x, y - r * 1.02, z + 0.06, r * 1.7, r * 0.2, 0.22, BEYAZ); };   // artı çerçeveli yuvarlak pencere + denizlik
+  const kapi = (B, x, z, c) => { const k = new T.Color(c).multiplyScalar(0.86).getHex(); B.ekle(cvG.kutu, x, 0.95, z, 1.1, 1.9, 0.14, k); B.ekle(cvG.sil, x, 1.9, z, 0.55, 0.14, 0.55, k, PI / 2); B.ekle(cvG.kureK, x + 0.33, 1.0, z + 0.1, 0.08, 0.08, 0.06, SARI); };
 
   // ───────── oyuncak tren: pistin ortasındaki boşlukta, kendi yuvarlak rayında ─────────
   const lok = (B, c) => {

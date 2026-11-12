@@ -573,3 +573,71 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
   #sonuc.sirali .sonuc-dugmeler .ev-dugme{width:58px;height:58px;padding:9px}
 }
 @media (prefers-reduced-motion:reduce){.sr-satir,.sr-feza,.sr-feza .sr-yuz,.sr-altin .sr-no::after{animation:none!important}}
+
+/* ═════════ TUR 3: tek tasarım dili ve güvenli kenar payı ═════════
+   Kenar: üstte/altta en az 5vh (çentik/durum çubuğu payı dahil), yanlarda en az 2,2vw.
+   Çıkartma dili: beyaz → açık mavi geçiş, 4px lacivert çerçeve, 5px sert gölge; küçükler hap/yuvarlak, paneller 40px köşe.
+   Yuvarlak düğmeler (duraklat, geri, kaydır, ev) aynı görünüşte ve en az 88px. */
+:root{--ust:max(5vh,calc(14px + env(safe-area-inset-top)));--alt:max(5vh,calc(14px + env(safe-area-inset-bottom)));
+  --sol:max(2.2vw,calc(16px + env(safe-area-inset-left)));--sag:max(2.2vw,calc(16px + env(safe-area-inset-right)));
+  --golge:0 5px 0 rgba(15,35,70,.35);--panel-golge:0 8px 0 rgba(15,35,70,.35),0 14px 30px rgba(10,25,55,.18)}
+/* yarış göstergeleri: dört köşe aynı paydan */
+#sol-ust{left:var(--sol);top:var(--ust)}
+#sira{top:var(--ust)}
+#dur{right:var(--sag);top:var(--ust)}
+#hizlan{right:var(--sag);bottom:var(--alt)}
+#rota{left:var(--sol);bottom:var(--alt)}
+/* ortak yuvarlak düğme */
+#dur,.sec-yuvarlak,.sec-kay,.ev-dugme{width:88px;height:88px;border-radius:50%;box-sizing:border-box;background:linear-gradient(#fff,#e8f0f8);color:var(--lac);
+  border:4px solid var(--lac);box-shadow:var(--golge),inset 0 -5px 0 rgba(23,51,92,.08);transition:transform .12s ease-out,box-shadow .12s ease-out}
+#dur{padding:20px}
+.sec-yuvarlak{padding:18px}
+.sec-kay{margin-top:-44px;padding:19px}
+#dur:active,.sec-yuvarlak:active,.ev-dugme:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(15,35,70,.35)}
+.sec-kay:active{transform:translateY(4px) scale(.96)}
+/* yıldız ve seri aynı yükseklikte */
+#yildiz-kutu,#seri{height:60px;box-sizing:border-box}
+#seri{padding:0 14px 0 10px;gap:3px;border-width:4px}
+.seri-yildiz{width:36px;height:38px}
+#seri .seri-roket{width:32px;height:40px}
+#seri .seri-ok{width:16px;height:24px}
+/* küçük harita: arkadaş noktalarında ince ama görünür beyaz çerçeve; Feza en üstte, lacivert gölgeli */
+#rota-rakipler circle{stroke-width:3.4}
+#rota-konum{stroke-width:3}
+/* geri sayım kutusu da aynı lacivert çerçeveyle */
+#isiklar{box-shadow:0 0 0 4px var(--lac),0 9px 0 4px rgba(15,35,70,.4)}
+/* seçim ekranı ve açılış */
+#secim{padding:var(--ust) var(--sag) var(--alt) var(--sol)}
+#sec-ileri{margin:0}
+#baslik #oyna{margin-bottom:max(6vh,var(--alt))}
+/* mola: aynı panel dili */
+.mola-kutu{border-width:4px;border-radius:48px;box-shadow:inset 0 -8px 0 #e3ecf5,var(--panel-golge)}
+.mola-kutu .ev-dugme{width:104px;height:104px;padding:20px}
+/* yarış sonu: açık renkli çıkartma panel, kenarlardan 5vh uzak; düğmeler ≥ 88px */
+#sonuc.sirali{padding:var(--ust) var(--sag) var(--alt) var(--sol)}
+#sonuc.sirali .sonuc-icerik{background:linear-gradient(#fbfdff,#e3eef9);border:4px solid var(--lac);border-radius:40px;box-shadow:inset 0 -8px 0 rgba(23,51,92,.07),var(--panel-golge);
+  max-height:100%;animation:ui-pop-gel .3s cubic-bezier(.3,1.4,.5,1) backwards}
+.sr-satir{border-width:3px;box-shadow:0 4px 0 rgba(15,35,70,.25)}
+.sr-feza{box-shadow:0 0 0 4px #ffb81f,0 4px 0 4px rgba(15,35,70,.25)}
+#sonuc.sirali #tekrar{width:clamp(100px,13vh,124px);height:clamp(100px,13vh,124px);border-width:8px}
+#sonuc.sirali .sonuc-dugmeler .ev-dugme{width:88px;height:88px;padding:18px}
+#sonuc.sirali .sonuc-dugmeler{gap:24px}
+@media (orientation:portrait){
+  #sonuc.sirali{padding:var(--ust) 3vw var(--alt)}
+  #siralama{--sh:clamp(50px,6.4vh,78px)}
+}
+@media (max-height:500px) and (orientation:landscape){
+  #sonuc.sirali .sonuc-dugmeler .ev-dugme{width:64px;height:64px;padding:12px}
+  #sonuc.sirali #tekrar{width:80px;height:80px;border-width:6px}
+  #dur,.sec-yuvarlak{width:64px;height:64px;padding:14px}.sec-kay{width:64px;height:64px;margin-top:-32px;padding:14px}
+}
+@media (max-width:700px){#dur{width:64px;height:64px;padding:14px}}
+/* seçili pist kartı: üç halka + büyük parıltı yerine tek turuncu halka ve sert gölge (daha sade, diğer çıkartmalarla aynı) */
+.pist-kart{box-shadow:0 6px 0 rgba(23,51,92,.2),0 10px 20px rgba(23,51,92,.14)}
+.pist-kart[aria-pressed=true]{transform:scale(1.05);box-shadow:0 0 0 4px #ff9d1e,0 8px 0 4px rgba(23,51,92,.22),0 0 24px 4px rgba(255,214,80,.55)}
+.araba-kart[aria-pressed=true]{box-shadow:0 0 0 4px #ff9d1e,0 8px 0 4px rgba(23,51,92,.22),0 0 20px 3px rgba(255,214,80,.55)}
+.sonuc-satir{--rb:clamp(44px,6.2vh,56px)}
+@media (max-height:500px) and (orientation:landscape){.sonuc-satir{--rb:38px}}
+/* sonuç rozetleri (yıldız, rekor, anılar): aynı 3px lacivert çerçeve ve gölge */
+#sonuc.sirali #sonuc-yildiz,#sonuc.sirali #rekor,#sonuc.sirali .ani.kazanildi{border:3px solid var(--lac);box-shadow:0 4px 0 rgba(15,35,70,.3)}
+#sonuc.sirali .ani.kazanildi{color:var(--lac)}

@@ -11,6 +11,16 @@ const clYK = (() => {   // yuvarlak köşeli, tombul kutu: köşeler yumuşak yu
   return g;
 })();
 const clBolge = i => { const f = (((i % N) + N) % N) / N; return f < 0.06 || f > 0.95 ? 0 : f < 0.24 ? 1 : f < 0.42 ? 2 : f < 0.6 ? 3 : f < 0.78 ? 4 : 5; };   // 0 başlangıç pazarı · 1 kaktüs bahçesi · 2 kızıl kayalar · 3 vaha · 4 eski taşlar · 5 çadır köyü
+function clCila(m, par, kenar) {   // yumuşak yüzey: Lambert'e ucuz, sabit yönlü küçük parlama + gün batımı kenar ışıması (ek ışık / çizim yok)
+  const o = m.onBeforeCompile, ok = m.customProgramCacheKey.call(m);
+  m.onBeforeCompile = (sh, r) => {
+    if (o) o.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec3 cV = normalize(vViewPosition); float cN = clamp(dot(normal, cV), 0.0, 1.0); vec3 cH = normalize(normalize(vec3(-0.35, 0.8, 0.5)) + cV);'
+      + ' float cS = pow(clamp(dot(normal, cH), 0.0, 1.0), 30.0); totalEmissiveRadiance += vec3(cS * ' + par.toFixed(3) + ') + diffuseColor.rgb * vec3(1.0, 0.9, 0.8) * pow(1.0 - cN, 2.5) * ' + kenar.toFixed(3) + '; }');
+  };
+  m.customProgramCacheKey = () => ok + '|clCila' + par + '_' + kenar;
+  return m;
+}
 if (cvTema === 'col') {
   // ───────── gök, ışık, zemin ─────────
   { const eski = scene.background;
@@ -37,10 +47,10 @@ if (cvTema === 'col') {
         g.stroke();
       }
     }
-    for (let i = 0; i < 900; i++) { g.globalAlpha = 0.5; g.fillStyle = i % 3 ? '#fff0c4' : '#c58d50'; g.fillRect(R() * w, R() * h, 1.5, 1.5); }
+    for (let i = 0; i < 900; i++) { g.globalAlpha = 0.3; g.fillStyle = i % 3 ? '#fff0c4' : '#c58d50'; g.fillRect(R() * w, R() * h, 1.5, 1.5); }
     g.globalAlpha = 1; cimDoku.needsUpdate = true;
     const p = zemin.geometry.attributes.position, col = zemin.geometry.attributes.color;
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.93 + 0.07 * Math.sin(x * 0.019 + 1) * Math.cos(y * 0.016) + 0.05 * Math.sin(x * 0.047 + y * 0.041); col.setXYZ(i, v, v * (0.97 + 0.03 * Math.sin(y * 0.03)), v * 0.95); }
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.93 + 0.07 * Math.sin(x * 0.019 + 1) * Math.cos(y * 0.016) + 0.05 * Math.sin(x * 0.047 + y * 0.041); const q = 0.5 + 0.5 * Math.sin(x * 0.0068 - 0.3) * Math.cos(y * 0.0057 + 0.8); col.setXYZ(i, v, v * lerp(0.955, 0.99, q) * (0.985 + 0.015 * Math.sin(y * 0.03)), v * lerp(0.9, 0.95, q)); }   // çok geniş, yumuşak sıcak ton dalgası: altın kum ↔ şeftali kum
     col.needsUpdate = true;
   }
 
@@ -290,7 +300,7 @@ if (cvTema === 'col') {
   }
   { const B = cvYapi(), e = (g, y, r, h, c) => B.ekle(g, 0, y, 0, r, h, r, c, 0, 0, 0, 1);
     e(clGovde, 0.3, 1, 0.6, KIZIL[0]); e(clGovde, 0.67, 0.8, 0.14, 0xf0b070); e(clGovde, 0.87, 0.64, 0.26, KIZIL[2]); e(clGovde, 0.2, 0.95, 0.045, 0xe58a58); e(clGovde, 0.42, 0.876, 0.04, 0xa8402e); e(clGovde, 0.9, 0.59, 0.04, 0xe58a58); B.ekle(clGovde, 1.0, 0.2, 0.2, 0.42, 0.4, 0.42, KIZIL[1], 0, 0, 0, 1); B.ekle(clGovde, -0.85, 0.15, -0.4, 0.5, 0.3, 0.45, KIZIL[3], 0, 0, 0, 1);
-    cok(B.geo(), cvMalz(0), mesaUzak); }
+    cok(B.geo(), clCila(cvMalz(0), 0, 0.14), mesaUzak); }   // katmanlı masa tepe: kenarlarda sıcak, yumuşak gün batımı ışıması
   { // en uzak katman: gün batımına karşı puslu siluetler (masa tepeler, kaya kuleleri) ve güneşin önünde üç büyük piramit; tek çizim
     const B = cvYapi(), az = Math.atan2(-0.41, 0.86); B.yer(0, -70, 0);
     const clSilY = new T.CylinderGeometry(0.86, 1, 1, 14, 1, true), clKapak = new T.SphereGeometry(1, 14, 3, 0, 6.2832, 0, PI / 2), clTepe = new T.SphereGeometry(1, 14, 4, 0, 6.2832, 0, PI / 2);
@@ -301,7 +311,9 @@ if (cvTema === 'col') {
       else { const w = 50 + (k % 5) * 12, h = 46 + (k % 3) * 16; B.ekle(clSilY, x, h / 2, z, w, h, w * 0.7, c, 0, -a); B.ekle(clKapak, x, h, z, w * 0.86, 9, w * 0.6, c, 0, -a); B.ekle(clTepe, x, 0, z, w * 1.55, h * 0.4, w * 1.05, c, 0, -a); }
     }
     for (const [da, h] of [[-0.1, 105], [0.015, 150], [0.125, 88]]) { const a = az + da; B.ekle(clKup, Math.cos(a) * 600, h / 2 - 2, Math.sin(a) * 600, h * 0.78, h, h * 0.78, da === 0.015 ? 0xcf8580 : 0xc67a84, 0, PI / 4 - a); }
-    const m = new T.Mesh(B.geo(), new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.frustumCulled = false; scene.add(m);
+    const bg = B.geo(), bp = bg.attributes.position, bc = bg.attributes.color;   // dibi ufkun sıcak pusuna erir: uzak katman sakin ve soluk
+    for (let i = 0; i < bp.count; i++) { const t = 0.1 + 0.5 * (1 - clamp((bp.getY(i) + 2) / 75, 0, 1)); bc.setXYZ(i, lerp(bc.getX(i), 0.95, t), lerp(bc.getY(i), 0.6, t), lerp(bc.getZ(i), 0.36, t)); }
+    const m = new T.Mesh(bg, new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.frustumCulled = false; scene.add(m);
   }
   { // gün batımı bulutları: yassı, uzun; altı gül-mor, üstü altın şeftali
     // yumuşak, kabarık çizgi film bulutu: düz alt, üstte yuvarlak tepecikler (pürüzsüz küre, köşesiz)
@@ -324,7 +336,7 @@ if (cvTema === 'col') {
 
   // ───────── tek parça yapılar, kumaşlar, gölgeler, kum pırıltıları ─────────
   { const g = S.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.2 * clamp(p.getY(i) / 5, 0, 1); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); }   // ton geçişi: dipte biraz koyu, yukarı doğru açık
-    const m = new T.Mesh(g, cvMalz(0)); m.frustumCulled = false; scene.add(m); }
+    const m = new T.Mesh(g, clCila(cvMalz(0), 0.08, 0.1)); m.frustumCulled = false; scene.add(m); }
   { const m = new T.Mesh(W.geo(), cvMalz(clBayrakMod, { side: T.DoubleSide })); m.frustumCulled = false; scene.add(m); }
   { const d = tuvalDoku(64, 64, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(120,62,30,.30)'); r.addColorStop(0.45, 'rgba(120,62,30,.15)'); r.addColorStop(1, 'rgba(120,62,30,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
     const g = new T.PlaneGeometry(2, 2); g.rotateX(-PI / 2); const sh = cok(g, new T.MeshBasicMaterial({ map: d, transparent: true, depthWrite: false }), golge); sh.renderOrder = 1; }

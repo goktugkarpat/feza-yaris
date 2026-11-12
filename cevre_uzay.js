@@ -15,6 +15,16 @@ const uzYK = (() => {   // yuvarlak köşeli, tombul kutu: köşeler yumuşak yu
   for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); v.set(u(v.x), u(v.y), u(v.z)); c.set(clamp(v.x, -0.5 + r, 0.5 - r), clamp(v.y, -0.5 + r, 0.5 - r), clamp(v.z, -0.5 + r, 0.5 - r)); v.sub(c).normalize(); n.setXYZ(i, v.x, v.y, v.z); p.setXYZ(i, c.x + v.x * r, c.y + v.y * r, c.z + v.z * r); }
   return g;
 })();
+function uzCila(m, par, kenar) {   // temiz yüzey: Lambert'e ucuz, sabit yönlü küçük parlama + yumuşak kenar ışıması (ek ışık / çizim yok)
+  const o = m.onBeforeCompile, ok = m.customProgramCacheKey.call(m);
+  m.onBeforeCompile = (sh, r) => {
+    if (o) o.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec3 cV = normalize(vViewPosition); float cN = clamp(dot(normal, cV), 0.0, 1.0); vec3 cH = normalize(normalize(vec3(-0.35, 0.8, 0.5)) + cV);'
+      + ' float cS = pow(clamp(dot(normal, cH), 0.0, 1.0), 30.0); float cD = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)) - min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b)); totalEmissiveRadiance += vec3(cS * ' + par.toFixed(3) + ' * smoothstep(0.12, 0.35, cD)) + diffuseColor.rgb * pow(1.0 - cN, 2.5) * ' + kenar.toFixed(3) + ' * (0.35 + 0.65 * smoothstep(0.12, 0.35, cD)); }');   // yalnız renkli (kristal) yüzeyler parlar; gri kaya ve tepeler mat toz kalır
+  };
+  m.customProgramCacheKey = () => ok + '|uzCila' + par + '_' + kenar;
+  return m;
+}
 function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y) ve el sallama (cvK.z); kopya rengi cvK.x = 1 olan parçaları boyar
   const m = new T.MeshLambertMaterial(Object.assign({ color: 0xffffff, vertexColors: true }, o || {}));
   m.onBeforeCompile = sh => {
@@ -91,7 +101,9 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   { // en uzak katman: sivri ay sıradağları, puslu mor siluet (tek çizim)
     const B = cvYapi(); B.yer(0, -65, 0);
     for (let k = 0; k < 44; k++) { const a = k / 44 * 6.2832, rr = 600 + (k % 3) * 22, h = 46 + ((k * 7) % 5) * 15 + (k % 2) * 10, w = 50 + ((k * 3) % 4) * 14; B.ekle(cvG.koni, Math.cos(a) * rr, h / 2 - 2, Math.sin(a) * rr, w, h, w, k % 2 ? 0x8f79c6 : 0x7f69ba, 0, k * 1.7); }
-    const m = new T.Mesh(B.geo(), new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.frustumCulled = false; scene.add(m);
+    const bg = B.geo(), bp = bg.attributes.position, bc = bg.attributes.color;   // dibi ufuk pusuna (açık lila) yumuşakça erir, sivri tepe biraz daha tok: sakin, soluk uzak katman
+    for (let i = 0; i < bp.count; i++) { const t = 0.12 + 0.55 * (1 - clamp((bp.getY(i) + 2) / 80, 0, 1)); bc.setXYZ(i, lerp(bc.getX(i), 0.44, t), lerp(bc.getY(i), 0.41, t), lerp(bc.getZ(i), 0.63, t)); }
+    const m = new T.Mesh(bg, new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.frustumCulled = false; scene.add(m);
   }
   {
     const H = cvYapi(); H.yer(0, 0, 0);
@@ -134,16 +146,18 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   const ayDoku = tuvalDoku(512, 512, (g, w, h) => {
     g.fillStyle = '#bcb8d6'; g.fillRect(0, 0, w, h);
     const leke = (x, y, r) => { for (const ox of [0, -w, w]) for (const oy of [0, -h, h]) { if (x + ox < -r || x + ox > w + r || y + oy < -r || y + oy > h + r) continue; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 7); g.fill(); } };
-    for (let i = 0; i < 44; i++) { g.fillStyle = ['#cdc9e4', '#aeaaca', '#d4d0ea', '#a9a4c8', '#c4bfe0'][i % 5]; g.globalAlpha = 0.24; const x = R() * w, y = R() * h, r = 26 + R() * 54; leke(x, y, r); leke(x + r * 0.5, y + r * 0.3, r * 0.7); }
-    for (let i = 0; i < 46; i++) {   // küçük kraterler: koyu çukur + açık kenar
+    const yum = (x, y, r, c, a) => { const rg = g.createRadialGradient(0, 0, 0, 0, 0, r); rg.addColorStop(0, 'rgba(' + c + ',' + a + ')'); rg.addColorStop(0.6, 'rgba(' + c + ',' + a * 0.5 + ')'); rg.addColorStop(1, 'rgba(' + c + ',0)');
+      for (const ox of [0, -w, w]) for (const oy of [0, -h, h]) { if (x + ox < -r || x + ox > w + r || y + oy < -r || y + oy > h + r) continue; g.save(); g.translate(x + ox, y + oy); g.fillStyle = rg; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill(); g.restore(); } };
+    for (let i = 0; i < 44; i++) { const x = R() * w, y = R() * h, r = 26 + R() * 54; yum(x, y, r * 1.3, ['214,210,236', '168,162,200', '222,216,240', '176,166,206', '206,198,230'][i % 5], 0.42); yum(x + r * 0.5, y + r * 0.3, r * 0.9, i % 2 ? '226,220,242' : '170,164,204', 0.25); }   // geniş, kenarı eriyen gri-lila toz lekeleri
+    for (let i = 0; i < 46; i++) {   // küçük kraterler: kenarı yumuşak, içinde ışığın karşı yanında yumuşak gölge, öbür yanda ışık alan kenar
       const x = R() * w, y = R() * h, r = 4 + R() * 11;
-      g.globalAlpha = 0.5; g.fillStyle = '#e2dff4'; leke(x, y, r * 1.18); g.globalAlpha = 0.55; g.fillStyle = '#9f9ac0'; leke(x, y, r); g.globalAlpha = 0.5; g.fillStyle = '#b7b2d3'; leke(x + r * 0.22, y + r * 0.22, r * 0.72);
+      yum(x + r * 0.25, y + r * 0.25, r * 1.35, '236,233,250', 0.55); yum(x, y, r * 1.05, '150,144,188', 0.5); yum(x - r * 0.3, y - r * 0.3, r * 0.75, '128,120,172', 0.35);
     }
-    for (let i = 0; i < 1500; i++) { g.fillStyle = ['#d8d5ec', '#a09bc0', '#e4e1f5', '#9892ba'][i % 4]; g.globalAlpha = 0.5; g.fillRect(R() * w, R() * h, 1.5 + R() * 1.5, 1.5 + R() * 1.5); }
+    for (let i = 0; i < 1500; i++) { g.fillStyle = ['#d8d5ec', '#a09bc0', '#e4e1f5', '#9892ba'][i % 4]; g.globalAlpha = 0.26; g.fillRect(R() * w, R() * h, 1.5 + R() * 1.5, 1.5 + R() * 1.5); }   // ince toz taneleri: daha soluk, yüzey temiz
     g.globalAlpha = 1;
   }, true); ayDoku.repeat.set(40, 40);
   zemin.material.map = ayDoku; zemin.material.needsUpdate = true;
-  { const p = zemin.geometry.attributes.position, c = zemin.geometry.attributes.color; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.92 + 0.08 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017) + 0.05 * Math.sin(x * 0.05 + y * 0.043); c.setXYZ(i, v * 0.98, v * 0.97, v); } c.needsUpdate = true; }
+  { const p = zemin.geometry.attributes.position, c = zemin.geometry.attributes.color; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.92 + 0.08 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017) + 0.05 * Math.sin(x * 0.05 + y * 0.043); const q = 0.5 + 0.5 * Math.sin(x * 0.0075 + 0.6) * Math.cos(y * 0.0062 - 0.4); c.setXYZ(i, v * lerp(0.95, 1.0, q), v * lerp(0.93, 0.965, q), v * lerp(1.0, 0.955, q)); } c.needsUpdate = true; }   // çok geniş, yumuşak ton dalgası: serin lila toz ↔ ılık gri toz
 
   // ───────── süsler ─────────
   const S = cvYapi(), E = cvYapi(), golge = [], hale = [], astro = [], uzayli = [], krater = [];
@@ -382,7 +396,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     if (l.length) cok(g, mat(0xffffff), l);
   }
   { const g = S.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.2 * clamp(p.getY(i) / 5, 0, 1); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); }   // ton geçişi: dipte biraz koyu, yukarı doğru açık
-    const sm = new T.Mesh(g, cvMalz(0, { side: T.DoubleSide })); sm.frustumCulled = false; scene.add(sm); }
+    const sm = new T.Mesh(g, uzCila(cvMalz(0, { side: T.DoubleSide }), 0.35, 0.2)); sm.frustumCulled = false; scene.add(sm); }   // kristallerde temiz parlama, kubbelerde hafif cila
   const emM = new T.MeshBasicMaterial({ vertexColors: true });   // ışıklar: cvK.z = 1 olan işaret lambaları sırayla yanıp söner, 0,5 olanlar yavaşça nabız atar
   emM.onBeforeCompile = sh => {
     sh.uniforms.cvT = cvZ;
@@ -394,7 +408,9 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
 
   { // yerdeki krater çıkartmaları, renkli ışık havuzları ve temas gölgeleri (her biri tek çizim)
     const g = new T.PlaneGeometry(2, 2); g.rotateX(-Math.PI / 2);
-    const kd = tuvalDoku(128, 128, (c, w, h) => { const r = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(92,84,140,.34)'); r.addColorStop(0.55, 'rgba(92,84,140,.40)'); r.addColorStop(0.7, 'rgba(120,112,165,.30)'); r.addColorStop(0.78, 'rgba(250,248,255,.75)'); r.addColorStop(0.9, 'rgba(250,248,255,.25)'); r.addColorStop(1, 'rgba(250,248,255,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); const q = c.createRadialGradient(w * 0.4, h * 0.4, 0, w * 0.4, h * 0.4, w * 0.32); q.addColorStop(0, 'rgba(60,52,110,.30)'); q.addColorStop(1, 'rgba(60,52,110,0)'); c.fillStyle = q; c.fillRect(0, 0, w, h); });
+    const kd = tuvalDoku(128, 128, (c, w, h) => { const r = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(98,90,146,.24)'); r.addColorStop(0.5, 'rgba(98,90,146,.30)'); r.addColorStop(0.66, 'rgba(126,118,170,.22)'); r.addColorStop(0.77, 'rgba(246,244,255,.5)'); r.addColorStop(0.9, 'rgba(246,244,255,.16)'); r.addColorStop(1, 'rgba(246,244,255,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h);   // yumuşak çanak + eriyen açık kenar
+      const q = c.createRadialGradient(w * 0.4, h * 0.4, 0, w * 0.4, h * 0.4, w * 0.36); q.addColorStop(0, 'rgba(64,56,116,.26)'); q.addColorStop(0.6, 'rgba(64,56,116,.12)'); q.addColorStop(1, 'rgba(64,56,116,0)'); c.fillStyle = q; c.fillRect(0, 0, w, h);   // çanağın bir yanında yumuşak gölge
+      const u = c.createRadialGradient(w * 0.62, h * 0.62, 0, w * 0.62, h * 0.62, w * 0.2); u.addColorStop(0, 'rgba(232,228,250,.2)'); u.addColorStop(1, 'rgba(232,228,250,0)'); c.fillStyle = u; c.fillRect(0, 0, w, h); });   // öbür yanda ışık alan iç yamaç
     const km = cok(g, new T.MeshBasicMaterial({ map: kd, transparent: true, depthWrite: false }), krater); km.renderOrder = 0;
     const hd = tuvalDoku(64, 64, (c, w, h) => { const r = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(255,255,255,.75)'); r.addColorStop(0.35, 'rgba(255,255,255,.42)'); r.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); });
     const hm = cok(g, new T.MeshBasicMaterial({ map: hd, transparent: true, depthWrite: false }), hale); hm.renderOrder = 1;

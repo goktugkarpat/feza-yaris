@@ -16,6 +16,16 @@ const skYK = (() => {   // yuvarlak köşeli, tombul kutu: köşeler yumuşak yu
   for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); v.set(u(v.x), u(v.y), u(v.z)); c.set(clamp(v.x, -0.5 + r, 0.5 - r), clamp(v.y, -0.5 + r, 0.5 - r), clamp(v.z, -0.5 + r, 0.5 - r)); v.sub(c).normalize(); n.setXYZ(i, v.x, v.y, v.z); p.setXYZ(i, c.x + v.x * r, c.y + v.y * r, c.z + v.z * r); }
   return g;
 })();
+function skCila(m, par, kenar) {   // cam şeker cilası: Lambert'e ucuz, sabit yönlü küçük parlama + yumuşak kenar ışıması (ek ışık yok, ek çizim yok)
+  const o = m.onBeforeCompile, ok = m.customProgramCacheKey.call(m);
+  m.onBeforeCompile = (sh, r) => {
+    if (o) o.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec3 cV = normalize(vViewPosition); float cN = clamp(dot(normal, cV), 0.0, 1.0); vec3 cH = normalize(normalize(vec3(-0.35, 0.8, 0.5)) + cV);'
+      + ' float cS = pow(clamp(dot(normal, cH), 0.0, 1.0), 36.0); totalEmissiveRadiance += vec3(cS * ' + par.toFixed(3) + ') + diffuseColor.rgb * pow(1.0 - cN, 2.5) * ' + kenar.toFixed(3) + '; }');
+  };
+  m.customProgramCacheKey = () => ok + '|skCila' + par + '_' + kenar;
+  return m;
+}
 if (cvTema === 'seker') {
   const PEMBE = 0xff9ec7, NANE = 0x9be8c8, KREM = 0xfff0d0, LILA = 0xc9a8ff, MAVI = 0x8fd6ff, SARI = 0xffe27a, KIRMIZI = 0xff5068, CIKO = 0x7a4a2a, KURABIYE = 0xc98646, BEYAZ = 0xffffff, GOFRET = 0xe3aa5c;
   const PASTEL = [PEMBE, NANE, SARI, LILA, MAVI, 0xffb38a], CANLI = [0xff5c8a, 0x45cfa0, 0xffc93a, 0x9a6cff, 0x3fb4ff, 0xff8a3a];
@@ -43,7 +53,7 @@ if (cvTema === 'seker') {
     g.lineCap = 'round';
     for (let i = 0; i < 110; i++) {
       const x = 8 + R() * (w - 16), y = 8 + R() * (h - 16), a = R() * 6.283, l = 2.5 + R() * 2.5;
-      g.globalAlpha = 0.85; g.strokeStyle = ['#ff5c8a', '#3fc6a0', '#ffc02e', '#8f6cff', '#3fa9ff', '#ffffff', '#ff8a3a'][i % 7]; g.lineWidth = 2.6;
+      g.globalAlpha = 0.55; g.strokeStyle = ['#ff5c8a', '#3fc6a0', '#ffc02e', '#8f6cff', '#3fa9ff', '#ffffff', '#ff8a3a'][i % 7]; g.lineWidth = 2.6;
       g.beginPath(); g.moveTo(x - Math.cos(a) * l, y - Math.sin(a) * l); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
     }
     for (let i = 0; i < 90; i++) { g.globalAlpha = 0.6; g.fillStyle = i % 3 ? '#ffffff' : '#ffd0e2'; g.beginPath(); g.arc(3 + R() * (w - 6), 3 + R() * (h - 6), 1 + R() * 1.4, 0, 7); g.fill(); }
@@ -52,8 +62,8 @@ if (cvTema === 'seker') {
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = -p.getY(i) - 70, a = (Math.atan2(z + 78, x) / 6.2832 + 0.5) * 5 + 0.4 * Math.sin(x * 0.013 + z * 0.017), k = Math.floor(a);
       let f = a - k; f = f * f * (3 - 2 * f);
-      const A = RK[((k % 5) + 5) % 5], B = RK[(((k + 1) % 5) + 5) % 5], v = 0.95 + 0.05 * Math.sin(x * 0.05 + z * 0.043);
-      col.setXYZ(i, lerp(A[0], B[0], f) * v, lerp(A[1], B[1], f) * v, lerp(A[2], B[2], f) * v);
+      const A = RK[((k % 5) + 5) % 5], B = RK[(((k + 1) % 5) + 5) % 5], v = 0.955 + 0.03 * Math.sin(x * 0.011 + z * 0.009) + 0.015 * Math.sin(x * 0.031 - z * 0.027), q = 0.72;   // pastel krema: bölge rengi kremaya yumuşakça karışır, geniş ve çok hafif ton dalgası
+      col.setXYZ(i, lerp(1, lerp(A[0], B[0], f), q) * v, lerp(0.985, lerp(A[1], B[1], f), q) * v, lerp(0.955, lerp(A[2], B[2], f), q) * v);
     }
     col.needsUpdate = true;
   }
@@ -309,12 +319,12 @@ if (cvTema === 'seker') {
         if (yakin(x, z) < YARI + 4.4 || !cvBos(x, z, 0.75)) continue; cvYasak.push([x, z, 0.75]);
         const s = 1.25 + R() * 0.4, tur = (b + j + (R() < 0.35 ? 1 : 0)) % 3;
         if (tur === 0) kl.push([x, 0, z, s, s, s, ry, sec([0xffffff, 0xf2d2b0, 0xffe2c2])]);
-        else if (tur === 1) al.push([x, 0, z, s, s, s, ry, sec([0xff4d62, 0x49cf6c, 0xffc233, 0xff8a3a, 0xa96cff])]);
+        else if (tur === 1) al.push([x, 0, z, s, s, s, ry, sec([0xff6a80, 0x6fd894, 0xffc94e, 0xffa064, 0xb48cff])]);   // doygunluk yarışmasın: bir tık pastel
         else ml.push([x, 0, z, s * 1.1, s * 1.1, s * 1.1, ry, sec([0xffffff, 0xffd3e4, 0xfff6d8, 0xd9f0ff])]);
         golge.push([x, 0.012, z, 0.85 * s, 1, 0.7 * s, 0]);
       }
     }
-    if (kl.length) cok(K.geo(), cvMalz(2), kl); if (al.length) cok(A.geo(), cvMalz(2), al); if (ml.length) cok(M.geo(), cvMalz(2), ml);
+    if (kl.length) cok(K.geo(), cvMalz(2), kl); if (al.length) cok(A.geo(), skCila(cvMalz(2), 0.45, 0.25), al); if (ml.length) cok(M.geo(), cvMalz(2), ml);   // jelibon ayıcık: parlak cam şeker
   }
 
   // ───────── yol boyu şekerler: bölgeye göre değişir ─────────
@@ -333,7 +343,7 @@ if (cvTema === 'seker') {
     else { if (r < 0.58) bastonEkle(); else if (r < 0.78) sakiz(x, z); else if (r < 0.9) pamukEkle(); else lolipop(x, z, ry, s); }
   }
   { const g = S.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.2 * clamp(p.getY(i) / 5, 0, 1); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); }   // ton geçişi: dipte biraz koyu, yukarı doğru açık
-    const m = new T.Mesh(g, cvMalz(skSalMod)); m.frustumCulled = false; scene.add(m); }
+    const m = new T.Mesh(g, skCila(cvMalz(skSalMod), 0.22, 0.1)); m.frustumCulled = false; scene.add(m); }
   if (loli.length) {
     skLoliDoku = tuvalDoku(256, 256, (g, w, h) => {
       g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.lineCap = 'round'; g.strokeStyle = '#ff4f93'; g.lineWidth = w / 15;
@@ -351,11 +361,11 @@ if (cvTema === 'seker') {
         .replace('#include <project_vertex>', 'vec4 mvPosition = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\nmvPosition = instanceMatrix * mvPosition;\nfloat skF = instanceMatrix[3].x * 0.37 + instanceMatrix[3].z * 0.41; float skY = instanceMatrix[3].y;\nmvPosition.x += sin(cvT * 1.3 + skF) * skY * 0.035; mvPosition.z += cos(cvT * 1.1 + skF) * skY * 0.02;\n#endif\nmvPosition = modelViewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;');
     };
     lm.customProgramCacheKey = () => 'skLoli';
-    cok(g, lm, loli);
+    cok(g, skCila(lm, 0.55, 0.12), loli);
   }
   if (skJole.length) {   // jöle tepecik: yerel ölçü büyük tutulur ki salınım belirgin olsun (tepede ~%6)
     const J = cvYapi(); J.ekle(cvG.yarim, 0, 0, 0, 20, 17, 20, BEYAZ, 0, 0, 0, 1); J.ekle(cvG.kureK, -7.6, 12.4, 7.6, 4, 2, 2.8, BEYAZ, -0.6, 0, 0.5);
-    cok(J.geo(), cvMalz(1), skJole);
+    cok(J.geo(), skCila(cvMalz(1), 0.5, 0.3), skJole);
   }
   if (pamuk.length) {   // pamuk şeker ağacı: kâğıt külah + kabarık toplar (rüzgârda hafif salınır)
     const B = cvYapi(), skPam = new T.SphereGeometry(1, 8, 6);
@@ -383,7 +393,7 @@ if (cvTema === 'seker') {
     for (let k = 0; k < 4; k++) { const a = k * 1.5708 + 0.785; B.ekle(cvG.kutu, Math.cos(a) * 1.25, -7.4, Math.sin(a) * 1.25, 0.07, 1.9, 0.07, BEYAZ); }
     B.ekle(cvG.govdeK, 0, -9.2, 0, 1.9, 1.9, 1.9, GOFRET, Math.PI); B.ekle(cvG.sil, 0, -8.2, 0, 2.0, 0.24, 2.0, 0xfffaf2);
     [[0.6, 105, 40, 1.1, 0xff9ec7], [2.7, 150, 52, 1.35, 0x9be8c8], [4.6, 125, 46, 1.2, 0xffe27a]].forEach(e => l.push([Math.cos(e[0]) * e[1], e[2], Math.sin(e[0]) * e[1], e[3], e[3], e[3], e[0], e[4]]));
-    skBalon = cok(B.geo(), cvMalz(0), l); skBalon.position.set(0, 0, -78); skBalon.frustumCulled = false;
+    skBalon = cok(B.geo(), skCila(cvMalz(0), 0.22, 0.12), l); skBalon.position.set(0, 0, -78); skBalon.frustumCulled = false;
   }
   // ───────── uzak manzara: kek tepeleri, dondurma külahı dağları, pamuk şeker bulutlar ─────────
   {
@@ -410,7 +420,9 @@ if (cvTema === 'seker') {
     const U = cvYapi(); U.yer(0, -78, 0);
     const skYum = new T.SphereGeometry(1, 14, 6, 0, 6.2832, 0, Math.PI / 2);
     for (let k = 0; k < 30; k++) { const a = k / 30 * 6.2832 + 0.1, rr = 600 + (k % 3) * 18, w = 66 + ((k * 7) % 5) * 15, h = 64 + ((k * 3) % 4) * 16; U.ekle(skYum, Math.cos(a) * rr, -4, Math.sin(a) * rr, w, h, w * 0.8, [0xf0b6de, 0xd0bcf4, 0xf6c0d6][k % 3], 0, -a); }
-    const um = new T.Mesh(U.geo(), new T.MeshBasicMaterial({ vertexColors: true, fog: false })); um.frustumCulled = false; scene.add(um);
+    const ug = U.geo(), up = ug.attributes.position, uc = ug.attributes.color;   // uzak siluet: dibi sise (pembe pus) doğru yumuşakça soluklaşır, tepesi biraz daha tok
+    for (let i = 0; i < up.count; i++) { const t = 0.18 + 0.5 * (1 - clamp((up.getY(i) + 4) / 75, 0, 1)); uc.setXYZ(i, lerp(uc.getX(i), 1, t), lerp(uc.getY(i), 0.766, t), lerp(uc.getZ(i), 0.859, t)); }
+    const um = new T.Mesh(ug, new T.MeshBasicMaterial({ vertexColors: true, fog: false })); um.frustumCulled = false; scene.add(um);
   }
 
   // ───────── temas gölgeleri (tek çizim) ─────────
