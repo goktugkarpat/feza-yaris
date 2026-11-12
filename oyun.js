@@ -8,6 +8,78 @@ const SURUCU = [
   { tur: 'anne', renk: 0x2fc4b2, renk2: 0xfff3e0, taban: 23.2 },
   { tur: 'baba', renk: 0xff9a2e, renk2: 0x39424f, taban: 22.6 }
 ];
+// ───────── garaj: süs kataloğu, sahiplik, seçim, yıldız kavanozu, hediye kutuları (kayıt: localStorage['feza-yaris-garaj-v1']; kapalıysa bellekte) ─────────
+const OY_GARAJ_ANAHTAR = 'feza-yaris-garaj-v1', OY_GARAJ_TURLER = ['renk', 'teker', 'bayrak', 'iz', 'korna'], OY_KAVANOZ = 30;
+const GARAJ = (() => {
+  const katalog = {
+    renk: [{ id: 'varsayilan' }, { id: 'mavi', renk: 0x3f8fe8, renk2: 0xcfe6ff }, { id: 'kirmizi', renk: 0xf2483a, renk2: 0xffd6cf }, { id: 'yesil', renk: 0x49c25a, renk2: 0xd6f5c8 },
+      { id: 'sari', renk: 0xffd23c, renk2: 0xfff4c2 }, { id: 'pembe', renk: 0xff7fb8, renk2: 0xffe0ee }, { id: 'turuncu', renk: 0xff9a2e, renk2: 0xffe3bf },
+      { id: 'turkuaz', renk: 0x2fc4b2, renk2: 0xcff5ee }, { id: 'gokkusagi', renk: 0xff6b8a, renk2: 0x7fd4ff }],
+    teker: [{ id: 'klasik' }, { id: 'yildiz' }, { id: 'cicek' }, { id: 'gokkusagi' }, { id: 'altin' }, { id: 'seker' }],
+    bayrak: [{ id: 'yok' }, { id: 'yildiz' }, { id: 'kalp' }, { id: 'balon' }, { id: 'firildak' }, { id: 'pati' }],
+    iz: [{ id: 'yok' }, { id: 'gokkusagi' }, { id: 'yildiz' }, { id: 'baloncuk' }, { id: 'kalp' }],
+    korna: [{ id: 'dat' }, { id: 'ordek' }, { id: 'tren' }, { id: 'zil' }, { id: 'fil' }]
+  };
+  const ilk = () => ({ sahip: { renk: ['varsayilan', 'mavi'], teker: ['klasik'], bayrak: ['yok'], iz: ['yok'], korna: ['dat'] }, secili: { renk: 'varsayilan', teker: 'klasik', bayrak: 'yok', iz: 'yok', korna: 'dat' }, yildiz: 0, hediye: 0, anlatildi: false });
+  const varMi = (tur, id) => !!katalog[tur] && katalog[tur].some(x => x.id === id);
+  let v = ilk();
+  const kaydet = () => { try { localStorage.setItem(OY_GARAJ_ANAHTAR, JSON.stringify(v)); } catch (e) { /* kayıt kapalı: bellekte sürer */ } };
+  const mod = Q.get('garaj');
+  if (mod === 'sifir') kaydet();
+  else {
+    try {   // bozuk ya da eski kayıt oyunu durdurmaz: yalnız geçerli alanlar alınır
+      const k = JSON.parse(localStorage.getItem(OY_GARAJ_ANAHTAR) || 'null');
+      if (k && typeof k === 'object') {
+        for (const t of OY_GARAJ_TURLER) {
+          if (k.sahip && Array.isArray(k.sahip[t])) for (const id of k.sahip[t]) if (varMi(t, id) && !v.sahip[t].includes(id)) v.sahip[t].push(id);
+          if (k.secili && v.sahip[t].includes(k.secili[t])) v.secili[t] = k.secili[t];
+        }
+        if (k.yildiz > 0) v.yildiz = Math.min(OY_KAVANOZ, Math.floor(k.yildiz)); if (k.hediye > 0) v.hediye = Math.min(24, Math.floor(k.hediye)); v.anlatildi = !!k.anlatildi;
+      }
+    } catch (e) { /* kayıt yok/kapalı */ }
+    if (mod === 'hepsi') for (const t of OY_GARAJ_TURLER) for (const x of katalog[t]) if (!v.sahip[t].includes(x.id)) v.sahip[t].push(x.id);   // yalnız deneme; kaydedilmez (bir süs seçilene kadar)
+  }
+  const secim = Object.assign({}, v.secili);   // hep aynı nesne (çağıran değiştirmesin)
+  const kilitli = () => { let n = 0; for (const t of OY_GARAJ_TURLER) n += katalog[t].length - v.sahip[t].length; return n; };
+  const oran = () => (v.hediye > 0 && v.yildiz === 0 ? 1 : v.yildiz / OY_KAVANOZ);   // dolan kavanoz, kutu açılana kadar dolu görünür
+  const kvn = { oran: 0, yildiz: 0, kapasite: OY_KAVANOZ }, olayK = { once: 0, sonra: 0, hediye: 0, eklenen: 0 };
+  const susle = () => { if (typeof arabaSusle === 'function') { try { arabaSusle(P, secim); } catch (e) { console.error(e); } } };
+  return {
+    katalog, turler: OY_GARAJ_TURLER,
+    sahip(tur, id) { return !!v.sahip[tur] && v.sahip[tur].includes(id); },
+    secili(tur) { return v.secili[tur]; },
+    secim() { for (const t of OY_GARAJ_TURLER) secim[t] = v.secili[t]; return secim; },
+    sec(tur, id) {
+      if (!this.sahip(tur, id)) return false;
+      v.secili[tur] = id; secim[tur] = id; kaydet(); susle();
+      if (tur === 'renk' && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];   // sıralama ekranındaki yüz resmi yeni boyayla yeniden çekilir
+      OLAY.emit('garaj', { tur, id }); return true;
+    },
+    kavanoz() { kvn.oran = oran(); kvn.yildiz = v.yildiz; return kvn; },
+    yildizEkle(n) {   // yarış bitince bir kez: kavanoz dolar; dolan her kavanoz bir hediye kutusu (bir yarışta en çok 2; açılacak süs kalmadıysa kutu çıkmaz)
+      n = Math.max(0, Math.floor(n) || 0);
+      olayK.once = oran(); olayK.hediye = 0; olayK.eklenen = n;
+      v.yildiz += n;
+      while (v.yildiz >= OY_KAVANOZ && olayK.hediye < 2 && kilitli() - v.hediye > 0) { v.yildiz -= OY_KAVANOZ; v.hediye++; olayK.hediye++; }
+      if (v.yildiz >= OY_KAVANOZ) v.yildiz = kilitli() - v.hediye > 0 ? OY_KAVANOZ - 1 : OY_KAVANOZ;
+      olayK.sonra = oran(); kaydet();
+      OLAY.emit('kavanoz', olayK); return olayK;
+    },
+    hediyeBekleyen() { return v.hediye; },
+    hediyeAc() {   // bekleyen kutu varsa kilitli süslerden birini açar (kategoriler sırayla: teker, bayrak, iz, korna, boya …) ve seçili yapar
+      if (v.hediye <= 0) return null;
+      for (let i = 0; i < 9; i++) for (const t of OY_GARAJ_TURLER) {
+        const x = katalog[t][i]; if (!x || v.sahip[t].includes(x.id)) continue;
+        v.hediye--; v.sahip[t].push(x.id); v.secili[t] = x.id; secim[t] = x.id; kaydet(); susle();
+        if (t === 'renk' && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];
+        const sonuc = { tur: t, id: x.id }; OLAY.emit('hediye', sonuc); return sonuc;
+      }
+      v.hediye = 0; kaydet(); return null;
+    },
+    susle,
+    anlatildi(isaretle) { if (isaretle && !v.anlatildi) { v.anlatildi = true; kaydet(); } return v.anlatildi; }
+  };
+})();
 const IZGARA = [[-7, 0], [-1.5, -3.6], [-1.5, 3.6], [-11, -4.1], [-11, 4.1]];   // [yol, yanal]: önde 2, ortada Feza, arkada 2 – üst üste binmez
 const OYV = 23.5;   // Feza'nın düz hızı (m/sn)
 // ───────── araba seçimi (araba.js: ARABA_TIPLERI, araba(renk, renk2, tur, tip), arabaSok; yoksa eski tek model) ─────────
@@ -31,6 +103,7 @@ const oyIlkTip = i => (i ? oyRakipTip(i) : (oyTipler() ? oyArabaId : undefined))
 const A = SURUCU.map((s, i) => Object.assign(araba(s.renk, s.renk2, s.tur, oyIlkTip(i)), s, { tip: oyIlkTip(i), okT: 0, okSon: -1, korYan: 0, korE: 0, bitYan: 0, i, yol: 0, d: 0, v: 0, dv: 0, hop: 0, hopBasY: 0, hopBasEgim: 0, hopBasYatis: 0, rampaY: 0, rampaEgim: 0, rampaYatis: 0, rampaAyak: new Float32Array(4), rampaSon: -1, rampaYolOnce: 0, faz: i * 1.7, bitti: false, sira: i + 1, it: 0, tepki: 0.04 + i * 0.05 }));
 const P = A[0];
 let alev = roketAlevi(P);
+GARAJ.susle();   // Feza'nın arabası her kurulduğunda garajdaki süsler takılır
 function oyModelYenile(a, renk, renk2, tip) {   // nesnenin kimliği aynı kalır; yalnız model alanları (g, govde, teker, golge…) yenilenir
   const yeni = araba(renk, renk2, a.tur, tip);
   if (typeof arabaSok === 'function') arabaSok(a); else { scene.remove(a.g); scene.remove(a.golge); }
@@ -43,7 +116,7 @@ function oyArabaSec(id) {   // yalnız başlıkta: Feza'nın arabasını anında
   const onceki = oyArabaId; oyArabaId = id;
   try {
     oyModelYenile(P, tip.renk !== undefined ? tip.renk : P.renk, tip.renk2 !== undefined ? tip.renk2 : P.renk2, id);
-    alev = roketAlevi(P);
+    alev = roketAlevi(P); GARAJ.susle();
     for (let i = 1; i < A.length; i++) { const rt = oyRakipTip(i); if (rt !== A[i].tip) oyModelYenile(A[i], A[i].renk, A[i].renk2, rt); }
   } catch (e) { console.error(e); oyArabaId = onceki; return false; }
   for (const a of A) arabaYerlestir(a, 0);
@@ -58,6 +131,10 @@ let hedefD = null, parmak = false, sonOvgu = -99, turSesi = -1, ipucu = 0, sonTo
 let oyPid = null, oyBekleyen = null, oyAra = 0, oyElAcik = false, oySonSira = 0, oyBitisAsama = 0, oySure = 0, oySars = 0, oyRoketK = 0, oyBitisSira = 0;
 let oySeriAdet = 0, oySeriSay = 0, oyRoketSay = 0, oyHopSay = 0, oyGosterT = 0, oyTutucu = null;
 let oyMolaCizim = -1, oyTurZum = 0, oyLiderT = -99;
+// sürpriz balon gücü (P.guc hep aynı nesne ya da null), rakip tepkileri, garaj kamerası
+const oyGuc = { tur: '', kalan: 0, sure: 0 }, oySurprizE = { tur: '', sure: 0, x: 0, z: 0 }, oyBittiE = { tur: '' }, oyGectiE = { i: 0 }, OY_GUC_SURE = 4.5;
+let oySurprizAnlat = false, oyGarajAci0 = 0, oyGarajK = 0, oyGarajW = 0, oyGarajH = 0, oyGarajSes = false, oyKavanozTamam = false, oyDevK = 0;
+P.guc = null;
 const oyIlerleme = { tur: 1, oran: 0, toplam: 0, roket: false };   // 'ilerleme' olayı hep aynı nesneyi taşır (yeni nesne yok)
 let oyDolumSon = -1;
 let son = performance.now(), kareOrt = 16.7, yavas = 0, kare = 0;
@@ -68,6 +145,8 @@ const oyUs = (dt, k) => 1 - Math.exp(-dt * k);   // kare hızından bağımsız 
 function elGoster(a) { if (a !== oyElAcik) { oyElAcik = a; HUD.el.classList.toggle('gizli', !a); } }
 function izgarayaDiz() {
   A.forEach((a, i) => { a.yol = IZGARA[i][0]; a.d = IZGARA[i][1]; a.v = 0; a.dv = 0; a.hop = 0; a.hopBasY = 0; a.hopBasEgim = 0; a.hopBasYatis = 0; a.rampaY = 0; a.rampaEgim = 0; a.rampaYatis = 0; a.rampaAyak.fill(0); a.rampaSon = -1; a.rampaYolOnce = a.yol; a.bitti = false; a.it = 0; a.okT = 0; a.okSon = -1; a.korYan = 0; a.bitYan = 0; });
+  for (const a of A) { a.oyOn = a.yol > P.yol; a.oyTepT = -99; }
+  oyGucBitir(); oyKavanozTamam = false;
   siralama();
   yildizDuzenle(0); for (const o of OKLAR) o.tur = -1; for (const o of TUMSEK) o.tur = -1;
   girdiTemizle();
@@ -81,6 +160,33 @@ function izgarayaDiz() {
   OLAY.emit('seri', { adet: 0, hedef: 3, odul: false, toplam: 0 }); ilerlemeGoster(true);
 }
 function gec(d) { durum = d; durumT = 0; if (d === 'sayim') dongu.n = -1; OLAY.emit('durum', d); }
+// ───────── sürpriz gücü ─────────
+function oyGucBitir() { if (!P.guc) return; P.guc = null; oyBittiE.tur = oyGuc.tur; oyGuc.kalan = 0; OLAY.emit('surprizBitti', oyBittiE); }
+function oyGucVer(tur, x, z) {   // balon patladı: ~4,5 sn eğlenceli etki (önceki etki varsa onun yerine geçer)
+  if (SURPRIZ_TURLER.indexOf(tur) < 0 || durum !== 'yaris') return false;
+  oyGucBitir();
+  oyGuc.tur = tur; oyGuc.kalan = oyGuc.sure = OY_GUC_SURE; P.guc = oyGuc;
+  oySurprizE.tur = tur; oySurprizE.sure = OY_GUC_SURE; oySurprizE.x = x === undefined ? P.x : x; oySurprizE.z = z === undefined ? P.z : z;
+  OLAY.emit('surpriz', oySurprizE); return true;
+}
+const oyGucMu = tur => P.guc !== null && P.guc.tur === tur;
+// ───────── garaj: yalnız başlıktan açılır; kamera Feza'nın arabasının çevresinde yakın ve yavaş döner, rakipler gizlenir ─────────
+function oyRakipGoster(g) { for (let i = 1; i < A.length; i++) { A[i].g.visible = g; if (A[i].golge) A[i].golge.visible = g; } }
+function oyGarajAc() {
+  if (durum !== 'baslik') return false;
+  oySecBirak(); $('baslik').classList.add('gizli'); OY_SECIM.classList.add('gizli');
+  P.bitti = false; girdiTemizle(); oyRakipGoster(false);
+  oyGarajAci0 = (oyEkran === 'acilis' ? Math.atan2(camera.position.z - P.z, camera.position.x - P.x) : Math.atan2(P.tz, P.tx) + 0.9) - yT * 0.24;   // kamera bulunduğu açıdan dönmeye başlar
+  if (oyEkran !== 'acilis') oyKamIlk = true;
+  gec('garaj');
+  if (!oyGarajSes && SES.CUMLE && SES.CUMLE.garaj_gir) { oyGarajSes = true; SES.soyle('garaj_gir'); }   // oturumda bir kez
+  return true;
+}
+function oyGarajKapat() {
+  if (durum !== 'garaj') return false;
+  oyRakipGoster(true); gec('baslik'); oyEkranAc(oyEkran === 'pist' || oyEkran === 'araba' ? oyEkran : 'acilis');
+  return true;
+}
 // ───────── ekran akışı: açılış → seçim (pist adımı → araba adımı) → yarış. Durum hepsinde 'baslik'; hangi ekranın açık olduğu oyEkran'da. ─────────
 const OY_SECIM = $('secim');
 let oyEkran = 'acilis', oySec = null;   // oyEkran: 'acilis' | 'pist' | 'araba' | '' (yarış)
@@ -208,13 +314,13 @@ function oySiralamaVer() {
   return oySonSiralama.map((a, i) => ({ kim: a.tur, sira: i + 1, renk: a.renk, renk2: a.renk2, tip: a.tip, oyuncu: a === P, portre: oyPortre[a.tur + '|' + a.tip] || null }));
 }
 function basla() {
-  SES.hazirla(); oySecBirak(true); oyEkran = ''; izgarayaDiz(); molaAyar(false);
+  SES.hazirla(); oySecBirak(true); oyEkran = ''; oyRakipGoster(true); izgarayaDiz(); molaAyar(false);
   $('baslik').classList.add('gizli'); OY_SECIM.classList.add('gizli'); $('sonuc').classList.add('gizli'); HUD.hud.classList.remove('gizli');
   if (ilkYaris) { gec('giris'); SES.soyle(SES.CUMLE && SES.CUMLE['giris_' + PIST_TEMA] ? 'giris_' + PIST_TEMA : 'giris'); } else gec('sayim');
 }
 function oyBaslikDiz() { A[1].yol = A[2].yol = 3; A[3].yol = A[4].yol = -18; }   // seçim ekranında arkadaşlar biraz açılır: Feza'nın arabası rahat görünür
 function basligaDon() {
-  SES.sus(); izgarayaDiz(); oyBaslikDiz(); molaAyar(false);
+  SES.sus(); oyRakipGoster(true); izgarayaDiz(); oyBaslikDiz(); molaAyar(false);
   HUD.hud.classList.add('gizli'); $('sonuc').classList.add('gizli');
   gec('baslik'); oyEkranAc('pist');   // sonuçtan ve ev düğmesinden doğrudan seçim ekranına
 }
@@ -302,8 +408,8 @@ function oyOtoHedef() {
   return h === null ? Math.sin(zaman * 0.6) * 2 : h;
 }
 function oyuncuAdim(dt) {
-  const p = pist(P.yol, o1), kenar = clamp((Math.abs(P.d) - (DMAX - 0.9)) / 0.9, 0, 1);
-  const hedefV = durum === 'bitis' ? 9 : OYV * (1 - 0.09 * kenar * kenar) + (roketT > 0 ? 8.5 : 0);   // kenar bandı: hafif, yumuşak yavaşlama
+  const p = pist(P.yol, o1), kenar = oyGucMu('baloncuk') ? 0 : clamp((Math.abs(P.d) - (DMAX - 0.9)) / 0.9, 0, 1);   // köpük balonunda kenar yavaşlatmaz
+  const hedefV = durum === 'bitis' ? 9 : OYV * (1 - 0.09 * kenar * kenar) + Math.max(roketT > 0 ? 8.5 : 0, P.guc === null || durum !== 'yaris' ? 0 : P.guc.tur === 'gokkusagi' ? 6 : P.guc.tur === 'baloncuk' ? 1.2 : 0);   // gökkuşağı +6, köpük +1,2 m/sn; roketle üst üste binmez (yarış süresi aralıkta kalır)   // kenar bandı: hafif, yumuşak yavaşlama
   P.v += (hedefV - P.v) * oyUs(dt, hedefV > P.v ? 1.6 : 1.0);
   let dv = 0, surdu = false;
   if (durum === 'bitis') dv = clamp((0 - P.d) * 1.2, -4, 4);
@@ -447,10 +553,11 @@ function rakipAdim(a, dt, onde, gecebilir) {
 function carpisma(dt) {   // değme: ışınlanma yok, yumuşak ayrılma; rakip daha çok kenara çekilir
   for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++) {
     const a = A[i], b = A[j], ds = a.yol - b.yol, dd = a.d - b.d, ad = Math.abs(dd);
-    if (Math.abs(ds) < 3.8 && ad < 2.15) {
-      const ort = 2.15 - ad, yon = dd >= 0 ? 1 : -1, m = Math.min(ort, 7 * dt), pa = a === P ? 0.25 : 0.5;
+    const dev = a === P && P.guc !== null && P.guc.tur === 'dev', gen = dev ? 3.3 : 2.15;   // dev araba: rakipler nazikçe yana açılır, Feza yolundan sapmaz
+    if (Math.abs(ds) < (dev ? 5 : 3.8) && ad < gen) {
+      const ort = gen - ad, yon = dd >= 0 ? 1 : -1, m = Math.min(ort, (dev ? 9 : 7) * dt), pa = a === P ? (dev ? 0.05 : 0.25) : 0.5;
       a.d = clamp(a.d + yon * m * pa, -DMAX, DMAX); b.d = clamp(b.d - yon * m * (1 - pa), -DMAX, DMAX);
-      if (ort > 0.45) { const arka = ds < 0 ? a : b, on = ds < 0 ? b : a; if (arka.v > on.v) { arka.v += (on.v - arka.v) * oyUs(dt, 6); if (arka === P) on.v += 5 * dt; } }
+      if (ort > 0.45) { const arka = ds < 0 ? a : b, on = ds < 0 ? b : a; if (dev && arka === P) on.v += 5 * dt; else if (arka.v > on.v) { arka.v += (on.v - arka.v) * oyUs(dt, 6); if (arka === P) on.v += 5 * dt; } }
       if (a === P && durum === 'yaris' && zaman - sonTok > 0.9) { sonTok = zaman; SES.efekt.tok(); OLAY.emit('tok'); }
     }
   }
@@ -474,13 +581,31 @@ function rampaAdim(a, dt) {
   }
 }
 function toplananlar(dt) {
-  const s = ((P.yol % L) + L) % L, tur = Math.max(0, Math.floor(P.yol / L));
+  const s = ((P.yol % L) + L) % L, tur = Math.max(0, Math.floor(P.yol / L)), mik = oyGucMu('miknatis');
   for (const y of YILDIZ) {
     if (!y.var) { if (y.pat > 0) y.pat -= dt; continue; }
     let ds = Math.abs(y.s - s); if (ds > L / 2) ds = L - ds;
-    if (ds < 2.6 && Math.abs(y.d - P.d) < 2.3) { y.var = false; y.pat = 0.3; yildizSay++; HUD.yildiz.textContent = yildizSay; SES.efekt.yildiz(); OLAY.emit('yildiz', y); seriYildiz(); if (yildizSay % 12 === 0) ovgu(); }
+    const dd = y.d - P.d;
+    if ((ds < 2.6 && Math.abs(dd) < 2.3) || (mik && ds < 9 && ds * ds + dd * dd < 81)) {   /* mıknatıs: 9 m içindeki yıldızlar kendiliğinden gelir (seri ve roket ödülü aynen işler) */ y.var = false; y.pat = 0.3; yildizSay++; HUD.yildiz.textContent = yildizSay; SES.efekt.yildiz(); OLAY.emit('yildiz', y); seriYildiz(); if (yildizSay % 12 === 0) ovgu(); }
   }
   for (const o of OKLAR) { const ds = s - o.s; if (o.tur !== tur && ds > 0 && ds < 3.5 && Math.abs(o.d - P.d) < 2.9) { o.tur = tur; roket(1.3); } }
+  for (const b of SURPRIZ) {   // sürpriz balon: içinden geçince patlar (geniş, bağışlayıcı alan)
+    if (!b.var) continue;
+    let ds = s - b.s; if (ds > L / 2) ds -= L; else if (ds < -L / 2) ds += L;
+    if (ds > -2.6 && ds < 3.6 && Math.abs(b.d - P.d) < 2.8) { b.var = false; oyGucVer(b.tur, b.x, b.z); }
+    else if (!oySurprizAnlat && ds < 0 && ds > -50 && zaman > 1.5) {   // ilk balona yaklaşırken bir kez (kayıtlı) anlatılır
+      if (GARAJ.anlatildi()) oySurprizAnlat = true;
+      else if (SES.CUMLE && SES.CUMLE.surpriz) { oySurprizAnlat = true; GARAJ.anlatildi(true); anlat('surpriz'); }
+    }
+  }
+  if (P.guc !== null) { oyGuc.kalan -= dt; if (oyGuc.kalan <= 0) oyGucBitir(); }
+  if (zaman > 2.5) for (let i = 1; i < A.length; i++) {   // geçiş tepkileri: rakip el sallar (aynı rakip için en çok 6 sn'de bir)
+    const a = A[i], f = a.yol - P.yol;
+    if (a.oyOn ? f < -1.2 : f > 1.2) {
+      a.oyOn = !a.oyOn;
+      if (zaman - a.oyTepT >= 6 && Math.abs(f) < 12) { a.oyTepT = zaman; oyGectiE.i = i; OLAY.emit(a.oyOn ? 'gecildi' : 'gecti', oyGectiE); }
+    }
+  } else for (let i = 1; i < A.length; i++) A[i].oyOn = A[i].yol > P.yol;
 }
 function yarisAdim(dt) {
   zaman += dt;
@@ -523,7 +648,8 @@ function bitir() {
   P.bitti = true; const s = Math.min(3, biten + 1); P.sira = s; oyBitisSira = s; oySure = zaman;
   oySonSiralama = A.filter(a => a !== P).sort((x, y) => y.yol - x.yol); oySonSiralama.splice(s - 1, 0, P);   // sıralama ekranı için (bir kez)
   OLAY.emit('ozet', { pist: PIST_TEMA, yildiz: yildizSay, roket: oyRoketSay, ziplama: oyHopSay, seri: oySeriSay, sira: s, sure: +oySure.toFixed(1) });
-  gec('bitis'); OLAY.emit('bitis', s); HUD.hud.classList.add('gizli'); elGoster(false); ilkYaris = false; oyBitisAsama = 0; oyBekleyen = null; birak();
+  oyGucBitir(); gec('bitis'); OLAY.emit('bitis', s); HUD.hud.classList.add('gizli'); elGoster(false); ilkYaris = false; oyBitisAsama = 0; oyBekleyen = null; birak();
+  if (!oyKavanozTamam) { oyKavanozTamam = true; GARAJ.yildizEkle(yildizSay); }   // toplanan yıldızlar kavanoza (yarış başına bir kez)
   const p = pist(P.yol + 6); konfetiAt(p.x, p.z); SES.efekt.bitis();
   $('kupa').className = s === 1 ? '' : s === 2 ? 'iki' : 'uc'; $('sonuc-sira').textContent = s; $('sonuc-yildiz-say').textContent = yildizSay;
 }
@@ -548,10 +674,16 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   if (oySars > 0) oySars -= gdt;
   if (oyTurZum > 0) oyTurZum = Math.max(0, oyTurZum - gdt);
   oyRoketK += ((roketT > 0 && durum === 'yaris' ? 1 : 0) - oyRoketK) * oyUs(gdt, 3.5);
+  oyDevK += ((durum === 'yaris' && P.guc !== null && P.guc.tur === 'dev' ? 1 : 0) - oyDevK) * oyUs(gdt, 3);   // dev araba: kamera biraz geri ve yukarı açılır (yol görünür kalsın)
   if (durum === 'baslik') {
     // Açılış: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır.
     const a = 1.25 + Math.sin(yT * 0.3) * 0.42, r = dik ? 9.2 : 7.6, ri = r * Math.cos(a), ry = Math.min(6.4, r * Math.sin(a));
     kamH.set(P.x + P.tx * ri - P.tz * ry, dik ? 4 : 3.1, P.z + P.tz * ri + P.tx * ry); kamB.set(P.x, dik ? -0.6 : 0.1, P.z); k = 2.5;   // açılış: araba logonun altında, yeşil düğmenin üstünde
+  } else if (durum === 'garaj') {
+    // Garaj: kamera arabanın çevresinde yakın ve yavaş döner; görüntü yukarı kaydırılır (aşağıda), araba ekranın üst-ortasında kalır.
+    const a = oyGarajAci0 + yT * 0.24, r = dik ? 7.6 : 6.1;
+    kamH.set(P.x + Math.cos(a) * r, dik ? 3.3 : 2.6, P.z + Math.sin(a) * r); kamB.set(P.x, 0.85, P.z); k = 3;
+    oyRakipGoster(false);
   } else if (durum === 'bitis') {   // bir kez öne kayan kutlama kamerası; sonra yüzleri gösteren açık kadrajda durur
     const u = clamp((durumT - 1.7) / 2.4, 0, 1), acil = u * u * (3 - 2 * u), r0 = dik ? 13 : 10.8, r1 = dik ? 11.2 : 8.7;
     // Doğrusal koridor, geniş bir yörüngeye çıkmadan sağ yandan geçer; enine uzaklık dar tutulur.
@@ -567,7 +699,7 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   } else {
     tmp.set(P.tx, 0, P.tz); kamF.lerp(tmp, oyUs(gdt, 4.5)).normalize();
     oyGeriEk += ((bekliyor ? 1 : 0) - oyGeriEk) * oyUs(gdt, 1.6);   // dizilişte biraz geriden: arkadaki arabalar da görünsün
-    const geri = (dik ? 13 : 9.6) + oyRoketK * 1.5 + oyGeriEk * 3.4, yuk = (dik ? 7.2 : 4.6) + oyRoketK * 0.3 + oyGeriEk * 1.1, mx = P.x + P.tz * P.d * 0.45, mz = P.z - P.tx * P.d * 0.45;
+    const geri = (dik ? 13 : 9.6) + Math.max(oyRoketK * 1.5, oyDevK * 1.5) + oyGeriEk * 3.4,   /* dev + roket birlikteyken kamera daha da geri gitmez: arkadaki boş koridorun (14 m) içinde kalır */ yuk = (dik ? 7.2 : 4.6) + oyRoketK * 0.3 + oyGeriEk * 1.1 + oyDevK * 1.0, mx = P.x + P.tz * P.d * 0.45, mz = P.z - P.tx * P.d * 0.45;
     kamH.set(mx - kamF.x * geri, yuk, mz - kamF.z * geri);
     if (oySars > 0) kamH.y += Math.sin(yT * 46) * 0.12 * (oySars / 0.26);
     const il = pist(P.yol + 15, oyO2), ib = dik ? 10 : 9;   // virajda hafif öne bakış: yolun ilerisine doğru
@@ -577,6 +709,13 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   }
   if (oyKamIlk) { oyKamIlk = false; camera.position.copy(kamH); oyBak.copy(kamB); }
   camera.position.lerp(kamH, oyUs(gdt, k)); oyBak.lerp(kamB, oyUs(gdt, k * 1.4)); camera.lookAt(oyBak);
+  // Garajda ekranın alt ~%42'si arayüzün: görüntü yumuşakça yukarı kayar (araba üst %58'in ortasına gelir); garajdan çıkınca geri döner.
+  const gk = durum === 'garaj' ? 1 : 0;
+  if (gk || oyGarajK > 0) {
+    const once = oyGarajK; oyGarajK += (gk - oyGarajK) * oyUs(gdt, 5); if (!gk && oyGarajK < 0.004) oyGarajK = 0;
+    if (oyGarajK === 0) { camera.clearViewOffset(); oyGarajW = 0; }
+    else if (Math.abs(oyGarajK - once) > 0.0005 || oyGarajW !== innerWidth || oyGarajH !== innerHeight) { oyGarajW = innerWidth; oyGarajH = innerHeight; camera.setViewOffset(oyGarajW, oyGarajH, 0, Math.round(oyGarajH * 0.2 * oyGarajK), oyGarajW, oyGarajH); }
+  }
   if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * oyUs(gdt, 5); camera.updateProjectionMatrix(); }
 }
 
@@ -631,6 +770,6 @@ else {
 window.YARIS = {
   get durum() { return durum; }, get zaman() { return zaman; }, get mola() { return mola; }, pist: PIST_TEMA, P, A, L, TUR, renderer, scene, camera,
   get kareMs() { return kareOrt; }, get oran() { return oran; }, basla, basligaDon, get ekran() { return oyEkran; }, ekranAc: oyEkranAc, roket: roketDugme, get araba() { return oyArabaId; }, arabaSec: oyArabaSec,
-  surukle(d) { hedefD = d; }, siralama: oySiralamaVer,
-  bilgi() { return { pist: PIST_TEMA, araba: oyArabaId, durum, tur: Math.floor(Math.max(0, P.yol) / L), sira: P.sira, yildiz: yildizSay, seri: oySeriSay, seriAdet: oySeriAdet, roket: oyRoketSay, ziplama: oyHopSay, roketKalan: +roketT.toFixed(2), roketBekle: +roketBekle.toFixed(2), v: +P.v.toFixed(1), d: +P.d.toFixed(2), sure: +(durum === 'bitis' ? oySure : zaman).toFixed(1), el: oyElAcik, mola, cizim: renderer.info.render.calls, ucgen: renderer.info.render.triangles, oran, kareMs: +kareOrt.toFixed(2) }; }
+  surukle(d) { hedefD = d; }, siralama: oySiralamaVer, garaj: GARAJ, garajAc: oyGarajAc, garajKapat: oyGarajKapat, surprizVer: oyGucVer,
+  bilgi() { return { pist: PIST_TEMA, araba: oyArabaId, durum, tur: Math.floor(Math.max(0, P.yol) / L), sira: P.sira, yildiz: yildizSay, seri: oySeriSay, seriAdet: oySeriAdet, roket: oyRoketSay, ziplama: oyHopSay, roketKalan: +roketT.toFixed(2), roketBekle: +roketBekle.toFixed(2), v: +P.v.toFixed(1), d: +P.d.toFixed(2), sure: +(durum === 'bitis' ? oySure : zaman).toFixed(1), el: oyElAcik, mola, guc: P.guc ? P.guc.tur : null, gucKalan: P.guc ? +P.guc.kalan.toFixed(2) : 0, cizim: renderer.info.render.calls, ucgen: renderer.info.render.triangles, oran, kareMs: +kareOrt.toFixed(2) }; }
 };

@@ -77,7 +77,14 @@ const SES = (() => {
     bir2: 'Birinci oldun Feza! Altın kupa senin!',
     iki2: 'İkinci oldun Feza! Harika yarıştın.',
     uc2: 'Üçüncü oldun! Çok güzel yarıştın Feza.',
-    tekrar2: 'Feza, yine yarışalım mı?'
+    tekrar2: 'Feza, yine yarışalım mı?',
+    /*YENI-GARAJ*/   // garaj, yıldız kavanozu, hediye kutusu ve sürpriz balonlar
+    garaj_gir: 'Burası senin garajın! Arabanı istediğin gibi süsle.',
+    garaj_kilit: 'Bu süs hediye kutusunda. Yarışıp yıldız topla, kutu açılsın!',
+    hediye_var: 'Yıldız kavanozun doldu! Hediye kutusuna dokun.',
+    hediye_acildi: 'Yeni bir süs kazandın! Garajda arabana takabilirsin.',
+    surpriz: 'Renkli balonların içinden geç, sürprizi gör!'
+    /*/YENI-GARAJ*/
   };
   // Aynı anahtar istenince havuzdan, son çalınanlardan farklı biri seçilir (bıktırmasın).
   const CESIT = {
@@ -124,7 +131,8 @@ const SES = (() => {
       baslik: { bpm: 96, sakin: true, tr: 0, guc: 0.6 * (1 + (z - 1) * 0.5), tema },
       sonuc: { bpm: 100, sakin: true, tr: 0, guc: 0.5 * (1 + (z - 1) * 0.5), tema },
       yaris: { bpm: b, tr: 0, guc: 0.56 * z, tema },   // müzik anlatımın altında kalsın
-      son: { bpm: b + 12, tr: 2, guc: 0.6 * z, son: true, tema }
+      son: { bpm: b + 12, tr: 2, guc: 0.6 * z, son: true, tema },
+      garaj: { bpm: 106, sakin: true, tr: -5, guc: 0.56 * (1 + (z - 1) * 0.5), tema, atolye: true }   // garaj: başlık müziğinin sakin, neşeli "atölye" çeşitlemesi
     };
   };
   const MOD = sesModlar(sesTema);
@@ -261,7 +269,13 @@ const SES = (() => {
       if (!(s & 1)) ton(g, g.muzik, t, mf(ak[1][[0, 1, 2, 1][(s >> 1) & 3]] + 12 + tr), 2 * sd, { tip: 'triangle', guc: 0.04 });
       if (s === 0 || s === 8) ton(g, g.muzik, t, mf(ak[0] + (s ? 7 : 0) + tr), 6 * sd, { tip: 'triangle', guc: 0.13, tut: 0.5, at: 0.015 });
       if (s === 4 || s === 12) zil(g, t, 0.022);
-      const tm = m.tema;                                                    // sakin kiplerde de pistin küçük imzası
+      if (m.atolye) {                                                       // atölye: tahta tık-tak, ara sıra minik çekiç "tın"ı ve cırcır anahtar
+        if (s === 2 || s === 10) ton(g, g.muzik, t, s === 2 ? 820 : 640, .035, { guc: .05, at: .002 });
+        if (s === 6 || s === 14) ton(g, g.muzik, t, 1040, .03, { guc: .035, at: .002 });
+        if ((olcu & 1) && s === 12) { ton(g, g.yanki, t, mf(ak[1][2] + 24 + tr), .35, { guc: .03, at: .002 }); ton(g, g.muzik, t, mf(ak[1][2] + 24 + tr), .25, { guc: .02, at: .002 }); }
+        if ((olcu & 3) === 3 && s >= 12) his(g, g.muzik, t, .025, { tip: 'bandpass', f: 3000 + (s - 12) * 260, q: 4, guc: .03 });
+      }
+      const tm = m.tema;                                                   // sakin kiplerde de pistin küçük imzası
       if (tm === 'gokkusagi') { const ar = [0, 1, 2, 3, 4, 5, 4, 3, 2, 3, 4, 5, 4, 3, 2, 1][s]; ton(g, g.muzik, t, mf(ak[1][ar % 3] + 12 * (ar / 3 | 0) + 12 + tr), .2, { tip: 'triangle', guc: .05, at: .003 }); }
       else if (tm === 'kar') { if (!(s & 3)) his(g, g.muzik, t, .06, { tip: 'bandpass', f: 7400, q: 4, guc: .022 }); }
       else if (tm === 'kiyi') { if (s === 3 || s === 6 || s === 11 || s === 14) { const f = (s === 6 || s === 14) ? 392 : 294; ton(g, g.muzik, t, f, .08, { f2: f * .82, kay: .06, guc: .05, at: .003 }); } }
@@ -490,10 +504,76 @@ const SES = (() => {
     },
     kart(g, t) { ton(g, g.efekt, t, 660, .05, { guc: .13 }); ton(g, g.efekt, t + .045, 990, .07, { guc: .1 }); },   // pist kartı: iki sesli düğme tıkı
     gecis(g, t) { [79, 84].forEach((n, i) => ton(g, g.can, t + i * .085, mf(n), .19, { guc: .075 })); },
-    tik(g, t) { ton(g, g.efekt, t, 700, 0.06, { f2: 1050, kay: 0.04, guc: 0.11, at: 0.003 }); ton(g, g.efekt, t, 330, 0.05, { tip: 'triangle', guc: 0.06, at: 0.002 }); }   // düğme: yumuşak "pıt"
+    tik(g, t) { ton(g, g.efekt, t, 700, 0.06, { f2: 1050, kay: 0.04, guc: 0.11, at: 0.003 }); ton(g, g.efekt, t, 330, 0.05, { tip: 'triangle', guc: 0.06, at: 0.002 }); },   // düğme: yumuşak "pıt"
+    /*SES-GARAJ*/   // ---- garaj ve sürprizler ----
+    balon(g, t, tur) {                                                      // sürpriz balon: yumuşak "pat" + türe özgü kısa ezgi
+      his(g, g.efekt, t, .05, { tip: 'bandpass', f: 1500, f2: 500, q: .9, guc: .15, at: .002 }); ton(g, g.efekt, t, 430, .06, { f2: 150, kay: .05, guc: .15, at: .002 });
+      const b = t + .08;
+      if (tur === 'dev') { [60, 55, 48].forEach((a, i) => { ton(g, g.efekt, b + i * .1, mf(a), i === 2 ? .3 : .12, { tip: 'triangle', guc: .1, tut: .7, at: .01 }); ton(g, g.efekt, b + i * .1, mf(a + 12), .1, { guc: .035 }); }); ton(g, g.efekt, b + .2, 110, .2, { f2: 48, kay: .12, guc: .1 }); }   // büyüyen: inen kalın adımlar
+      else if (tur === 'baloncuk') [520, 660, 830, 1050].forEach((f, i) => ton(g, g.can, b + i * .075, f, .07, { f2: f * 1.7, kay: .06, guc: .09, at: .004 }));   // köpük: yükselen "blup"lar
+      else if (tur === 'miknatis') { ton(g, g.efekt, b, 260, .26, { f2: 620, kay: .24, guc: .09, tut: .8, at: .03 }); ton(g, g.efekt, b, 263, .26, { tip: 'triangle', f2: 626, kay: .24, guc: .05, tut: .8, at: .03 }); [91, 96].forEach((a, i) => ton(g, g.can, b + .26 + i * .08, mf(a), .2, { guc: .07 })); }   // çeken "vuup" + iki çın
+      else [84, 88, 91, 96, 100].forEach((a, i) => { ton(g, g.can, b + i * .06, mf(a), i === 4 ? .32 : .15, { tip: 'triangle', guc: .085 }); ton(g, g.can, b + i * .06, mf(a + 12), .1, { guc: .025 }); });   // gökkuşağı: yükselen pırıltı
+    },
+    guc(g, t, tur, n) {                                                     // güç boyunca hafif süren tını: bir adım (aralık sesGUC_ARA)
+      if (tur === 'dev') { ton(g, g.efekt, t, 98, .13, { f2: 50, kay: .09, guc: n & 1 ? .08 : .1 }); his(g, g.efekt, t, .05, { tip: 'lowpass', f: 320, guc: .03 }); }   // tok adım
+      else if (tur === 'baloncuk') { const f = [700, 930, 790, 1050][n & 3]; ton(g, g.can, t, f, .06, { f2: f * 1.6, kay: .05, guc: .04, at: .004 }); }   // su damlası
+      else if (tur === 'miknatis') { ton(g, g.efekt, t, 196, .34, { f2: 233, kay: .3, guc: .028, tut: .9, at: .08 }); ton(g, g.efekt, t, 294, .34, { tip: 'triangle', f2: 349, kay: .3, guc: .014, tut: .9, at: .08 }); }   // vınlama
+      else ton(g, g.can, t, mf([96, 100, 103, 108, 103, 100][n % 6]), .13, { guc: .03, at: .003 });   // gökkuşağı pırıltısı
+    },
+    gucBitti(g, t, tur) {                                                   // güç bitti: yumuşak, kısa iniş
+      if (tur === 'dev') ton(g, g.efekt, t, 300, .2, { tip: 'triangle', f2: 150, kay: .18, guc: .07, tut: .7, at: .02 });
+      else if (tur === 'baloncuk') { his(g, g.efekt, t, .04, { tip: 'bandpass', f: 2400, q: 1.2, guc: .06, at: .002 }); ton(g, g.can, t, 900, .06, { f2: 500, kay: .05, guc: .05, at: .003 }); }   // köpük "pıt"
+      else if (tur === 'miknatis') ton(g, g.efekt, t, 233, .2, { f2: 147, kay: .18, guc: .045, tut: .8, at: .03 });
+      else [96, 91, 88].forEach((a, i) => ton(g, g.can, t + i * .07, mf(a), .14, { guc: .04 }));
+    },
+    korna(g, t, id, z) {                                                    // Feza'nın kornaları: sevimli ve kısa (< 0,9 sn); z = düzey çarpanı
+      z = z || 1;
+      const suzgec = (f, q) => { const s = g.ctx.createBiquadFilter(); s.type = 'bandpass'; s.frequency.value = f; s.Q.value = q; s.connect(g.efekt); return s; };
+      const birak = (os, s) => os.addEventListener('ended', () => s.disconnect());
+      if (id === 'ordek') {                                                 // "vak vak": genizden, aşağı kayan iki kısa ses
+        const s = suzgec(1500, 2.2); let son;
+        [0, .2].forEach(d => { son = ton(g, s, t + d, 640, .1, { tip: 'sawtooth', f2: 370, kay: .1, guc: .3 * z, tut: .9, at: .008 }); ton(g, g.efekt, t + d, 320, .1, { tip: 'triangle', f2: 185, kay: .1, guc: .05 * z, tut: .9, at: .008 }); });
+        birak(son, s);
+      } else if (id === 'tren') {                                           // "çuf çuf" + iki sesli düdük
+        [0, .15].forEach(d => his(g, g.efekt, t + d, .07, { tip: 'bandpass', f: 1000, f2: 700, q: .8, guc: .13 * z, at: .012 }));
+        [659.3, 784].forEach(f => { ton(g, g.efekt, t + .32, f, .3, { tip: 'triangle', guc: .075 * z, tut: .9, at: .03 }); ton(g, g.efekt, t + .32, f * 1.004, .3, { guc: .04 * z, tut: .9, at: .04 }); });
+        his(g, g.efekt, t + .32, .2, { tip: 'bandpass', f: 2400, q: 1, guc: .012 * z, at: .03 });
+      } else if (id === 'zil') {                                            // bisiklet zili: "çın çın"
+        [0, .2].forEach(d => { ton(g, g.efekt, t + d, 2637, .3, { guc: .11 * z, at: .002 }); ton(g, g.efekt, t + d, 3951, .14, { guc: .03 * z, at: .002 }); ton(g, g.efekt, t + d, 1318.5, .1, { tip: 'triangle', guc: .03 * z, at: .002 }); });
+      } else if (id === 'fil') {                                            // minik fil "trompeti": yükselip hafifçe inen nefesli ses
+        const s = suzgec(1250, 1.4);
+        const o = ton(g, s, t, 330, .5, { tip: 'sawtooth', f2: 640, kay: .15, guc: .2 * z, tut: .85, at: .03 }); o.frequency.exponentialRampToValueAtTime(590, t + .34); o.frequency.exponentialRampToValueAtTime(440, t + .55);
+        const u = ton(g, g.efekt, t, 330, .5, { tip: 'triangle', f2: 640, kay: .15, guc: .05 * z, tut: .85, at: .03 }); u.frequency.exponentialRampToValueAtTime(590, t + .34); u.frequency.exponentialRampToValueAtTime(440, t + .55);
+        birak(o, s);
+      } else [[0, .08], [.14, .17]].forEach(n => [392, 494].forEach(f => { ton(g, g.efekt, t + n[0], f, n[1], { tip: 'triangle', guc: .1 * z, tut: .9, at: .012 }); ton(g, g.efekt, t + n[0], f, n[1], { tip: 'square', guc: .016 * z, tut: .9, at: .015 }); }));   // "dat dat": oyuncak korna
+    },
+    rakipKorna(g, t) { [330, 415].forEach(f => ton(g, g.efekt, t, f, .1, { tip: 'triangle', guc: .045, tut: .9, at: .012 })); },   // rakip geçerken: kısık, kısa selam
+    kavanoz(g, t, k) {                                                      // yıldız kavanoza düştü: cam "tık-çın"; k arttıkça perde yükselir
+      const f = mf([84, 86, 88, 91, 93, 96, 98, 100][(k || 0) & 7]);
+      ton(g, g.efekt, t, f, .16, { guc: .1, at: .002 }); ton(g, g.efekt, t, f * 2.76, .05, { guc: .018, at: .002 });
+      his(g, g.efekt, t, .015, { tip: 'bandpass', f: 5200, q: 2, guc: .04, at: .001 });
+    },
+    hediye(g, t) {                                                          // hediye kutusu açıldı: kısa, parlak fanfar (~1,2 sn)
+      his(g, g.efekt, t, .06, { tip: 'bandpass', f: 1300, f2: 600, q: .9, guc: .1, at: .002 }); ton(g, g.efekt, t, 380, .07, { f2: 160, kay: .05, guc: .1, at: .002 });   // kapak "pat"
+      [72, 76, 79, 84].forEach((a, i) => { ton(g, g.can, t + .07 + i * .075, mf(a), .14, { tip: 'triangle', guc: .11 }); ton(g, g.can, t + .07 + i * .075, mf(a + 12), .1, { guc: .03 }); });
+      [84, 88, 91].forEach(a => ton(g, g.can, t + .4, mf(a), .5, { tip: 'triangle', guc: .075, tut: .7, at: .01 }));
+      ton(g, g.efekt, t + .4, mf(48), .45, { tip: 'triangle', guc: .08, tut: .6 }); ton(g, g.efekt, t + .4, 140, .16, { f2: 55, kay: .09, guc: .1 });
+      [96, 100, 103, 108].forEach((a, i) => ton(g, g.can, t + .5 + i * .085, mf(a), .26, { guc: .04 }));
+      his(g, g.efekt, t + .4, .5, { f: 5600, guc: .025 });
+    },
+    sus(g, t, tur) {                                                        // garajda süs takıldı: türe göre küçük, neşeli ses
+      if (tur === 'renk') { his(g, g.efekt, t, .2, { tip: 'bandpass', f: 900, f2: 3200, q: 1.1, guc: .09, at: .06 }); [88, 93].forEach((a, i) => ton(g, g.can, t + .14 + i * .08, mf(a), .2, { guc: .08 })); }   // fırça "fış" + iki çın
+      else if (tur === 'teker') { [0, .05, .1].forEach((d, i) => ton(g, g.efekt, t + d, 900 + i * 160, .025, { guc: .07, at: .002 })); ton(g, g.can, t + .17, mf(91), .25, { tip: 'triangle', guc: .09 }); }   // cırcır anahtar + tın
+      else if (tur === 'bayrak') { his(g, g.efekt, t, .16, { tip: 'bandpass', f: 600, f2: 1500, q: .8, guc: .07, at: .05 }); [91, 96].forEach((a, i) => ton(g, g.can, t + .1 + i * .07, mf(a), .22, { guc: .075 })); }   // dalgalanma + çın
+      else if (tur === 'iz') [96, 100, 103, 108, 112].forEach((a, i) => ton(g, g.can, t + i * .05, mf(a), .2, { guc: .05, at: .002 }));   // pırıltı
+      else [84, 88, 91].forEach((a, i) => ton(g, g.can, t + i * .06, mf(a), i === 2 ? .28 : .14, { tip: 'triangle', guc: .1 }));
+    }
+    /*/SES-GARAJ*/
   };
+  const sesGUC_ARA = { dev: .44, baloncuk: .37, gokkusagi: .25, miknatis: .46 };
 
   // ---------- Canlı çalma ----------
+  let sesGuc = null, sesKornaT = -9, sesRakipT = -9, sesHediyeT = -9, sesSusT = -9, sesKavanozT = -9, sesKavanozK = 0, sesKavanozZ = 0, sesSira = null;
   let mod = null, bekleyen = null, adimNo = 0, sonraki = 0, kisik = false, sonDurum = 'baslik', sonucZ = 0, roketSon = -1, yildizK = 0, yildizT = -9, oncekiSira = 0, gecisT = -9, liderT = -9, rakipInisT = -9;
   const canli = () => !!(ac && ac.state === 'running');
   function muzikMod(ad) {
@@ -513,6 +593,11 @@ const SES = (() => {
   function zamanla() {                                                      // ileriye dönük planlayıcı (50 ms'de bir, 0,22 sn ileri)
     if (!canli()) return;
     kisAyar();
+    if (sesGuc) {                                                           // etkin sürprizin süren tınısı (bitince ya da yarış dışında kendiliğinden susar)
+      const t = ac.currentTime, ara = sesGUC_ARA[sesGuc.tur] || .3;
+      if (sonDurum !== 'yaris' || t > sesGuc.son) sesGuc = null;
+      else { if (sesGuc.an < t) sesGuc.an = t + .03; while (sesGuc.an < t + .22 && sesGuc.an < sesGuc.son) { E.guc(G, sesGuc.an, sesGuc.tur, sesGuc.n++); sesGuc.an += ara; } }
+    }
     if (!mod) return;
     const t = ac.currentTime;
     if (sonraki < t - 0.05) sonraki = t + 0.05;
@@ -527,7 +612,9 @@ const SES = (() => {
     if (d === 'baslik' || d === 'giris' || d === 'sayim') sus();
     if (d === 'baslik') hava(null);                                          // seçim ekranında hava sesi yok
     if (d === 'giris' || d === 'sayim') { yildizK = 0; yildizT = -9; oncekiSira = 0; gecisT = -9; liderT = -9; roketSon = -1; }
-    if (d === 'baslik' || d === 'giris') muzikMod('baslik');
+    if (d !== 'yaris') sesGuc = null;
+    if (d === 'garaj') muzikMod('garaj');
+    else if (d === 'baslik' || d === 'giris') muzikMod('baslik');
     else if (d === 'yaris') muzikMod('yaris');
     else { muzikMod(null); if (d === 'bitis') sonucZ = setTimeout(() => { if (sonDurum === 'bitis') muzikMod('sonuc'); }, 3300); }
   }
@@ -552,6 +639,7 @@ const SES = (() => {
     if (!oynatici) {
       for (const k in CUMLE) kayit[k] = 'sesler/' + k + '.mp3';
       sesKaynak = kayit.giris; oynatici = new Audio(sesKaynak); oynatici.preload = 'auto';
+      oynatici.addEventListener('ended', () => { const k = sesSira; sesSira = null; if (k) soyle(k); });   // sırada bekleyen cümle
     }
     if (ac) return;
     try {
@@ -578,6 +666,30 @@ const SES = (() => {
           if (oncekiSira && n < oncekiSira && canli() && ac.currentTime - gecisT > 4) { E.gecis(G, ac.currentTime + .012); gecisT = ac.currentTime; }
           oncekiSira = n;
         });
+        // ---- garaj ve sürprizler (olay hiç gelmese de sorun olmaz) ----
+        OLAY.on('surpriz', o => {
+          if (!canli() || !o) return; const t = ac.currentTime, sure = o.sure > 0 ? o.sure : 4.5;
+          E.balon(G, t + .012, o.tur); sesGuc = { tur: o.tur, an: t + .62, son: t + sure - .25, n: 0 };
+        });
+        OLAY.on('surprizBitti', o => { const vardi = sesGuc; sesGuc = null; if (canli() && vardi && sonDurum === 'yaris') E.gucBitti(G, ac.currentTime + .012, (o && o.tur) || vardi.tur); });
+        OLAY.on('gecti', () => {                                              // Feza bir rakibi geçti: Feza'nın seçili kornası
+          if (!canli() || sonDurum !== 'yaris' || ac.currentTime - sesKornaT < 1.5) return;
+          let id = 'dat'; try { if (typeof GARAJ !== 'undefined') id = GARAJ.secili('korna') || 'dat'; } catch (_) {}
+          sesKornaT = gecisT = ac.currentTime; E.korna(G, sesKornaT + .05, id);
+        });
+        OLAY.on('gecildi', () => { if (canli() && sonDurum === 'yaris' && ac.currentTime - sesRakipT > 2 && ac.currentTime - sesKornaT > .9) { sesRakipT = ac.currentTime; E.rakipKorna(G, sesRakipT + .05); } });
+        OLAY.on('garaj', o => { if (o) { if (o.tur === 'korna') efekt.korna(o.id); else efekt.sus(o.tur); } });
+        OLAY.on('hediye', () => efekt.hediye());
+        OLAY.on('kavanoz', o => {                                             // arayüz yıldız başına SES.efekt.kavanoz() çağırmazsa: sonuç ekranı gelince kısa bir dolma sesi
+          if (!o || !(o.sonra > o.once || o.hediye)) return;
+          const isaret = sesKavanozT; clearTimeout(sesKavanozZ);
+          sesKavanozZ = setTimeout(() => {
+            if (!canli() || sesKavanozT !== isaret || sonDurum !== 'bitis') return;
+            const t = ac.currentTime, n = 3 + Math.round(4 * Math.max(0, Math.min(1, o.hediye ? 1 : o.sonra - o.once)));
+            for (let i = 0; i < n; i++) E.kavanoz(G, t + .02 + i * .1, i);
+            sesKavanozT = t;
+          }, 3600);
+        });
       }
       muzikMod('baslik');
       document.addEventListener('visibilitychange', () => {
@@ -590,6 +702,7 @@ const SES = (() => {
   // iPad: ses ilk dokunuşta açılır; sonradan kesilirse (arama, kilit) bir sonraki dokunuşta geri gelir
   if (!sessiz) for (const ad of ['pointerup', 'touchend', 'click', 'keydown']) addEventListener(ad, () => { if (!ac) hazirla(); else uyandir(); }, true);
 
+  const sesSIRALI = { garaj_gir: 1, hediye_var: 1, hediye_acildi: 1, surpriz: 1 };
   const sonCesit = {};
   function cesit(k) {                                                       // havuzdan son çalınandan farklı bir cümle
     const ad = /^ovgu\d$/.test(k) ? 'ovgu' : k, h = CESIT[ad];
@@ -603,6 +716,11 @@ const SES = (() => {
     if (sessiz) return;
     k = cesit(k);
     if (!kayit[k]) return;
+    // Garaj/hediye/sürpriz cümleleri konuşan cümleyi kesmez: sıraya girer (tek yer), önceki bitince söylenir.
+    const suren = konusuyor() || !!devamKayit;
+    if (k === 'garaj_kilit' && suren && sesKaynak === kayit[k]) return;       // kilitli kutuya art arda dokunma: cümle baştan başlamasın
+    if (sesSIRALI[k] && suren && !(k === 'hediye_acildi' && sesKaynak === kayit.hediye_var)) { sesSira = k; return; }
+    sesSira = null;
     devamKayit = null;
     try {
       if (simdi) simdi.pause();
@@ -624,7 +742,7 @@ const SES = (() => {
     if (kayit[k]) soyle(k);
   }
   function konusuyor() { return !!(simdi && !simdi.paused && !simdi.ended); }
-  function sus() { devamKayit = null; if (simdi) { try { simdi.pause(); } catch (e) { /* yok */ } } kisAyar(); }
+  function sus() { devamKayit = null; sesSira = null; if (simdi) { try { simdi.pause(); } catch (e) { /* yok */ } } kisAyar(); }
   const cal = ad => function () { if (canli()) E[ad](G, ac.currentTime + 0.012); };
   const efekt = {
     yildiz() {                                                              // art arda toplandıkça perde yükselir
@@ -632,6 +750,18 @@ const SES = (() => {
       const t = ac.currentTime; yildizK = t - yildizT < 1.8 ? Math.min(5, yildizK + 1) : 0; yildizT = t;
       E.yildiz(G, t + 0.012, yildizK);
     },
+    balon(tur) { if (canli()) E.balon(G, ac.currentTime + .012, tur); },
+    korna(id) {                                                             // id verilmezse Feza'nın seçili kornası
+      if (!canli()) return; const t = ac.currentTime; if (t - sesKornaT < .25) return;
+      if (!id) { id = 'dat'; try { if (typeof GARAJ !== 'undefined') id = GARAJ.secili('korna') || 'dat'; } catch (_) {} }
+      sesKornaT = t; E.korna(G, t + .012, id);
+    },
+    kavanoz() {                                                             // art arda düşen yıldızlarda perde yükselir
+      if (!canli()) return; const t = ac.currentTime; if (t - sesKavanozT < .04) return;
+      sesKavanozK = t - sesKavanozT < 1.2 ? sesKavanozK + 1 : 0; sesKavanozT = t; E.kavanoz(G, t + .012, sesKavanozK);
+    },
+    hediye() { if (!canli()) return; const t = ac.currentTime; if (t - sesHediyeT < .6) return; sesHediyeT = t; E.hediye(G, t + .012); },
+    sus(tur) { if (!canli()) return; const t = ac.currentTime; if (t - sesSusT < .15 || t - sesHediyeT < 1.3) return; sesSusT = t; E.sus(G, t + .012, tur); },   // hediye fanfarının üstüne binmez
     roket: cal('roket'), hop: cal('hop'), tok: cal('tok'), bip: cal('bip'), git: cal('git'), tur: cal('tur'), bitis: cal('bitis'), tik: cal('tik'), secim: cal('secim'), kart: cal('kart')
   };
   function motorAyar(hiz, acik) {
@@ -668,5 +798,5 @@ const SES = (() => {
     if (ac) { if (d) { const p = ac.suspend(); if (p && p.catch) p.catch(() => {}); } else uyandir(); }
     if (d) anlatimBeklet(); else anlatimSurdur();
   }
-  return { hazirla, soyle, sus, konusuyor, efekt, motorAyar, durdur, hava, sessiz, CUMLE, _ic: { kur, adim, E, HAVA, MOD, ADIM, MEL, DIZI, NOTA, SES_B, SES_BPM, SES_Z, SES_TEMALAR, sesModlar, tema: sesTema } };
+  return { hazirla, soyle, sus, konusuyor, efekt, motorAyar, durdur, hava, sessiz, CUMLE, _ic: { kur, adim, E, HAVA, MOD, ADIM, MEL, DIZI, NOTA, SES_B, SES_BPM, SES_Z, SES_TEMALAR, sesModlar, tema: sesTema, sesGUC_ARA } };
 })();

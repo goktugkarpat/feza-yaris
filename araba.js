@@ -1016,23 +1016,12 @@ function araba(renk, renk2, tur, tip) {   // öne +Z; tip: ARABA_TIPLERI içinde
   for (const z of [-1, 1]) for (const x of [-1, 1]) {
     const r = z < 0 ? tkr.ra : tkr.ro, s = r / 0.46, en = z < 0 ? tkr.ena : tkr.eno, of = Math.max(0, 0.16 * s * en - 0.26), d = new T.Group(), t = new T.Group(), ty = arYapi();
     d.position.set(x * 0.97, r, z * 1.05); g.add(d); d.add(t); t.userData.r = r;
-    arKat(ty, arLastik, AR_KOYU, 0, 0, 0, s, s, s * en, 0, Math.PI / 2);
-    arKat(ty, arSil, tkr.jant || 0xeef1f6, 0, 0, 0, 0.21 * s, 0.4 + of * 2, 0.21 * s, 0, 0, Math.PI / 2);
-    arKat(ty, arM, renk2 === 0xffffff ? renk : renk2, x * (0.2 + of), 0, 0, 0.06, 0.115 * s, 0.115 * s);
-    arKat(ty, arM, 0x3a404c, x * (0.252 + of), 0, 0, 0.02, 0.04 * s, 0.04 * s);                    // göbek somunu
-    for (let q = 0; q < 5; q++) { const an = q * Math.PI * 2 / 5; arKat(ty, G.kutu, 0xdfe5ee, x * (0.203 + of), Math.cos(an) * 0.115 * s, Math.sin(an) * 0.115 * s, 0.022, 0.19 * s, 0.075 * s, an); }   // beş kollu jant
-    arKat(ty, arJantHalka, renk2 === 0xffffff ? renk : renk2, x * 0.155 * s * en, 0, 0, 0.3 * s, 0.3 * s, 0.3 * s, 0, Math.PI / 2);   // lastik yanağında renkli çizgi
-    arKat(ty, arJantHalka, 0xf0e9db, x * (0.223 + of), 0, 0, 0.235 * s, 0.235 * s, 0.235 * s, 0, Math.PI / 2);
-    // Seyrek kabartma dişler: ayrı cisim/çizim olmadan lastiğin dönüşünü okunur kılar.
-    for (let q = 0; q < 8; q++) {
-      const an = q * Math.PI * 2 / 8;
-      arKat(ty, G.kutu, arazi ? 0x414954 : 0x363c47, 0, Math.cos(an) * (r - 0.024), Math.sin(an) * (r - 0.024), (arazi ? 0.34 : 0.24) * Math.max(0.8, en / 1.5), 0.05, 0.14, an);   // lastiğin yanından köşe gibi taşmaz
-    }
+    arTekerKur(ty, tkr, z, x, renk, renk2, arazi, 'klasik');
     arBitir(ty, t, arBoya); teker.push(t); if (z > 0) on.push(d);   // lastik mat, jant parlak (parıltı renk açıklığına göre)
   }
   const golge = new T.Mesh(new T.PlaneGeometry(3.4, 4.6), golgeMat.clone()); golge.rotation.x = -Math.PI / 2; golge.position.y = 0.07; golge.renderOrder = 2; scene.add(golge);
   scene.add(g);
-  return { g, govde, teker, golge, arTip: tip, arEk: ek, arYuk: yuk, arYayK: tkr.yay || 1, arOn: on, arKol: kol, arKafa: kf, arGoz: kf.userData.gozMesh, arSallan: kf.userData.sallan, arDireksiyon: direksiyon, arAlev: null,
+  return { g, govde, teker, golge, arSus: null, arGuc: null, arTur: tur, arRenk: renk, arRenk2: renk2, arArazi: arazi, arTip: tip, arEk: ek, arYuk: yuk, arYayK: tkr.yay || 1, arOn: on, arKol: kol, arKafa: kf, arGoz: kf.userData.gozMesh, arSallan: kf.userData.sallan, arDireksiyon: direksiyon, arAlev: null,
     ar: { t: 0, v0: 0, ivme: 0, don: 0, egx: 0, egz: 0, sev: 0, sal: 0, bak: 0, yay: 0, ayak: new Float32Array(4), havada: false, inis: 9, sek: 9, tok: 9, mer: 9 } };
 }
 function roketAlevi(a) {   // iç içe iki koni; oyun.js görünürlüğü ve ölçeği ayarlar, içteki koni arabaYerlestir içinde titreşir
@@ -1111,12 +1100,12 @@ function arabaSok(a) {   // arabayı sahneden kaldırır; yalnız o arabaya ait 
   if (!a || !a.g) return;
   const birak = o => {
     if (!o.isMesh) return;
-    if (o.geometry && o.geometry !== arKoniGeo && o.geometry !== arLambaGeo) o.geometry.dispose();
+    if (o.geometry && o.geometry !== arKoniGeo && o.geometry !== arLambaGeo && !arOrtakGeo.has(o.geometry)) o.geometry.dispose();
     const m = o.material; if (m && m !== arMat && m !== arBoya && m !== arAlevMat && m !== golgeMat) m.dispose();
   };
   a.g.traverse(birak); if (a.g.parent) a.g.parent.remove(a.g);
   if (a.golge) { birak(a.golge); if (a.golge.parent) a.golge.parent.remove(a.golge); }
-  a.arAlev = null;
+  a.arAlev = null; a.arSus = null; a.arGuc = null;
 }
 OLAY.on('yildiz', () => { if (typeof A !== 'undefined' && A[0].ar) A[0].ar.sek = 0; });
 OLAY.on('roket', () => { if (typeof A !== 'undefined' && A[0].ar) A[0].ar.rok = 0; });   // sürücü hızlanınca geriye yaslanır
@@ -1131,6 +1120,238 @@ OLAY.on('durum', d => {
     s.havada = false; s.inis = 9; s.sek = 9; s.tok = 9; if (d !== 'baslik') s.mer = 9;
   }
 });
+// ───────── GARAJ süsleri: boya, teker, anten süsü (arabaSusle) ─────────
+// Teker: klasik (arabanın kendi tekeri) + beş süslü çeşit. Hepsi tek geometride kalır: ek çizim yok.
+const AR_SUS_TEKER = {
+  yildiz: { lastik: 0x2a3f8f, jant: 0x4aa8ff, halka: 0xffffff, cember: 0xffd23e, dis: [0xffd23e, 0xffffff] },
+  cicek: { lastik: 0x49b97c, jant: 0xfff6e6, halka: 0xffffff, cember: 0xff8fc0, dis: [0xff8fc0, 0xfff2a8] },
+  gokkusagi: { lastik: AR_KOYU, jant: 0xffffff, halka: 0xff4a4a, cember: 0xffd23e, dis: [0xff4a4a, 0xff9a2e, 0xffe03a, 0x4ccf5a, 0x3aa6ff, 0x9b6bff, 0xff7ac8, 0x35d6d0] },
+  altin: { lastik: 0x3a2f2a, jant: 0xffc61a, halka: 0xffd84a, cember: 0xfff0a0, dis: [0xffc61a] },
+  seker: { lastik: 0xfff4ee, jant: 0xffffff, halka: 0xff4f6e, cember: 0xff9fc6, dis: [0xff4f6e, 0x7fe0d0] }
+};
+function arTekerKur(ty, tkr, z, x, renk, renk2, arazi, stil) {   // bir tekerin bütün parçalarını ty yapısına ekler (araba() ve arabaSusle kullanır)
+  const r = z < 0 ? tkr.ra : tkr.ro, s = r / 0.46, en = z < 0 ? tkr.ena : tkr.eno, of = Math.max(0, 0.16 * s * en - 0.26);
+  const S = AR_SUS_TEKER[stil];
+  if (!S) {
+    arKat(ty, arLastik, AR_KOYU, 0, 0, 0, s, s, s * en, 0, Math.PI / 2);
+    arKat(ty, arSil, tkr.jant || 0xeef1f6, 0, 0, 0, 0.21 * s, 0.4 + of * 2, 0.21 * s, 0, 0, Math.PI / 2);
+    arKat(ty, arM, renk2 === 0xffffff ? renk : renk2, x * (0.2 + of), 0, 0, 0.06, 0.115 * s, 0.115 * s);
+    arKat(ty, arM, 0x3a404c, x * (0.252 + of), 0, 0, 0.02, 0.04 * s, 0.04 * s);                    // göbek somunu
+    for (let q = 0; q < 5; q++) { const an = q * Math.PI * 2 / 5; arKat(ty, G.kutu, 0xdfe5ee, x * (0.203 + of), Math.cos(an) * 0.115 * s, Math.sin(an) * 0.115 * s, 0.022, 0.19 * s, 0.075 * s, an); }   // beş kollu jant
+    arKat(ty, arJantHalka, renk2 === 0xffffff ? renk : renk2, x * 0.155 * s * en, 0, 0, 0.3 * s, 0.3 * s, 0.3 * s, 0, Math.PI / 2);   // lastik yanağında renkli çizgi
+    arKat(ty, arJantHalka, 0xf0e9db, x * (0.223 + of), 0, 0, 0.235 * s, 0.235 * s, 0.235 * s, 0, Math.PI / 2);
+    // Seyrek kabartma dişler: ayrı cisim/çizim olmadan lastiğin dönüşünü okunur kılar.
+    for (let q = 0; q < 8; q++) {
+      const an = q * Math.PI * 2 / 8;
+      arKat(ty, G.kutu, arazi ? 0x414954 : 0x363c47, 0, Math.cos(an) * (r - 0.024), Math.sin(an) * (r - 0.024), (arazi ? 0.34 : 0.24) * Math.max(0.8, en / 1.5), 0.05, 0.14, an);   // lastiğin yanından köşe gibi taşmaz
+    }
+    return;
+  }
+  const PI = Math.PI, yz = x * (0.203 + of), kapak = renk2 === 0xffffff ? renk : renk2;
+  arKat(ty, arLastik, S.lastik, 0, 0, 0, s, s, s * en, 0, PI / 2);
+  arKat(ty, arSil, S.jant, 0, 0, 0, 0.21 * s, 0.4 + of * 2, 0.21 * s, 0, 0, PI / 2);
+  arKat(ty, arJantHalka, S.halka, x * 0.155 * s * en, 0, 0, 0.3 * s, 0.3 * s, 0.3 * s, 0, PI / 2);
+  arKat(ty, arJantHalka, S.cember, x * (0.223 + of), 0, 0, 0.235 * s, 0.235 * s, 0.235 * s, 0, PI / 2);
+  // renkli dişler: kamera arkadan baktığı için süs en çok lastiğin sırtından seçilir
+  for (let q = 0; q < 8; q++) {
+    const an = q * PI * 2 / 8;
+    arKat(ty, G.kutu, S.dis[q % S.dis.length], 0, Math.cos(an) * (r - 0.03), Math.sin(an) * (r - 0.03), 0.24 * Math.max(0.8, en / 1.5), 0.055, stil === 'altin' ? 0.1 : 0.2, an, stil === 'seker' ? 0.45 : 0);
+  }
+  if (stil === 'yildiz') {
+    arKat(ty, arYildizGeo, 0xffd23e, x * (0.185 + of), 0, 0, 0.205 * s, 0.205 * s, 0.34, 0, x * PI / 2, 0);
+    arKat(ty, arM, 0xffffff, x * (0.275 + of), 0, 0, 0.02, 0.05 * s, 0.05 * s);
+  } else if (stil === 'cicek') {
+    for (let q = 0; q < 6; q++) { const an = q * PI / 3; arKat(ty, arM, q & 1 ? 0xff8fc0 : 0xff6aa8, x * (0.21 + of), Math.cos(an) * 0.125 * s, Math.sin(an) * 0.125 * s, 0.04, 0.085 * s, 0.085 * s); }
+    arKat(ty, arM, 0xffd23e, x * (0.23 + of), 0, 0, 0.045, 0.075 * s, 0.075 * s);
+  } else if (stil === 'gokkusagi') {
+    arKat(ty, arJantHalka, 0xff9a2e, x * (0.215 + of), 0, 0, 0.17 * s, 0.17 * s, 0.2 * s, 0, PI / 2);
+    arKat(ty, arJantHalka, 0x3aa6ff, x * (0.215 + of), 0, 0, 0.105 * s, 0.105 * s, 0.2 * s, 0, PI / 2);
+    arKat(ty, arM, 0x9b6bff, x * (0.2 + of), 0, 0, 0.05, 0.07 * s, 0.07 * s);
+  } else if (stil === 'altin') {
+    for (let q = 0; q < 5; q++) { const an = q * PI * 2 / 5; arKat(ty, G.kutu, 0xffd84a, yz, Math.cos(an) * 0.115 * s, Math.sin(an) * 0.115 * s, 0.026, 0.2 * s, 0.085 * s, an); }
+    arKat(ty, arM, 0xfff0a0, x * (0.21 + of), 0, 0, 0.06, 0.1 * s, 0.1 * s);
+    for (const k of [-1, 1]) arKat(ty, arJantHalka, 0xffc61a, k * 0.115 * s * en, 0, 0, r - 0.045, r - 0.045, r - 0.045, 0, PI / 2);   // lastiğin sırtında iki altın şerit
+  } else {   // seker: nane şekeri gibi kırmızı-beyaz dilimler
+    for (let q = 0; q < 3; q++) { const an = q * PI / 3; arKat(ty, G.kutu, 0xff4f6e, yz, 0, 0, 0.024, 0.44 * s, 0.1 * s, an); }
+    arKat(ty, arM, 0xff9fc6, x * (0.215 + of), 0, 0, 0.05, 0.085 * s, 0.085 * s);
+  }
+  void kapak;
+}
+const AR_SUS_RENK = { mavi: [0x2b7de9, 0xffe27a], kirmizi: [0xf03a34, 0xffe9a8], yesil: [0x3fb552, 0xfff0a8], sari: [0xffc928, 0xfff7dc], pembe: [0xff6fb4, 0xfff0f7], turuncu: [0xff8a2b, 0xfff1c4], turkuaz: [0x1fc8c0, 0xfff4c0] };
+const arSusKalpGeo = (() => {
+  const h = new T.Shape(); h.moveTo(5, 5); h.bezierCurveTo(5, 5, 4, 0, 0, 0); h.bezierCurveTo(-6, 0, -6, 7, -6, 7); h.bezierCurveTo(-6, 11, -3, 15.4, 5, 19); h.bezierCurveTo(12, 15.4, 16, 11, 16, 7); h.bezierCurveTo(16, 7, 16, 0, 10, 0); h.bezierCurveTo(7, 0, 5, 5, 5, 5);
+  const g = new T.ExtrudeGeometry(h, { depth: 3, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 1.1, bevelSegments: 2, curveSegments: 5 });
+  g.translate(-5, -9.5, -1.5); g.rotateZ(Math.PI); g.scale(0.1, 0.1, 0.1); return g;
+})();
+function arSusMeshler(a) {   // boyanacak parçalar: gövde ve tipin kendi parçaları; sürücünün kafası/kolları ve garaj süsleri dışarıda kalır
+  const l = [], gez = o => { if (o === a.arKafa || o.userData.arSus || (a.arKol && a.arKol.indexOf(o) >= 0)) return; if (o.isMesh && o.geometry && o.geometry.attributes.color) l.push(o); for (const c of o.children) gez(c); };
+  gez(a.govde); return l;
+}
+const arSusC = new T.Color();
+function arSusBoya(a, id) {
+  const st = a.arSus; if (st.renk === id) return;
+  const hedef = arSusMeshler(a);
+  if (!st.ilk) st.ilk = hedef.map(m => m.geometry.attributes.color.array.slice());
+  const renkler = t => arSusMeshler(t).map(m => m.geometry.attributes.color.array);
+  const yaz = kaynak => hedef.forEach((m, i) => { const c = m.geometry.attributes.color; if (kaynak[i] && kaynak[i].length === c.array.length) { c.array.set(kaynak[i]); c.needsUpdate = true; } });
+  // Aynı arabayı yeni renklerle bir kez kurup yalnız renklerini alırız: her tipin gölgeli/açık tonları, çizgileri kendiliğinden uyar; sürücü hiç değişmez.
+  let r = a.arRenk, r2 = a.arRenk2, gecici = [];
+  try {
+    if (id === 'varsayilan' || (id !== 'gokkusagi' && !AR_SUS_RENK[id])) { yaz(st.ilk); id = 'varsayilan'; }
+    else if (id === 'gokkusagi') {
+      r2 = 0xfff1c9;
+      const beyaz = araba(0xffffff, r2, a.arTur, a.arTip), maske = araba(0x3566c8, r2, a.arTur, a.arTip); gecici.push(beyaz, maske);
+      const cb = renkler(beyaz), cm = renkler(maske);
+      hedef.forEach((m, i) => {
+        const c = m.geometry.attributes.color, p = m.geometry.attributes.position, b = cb[i], k = cm[i];
+        if (!b || b.length !== c.array.length) return;
+        const ox = m.parent === a.govde ? 0 : m.parent.position.x, oy = m.parent === a.govde ? 0 : m.parent.position.y, oz = m.parent === a.govde ? 0 : m.parent.position.z;
+        for (let j = 0; j < c.count; j++) {
+          const q = j * 3, ana = Math.abs(b[q] - k[q]) + Math.abs(b[q + 1] - k[q + 1]) + Math.abs(b[q + 2] - k[q + 2]) > 0.02;
+          if (ana) {   // gövdenin ana rengi: arkadan da yandan da görünen yumuşak çapraz gökkuşağı geçişi
+            let h = 0.5 + (p.getX(j) + ox) * 0.3 - (p.getZ(j) + oz) * 0.16 + (p.getY(j) + oy) * 0.14; h -= Math.floor(h);
+            arSusC.setHSL(h, 0.92, 0.6);
+            c.array[q] = b[q] * arSusC.r; c.array[q + 1] = b[q + 1] * arSusC.g; c.array[q + 2] = b[q + 2] * arSusC.b;
+          } else { c.array[q] = b[q]; c.array[q + 1] = b[q + 1]; c.array[q + 2] = b[q + 2]; }
+        }
+        c.needsUpdate = true;
+      });
+    } else {
+      const kt = typeof GARAJ !== 'undefined' && GARAJ && GARAJ.katalog && GARAJ.katalog.renk, kg = Array.isArray(kt) ? kt.find(q => q && q.id === id) : null;
+      r = kg && typeof kg.renk === 'number' ? kg.renk : AR_SUS_RENK[id][0]; r2 = kg && typeof kg.renk2 === 'number' ? kg.renk2 : AR_SUS_RENK[id][1];
+      const yeni = araba(r, r2, a.arTur, a.arTip); gecici.push(yeni); yaz(renkler(yeni));
+    }
+  } finally { for (const g of gecici) arabaSok(g); }
+  st.renk = id; st.r = r; st.r2 = id === 'gokkusagi' ? 0xffd84a : r2; st.teker = null;   // teker göbeği yeni renge uysun
+}
+function arSusTeker(a, id) {
+  const st = a.arSus; if (!AR_SUS_TEKER[id]) id = 'klasik'; if (st.teker === id) return;
+  const tkr = AR_TEKER[a.arTip]; let i = 0;
+  for (const z of [-1, 1]) for (const x of [-1, 1]) {
+    const m = a.teker[i++].children[0], ty = arYapi(); if (!m || !m.isMesh) continue;
+    arTekerKur(ty, tkr, z, x, st.r, st.r2, a.arArazi, id);
+    m.geometry.dispose(); m.geometry = arGeo(ty);
+  }
+  st.teker = id;
+}
+function arSusYer(a) {   // anten yeri: arka sağ köşede gövdenin üst yüzeyi (her tipte kendiliğinden bulunur)
+  const m = a.govde.children[0], p = m.geometry.attributes.position.array, X = 0.6, Z = -1.2; let en = -1;
+  for (let i = 0; i < p.length; i += 9) {
+    const x1 = p[i] - X, z1 = p[i + 2] - Z, x2 = p[i + 3] - X, z2 = p[i + 5] - Z, x3 = p[i + 6] - X, z3 = p[i + 8] - Z;
+    const d = x1 * (z2 - z3) + x2 * (z3 - z1) + x3 * (z1 - z2); if (Math.abs(d) < 1e-9) continue;
+    const w1 = (x2 * z3 - x3 * z2) / d, w2 = (x3 * z1 - x1 * z3) / d, w3 = 1 - w1 - w2; if (w1 < 0 || w2 < 0 || w3 < 0) continue;
+    const y = w1 * p[i + 1] + w2 * p[i + 4] + w3 * p[i + 7]; if (y < 1.2 && y > en) en = y;
+  }
+  return [X, en > 0.3 ? en - 0.03 : 0.9, Z];
+}
+function arSusBayrak(a, id) {
+  const st = a.arSus; if (['yildiz', 'kalp', 'balon', 'firildak', 'pati'].indexOf(id) < 0) id = 'yok'; if (st.bayrak === id) return;
+  if (st.bayrakG) {   // eskisini kaldır: yalnız bu arabaya ait geometri bırakılır
+    const i = a.arEk.indexOf(st.bayrakG); if (i >= 0) a.arEk.splice(i, 1);
+    st.bayrakG.traverse(o => { if (o.isMesh) o.geometry.dispose(); }); a.govde.remove(st.bayrakG); st.bayrakG = null;
+  }
+  for (const e of a.arEk) if (e.userData.ek === 'anten') e.visible = id === 'yok';   // kartın kendi anteni yerine süslü anten gelir
+  st.bayrak = id; if (id === 'yok') return;
+  if (!st.yer) st.yer = arSusYer(a);
+  const PI = Math.PI, gr = new T.Group(), y = arYapi(), boy = 1.24, balon = id === 'balon';
+  gr.position.set(st.yer[0], st.yer[1], st.yer[2]); gr.userData.ek = 'bayrak'; gr.userData.arSus = true; gr.userData.salin = balon ? 1.5 : 1; gr.rotation.y = -0.7;   // yassı süsler hem arkadan hem yandan seçilsin diye çapraz durur
+  arKat(y, G.kutu, balon ? 0xf4f6fa : 0x3a404c, 0, boy / 2, 0, balon ? 0.02 : 0.032, boy, balon ? 0.02 : 0.032);
+  arKat(y, arM, 0xc9cfd9, 0, 0.02, 0, 0.065, 0.045, 0.065);
+  const ty = boy + 0.16;
+  if (id === 'yildiz') {
+    arKat(y, arYildizGeo, 0xffc928, 0, ty, -0.045, 0.3, 0.3, 0.5);
+    for (const k of [-1, 1]) arKat(y, arM, 0xfff6c8, 0, ty, k * 0.075, 0.09, 0.09, 0.025);
+  } else if (id === 'kalp') {
+    arKat(y, arSusKalpGeo, 0xff4d7e, 0, ty + 0.02, 0, 0.26, 0.26, 0.3);
+    for (const k of [-1, 1]) arKat(y, arM, 0xffc3d6, -0.13 * k, ty + 0.14, k * 0.11, 0.06, 0.045, 0.02);
+  } else if (balon) {
+    arKat(y, arK, 0xff5a6e, 0, ty + 0.2, 0, 0.3, 0.36, 0.3);
+    arKat(y, arKoniGeo, 0xe64560, 0, ty - 0.21, 0, 0.06, 0.09, 0.06);
+    for (const k of [-1, 1]) arKat(y, arM, 0xffd0d8, -0.11, ty + 0.34, k * 0.2, 0.07, 0.09, 0.05);
+  } else if (id === 'pati') {
+    arKat(y, arSil, 0xfff1dc, 0, ty + 0.02, 0, 0.3, 0.07, 0.3, PI / 2);
+    arKat(y, arInceHalka, 0xff9d3c, 0, ty + 0.02, 0, 0.3, 0.3, 0.5);
+    for (const k of [-1, 1]) {
+      arKat(y, arM, 0xff7fa8, 0, ty - 0.045, k * 0.04, 0.125, 0.1, 0.03);
+      for (const q of [[-0.165, 0.06], [-0.06, 0.15], [0.06, 0.15], [0.165, 0.06]]) arKat(y, arM, 0xff7fa8, q[0], ty + q[1], k * 0.04, 0.055, 0.062, 0.028);
+    }
+  } else {   // firildak: dört renkli kanat ayrı parçada döner
+    const dn = new T.Group(), dy = arYapi(), rk = [0xff4a4a, 0xffd23e, 0x3aa6ff, 0x4ccf5a];
+    dn.position.set(0, ty + 0.04, 0); dn.userData.arSus = true;
+    for (let q = 0; q < 4; q++) {
+      const an = q * PI / 2;
+      for (const k of [-1, 1]) arKat(dy, arKoniGeo, k < 0 ? rk[q] : arKoyult(rk[q], 0.82), -Math.sin(an) * 0.03 + Math.cos(an) * 0.075, Math.cos(an) * 0.03 + Math.sin(an) * 0.075, k * 0.012, 0.15, 0.36, 0.022, 0, 0, an + 0.28);
+    }
+    arKat(dy, arM, 0xffffff, 0, 0, 0, 0.065, 0.065, 0.075);
+    const dm = arBitir(dy, dn, arBoya); dm.userData.arSus = true; gr.add(dn); gr.userData.donen = dn;
+    arKat(y, arM, 0x3a404c, 0, ty + 0.04, 0, 0.04, 0.04, 0.06);
+  }
+  const m = arBitir(y, gr, arBoya); m.userData.arSus = true;
+  a.govde.add(gr); a.arEk.push(gr); st.bayrakG = gr;
+}
+function arabaSusle(a, secim) {   // garaj süslerini uygular; tekrar çağrılınca yalnız değişeni yeniler (iz ve korna başka dosyaların işi)
+  if (!a || !a.g || !a.govde || !a.teker) return;
+  secim = secim || {};
+  if (!a.arSus) a.arSus = { renk: 'varsayilan', teker: 'klasik', bayrak: 'yok', ilk: null, bayrakG: null, yer: null, r: a.arRenk, r2: a.arRenk2 };
+  try { arSusBoya(a, secim.renk || 'varsayilan'); arSusTeker(a, secim.teker || 'klasik'); arSusBayrak(a, secim.bayrak || 'yok'); } catch (e) { console.error(e); }
+}
+
+// ───────── sürpriz güç görünümleri (a.guc): dev, köpük balonu, pırıltı, mıknatıs ─────────
+const arGucKopGeo = new T.SphereGeometry(1, 22, 14);
+const arGucPirGeo = (() => {   // dokuz küçük dört köşeli yıldız: her yönden görünsün diye iki çapraz düzlemde
+  const p = [], w = 0.17, yildiz = (cx, cy, cz, r) => {
+    for (const dz of [0, 1]) for (const yat of [0, 1]) {
+      const q = yat ? [[r, 0], [0, r * w], [-r, 0], [0, -r * w]] : [[0, r], [r * w, 0], [0, -r], [-r * w, 0]];
+      for (const u of [[0, 1, 2], [0, 2, 3]]) for (const k of u) p.push(cx + (dz ? 0 : q[k][0]), cy + q[k][1], cz + (dz ? q[k][0] : 0));
+    }
+  };
+  for (let i = 0; i < 9; i++) { const an = i / 9 * Math.PI * 2 + (i & 1) * 0.3; yildiz(Math.cos(an) * 1.55, 0.55 + arRast(i + 3) * 1.75, Math.sin(an) * 2.25, 0.2 + arRast(i + 11) * 0.16); }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); return g;
+})();
+const arGucMikGeo = (() => {   // at nalı mıknatıs: kırmızı kavis, beyaz uçlar (uçlar aşağıya, arabaya bakar)
+  const y = arYapi();
+  arKat(y, new T.TorusGeometry(0.34, 0.115, 6, 12, Math.PI), 0xf03a34, 0, 0, 0, 1, 1, 1);
+  for (const x of [-1, 1]) { arKat(y, arSil, 0xf03a34, x * 0.34, -0.1, 0, 0.115, 0.2, 0.115); arKat(y, arSil, 0xf6f8fc, x * 0.34, -0.27, 0, 0.118, 0.15, 0.118); }
+  return arGeo(y);
+})();
+const arOrtakGeo = new Set([arGucKopGeo, arGucPirGeo, arGucMikGeo]);
+const arGucKopMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uA: { value: 1 } },
+  vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+  fragmentShader: 'varying vec3 vN; varying vec3 vV; uniform float uA; void main(){ vec3 n = normalize(vN); float f = 1.0 - abs(dot(n, normalize(vV))); float k = pow(f, 2.0);' +
+    ' vec3 c = mix(vec3(0.62, 0.9, 1.0), vec3(1.0, 0.74, 0.95), smoothstep(0.35, 1.0, f)); float par = smoothstep(0.9, 0.97, dot(n, normalize(vec3(-0.5, 0.72, 0.48)))) + 0.5 * smoothstep(0.965, 0.99, dot(n, normalize(vec3(0.55, -0.5, 0.67))));' +
+    ' gl_FragColor = vec4(c + par, clamp(0.07 + 0.75 * k + par * 0.85, 0.0, 1.0) * uA);\n#include <colorspace_fragment>\n}' });
+function arGucKur(a) {
+  const kop = new T.Mesh(arGucKopGeo, arGucKopMat.clone()); kop.position.y = 1.1; kop.renderOrder = 6; kop.visible = false; a.g.add(kop);
+  const pir = [0xfff3a0, 0xffffff].map((c, i) => { const m = new T.Mesh(arGucPirGeo, new T.MeshBasicMaterial({ color: c, transparent: true, depthWrite: false, side: T.DoubleSide })); m.renderOrder = 5; m.visible = false; if (i) { m.rotation.y = 0.35; m.position.y = 0.25; } a.g.add(m); return m; });
+  const mik = new T.Mesh(arGucMikGeo, arBoya); mik.position.set(0, 3.15, -0.2); mik.visible = false; a.g.add(mik);
+  return { kop, pir, mik };
+}
+function arGucGorunum(a, s, t, dt) {   // arabaYerlestir sonunda: etkiler yumuşakça girer/çıkar, gölge de uyar
+  const tur = a.guc && a.guc.kalan > 0.3 ? a.guc.tur : null;
+  if (s.gD === undefined) { s.gD = 0; s.gK = 0; s.gP = 0; s.gM = 0; }
+  const k = arYumusak(dt, 6);
+  s.gD += ((tur === 'dev' ? 1 : 0) - s.gD) * k; s.gK += ((tur === 'baloncuk' ? 1 : 0) - s.gK) * k; s.gP += ((tur === 'gokkusagi' ? 1 : 0) - s.gP) * k; s.gM += ((tur === 'miknatis' ? 1 : 0) - s.gM) * k;
+  s.gAcik = !!tur || s.gD + s.gK + s.gP + s.gM > 0.004;
+  if (!s.gAcik) s.gD = s.gK = s.gP = s.gM = 0;
+  if (!a.arGuc) { if (!s.gAcik) { a.g.scale.setScalar(1); return; } a.arGuc = arGucKur(a); }
+  const g = a.arGuc;
+  // dev: büyürken hafifçe taşar, sonra oturur (oyuncak gibi)
+  a.g.scale.setScalar(1 + 0.6 * s.gD + Math.sin(s.gD * Math.PI) * 0.06);
+  a.golge.scale.multiplyScalar((1 + 0.6 * s.gD) * (1 - 0.2 * s.gK)); a.golge.material.opacity *= 1 - 0.3 * s.gK;
+  g.kop.visible = s.gK > 0.01;
+  if (g.kop.visible) { const b = 0.35 + 0.65 * s.gK, d1 = Math.sin(t * 3.1) * 0.035, d2 = Math.sin(t * 2.3 + 1) * 0.03; g.kop.scale.set(2.05 * b * (1 + d1), 1.85 * b * (1 - d1 + d2), 2.75 * b * (1 - d2)); g.kop.material.uniforms.uA.value = s.gK; }
+  for (let i = 0; i < 2; i++) {
+    const m = g.pir[i]; m.visible = s.gP > 0.01;
+    if (m.visible) { const f = 0.5 + 0.5 * Math.sin(t * 7 + i * Math.PI); m.material.opacity = s.gP * (0.25 + 0.75 * f); m.rotation.y = (i ? 0.35 : 0) + t * (i ? -0.9 : 1.3); m.scale.setScalar(0.8 + 0.2 * s.gP + f * 0.12); }
+  }
+  g.mik.visible = s.gM > 0.01;
+  if (g.mik.visible) { const b = s.gM * (1 + Math.sin(t * 9) * 0.05); g.mik.scale.setScalar(b * 1.25); g.mik.position.y = 3.2 + Math.sin(t * 3.4) * 0.1; g.mik.rotation.z = Math.sin(t * 2.6) * 0.3; g.mik.rotation.y = Math.sin(t * 1.7) * 0.5; }
+}
+// rakip tepkileri ve garaj sevinci
+OLAY.on('gecti', v => { if (typeof A !== 'undefined' && v && A[v.i] && v.i > 0 && A[v.i].ar) A[v.i].ar.el = 0; });
+OLAY.on('gecildi', v => { if (typeof A !== 'undefined' && v && A[v.i] && v.i > 0 && A[v.i].ar) A[v.i].ar.el = 0; });
+OLAY.on('garaj', () => { if (typeof A !== 'undefined' && A[0].ar) A[0].ar.gar = 0; });
+
 const arKolYon = new T.Vector3(), arKolEksen = new T.Vector3(0, 0, 1), arKolQ = new T.Quaternion(), arSevQ = new T.Quaternion(), arSevE = new T.Euler();
 const arYumusak = (dt, hiz) => 1 - Math.exp(-Math.max(0, dt) * hiz);
 
@@ -1148,6 +1369,12 @@ function arabaYerlestir(a, dt) {
   }
   if (s.havada && !havada) s.inis = 0;
   s.havada = havada; s.inis += dt; s.sek += dt; s.tok += dt; s.t += dt; s.mer += dt;
+  if (s.el === undefined) { s.el = 9; s.gar = 9; s.gK = 0; } s.el += dt; s.gar += dt;
+  // garajda süs değişince küçük sevinç zıplaması; köpük balonunda araba yoldan yükselip süzülür
+  const garU = s.gar < 0.5 ? s.gar / 0.5 : 1, garY = garU < 1 ? Math.sin(garU * Math.PI) * 0.42 : 0, garEz = garU < 1 ? Math.sin(garU * Math.PI * 2) * 0.09 : s.gar < 0.95 ? -0.07 * Math.exp(-8 * (s.gar - 0.5)) * Math.cos((s.gar - 0.5) * 18) : 0;
+  const kopY = s.gK > 0 ? s.gK * (1.1 + Math.sin(s.t * 2.3) * 0.13) : 0;
+  let elU = s.el < 1.2 ? Math.min(1, s.el / 0.18, (1.2 - s.el) / 0.28) : 0, elYaw = 0, elKol = -1; elU = elU * elU * (3 - 2 * elU);
+  if (elU > 0 && typeof A !== 'undefined' && a !== A[0]) { const dd = A[0].d - a.d; let dz = A[0].yol - a.yol; if (Math.abs(dz) > 60) dz = 2; elYaw = clamp(Math.atan2(-dd, dz), -1.25, 1.25); elKol = dd > 0 ? 0 : 1; }
   // merhaba: seçim ekranında yeni araba küçük bir zıplar, kendi çevresinde bir tur döner, yumuşakça yere konar
   const merU = s.mer < 0.85 ? s.mer / 0.85 : 1, merDon = merU < 1 ? merU * merU * (3 - 2 * merU) * Math.PI * 2 : 0, merY = merU < 1 ? Math.sin(merU * Math.PI) * 0.6 : 0;
   const merEz = merU < 1 ? Math.sin(merU * Math.PI) * 0.07 : s.mer < 1.35 ? -0.08 * Math.exp(-7 * (s.mer - 0.85)) * Math.cos((s.mer - 0.85) * 16) : 0;
@@ -1155,7 +1382,7 @@ function arabaYerlestir(a, dt) {
   const ivme = dt > 0 ? clamp((a.v - s.v0) / dt, -30, 30) : 0; s.v0 = a.v; s.ivme += (ivme - s.ivme) * arYumusak(dt, 5);
   const don = clamp(-Math.atan2(a.dv, Math.max(8, a.v)) * 1.7 - p.k * a.v * 0.3, -0.5, 0.5); s.don += (don - s.don) * k;
   s.sev += ((a.bitti ? 1 : 0) - s.sev) * arYumusak(dt, 4);
-  a.g.position.set(x, y + merY, z);
+  a.g.position.set(x, y + merY + garY + kopY, z);
   a.g.rotation.set(-egim, Math.atan2(p.tx, p.tz) - Math.atan2(a.dv, Math.max(8, a.v)) * 0.9 + merDon, yatis, 'YXZ');
   // gövde: yatma, yaylanma, zıplarken gerilme, inişte ezilme, sevinç zıplaması
   const egz = clamp(a.dv * 0.014, -0.13, 0.13) + clamp(p.k * a.v * 0.05, -0.08, 0.08) + (s.tok < 0.5 ? Math.sin(s.tok * 30) * 0.06 * (1 - s.tok * 2) : 0);
@@ -1166,7 +1393,7 @@ function arabaYerlestir(a, dt) {
   a.govde.rotation.y = s.sev * Math.sin(t * 3.25 + a.faz) * 0.16;   // bitişte sağa sola dans
   let es = havada ? 0.065 * Math.sin(Math.PI * Math.pow(hu, 0.6)) : s.inis < 0.7 ? -0.095 * Math.exp(-7 * s.inis) * Math.cos(s.inis * 16) : 0;
   const zs = Math.abs(Math.sin(t * 6.5 + a.faz));
-  es += s.sev * (zs - 0.5) * 0.11 + (s.sek < 0.35 ? Math.sin(s.sek / 0.35 * Math.PI) * 0.07 : 0) + merEz;
+  es += s.sev * (zs - 0.5) * 0.11 + (s.sek < 0.35 ? Math.sin(s.sek / 0.35 * Math.PI) * 0.07 : 0) + merEz + garEz;
   // oyuncak esnemesi (yalnız görsel): hızlanınca boyuna uzar, frende kısalıp kabarır, virajda hafif yayvanlaşır
   const uz = clamp(s.ivme * 0.0032, -0.055, 0.075), yayv = Math.min(0.05, Math.abs(s.egz) * 0.32);
   a.govde.scale.set((1 - es * 0.5) * (1 + yayv), (1 + es) * (1 - uz * 0.55 - yayv * 0.4), (1 - es * 0.5) * (1 + uz));
@@ -1197,6 +1424,7 @@ function arabaYerlestir(a, dt) {
   const sv = s.sek < 0.7 ? Math.sin(s.sek / 0.7 * Math.PI) ** 2 : 0, rk = s.rok < 0.8 ? Math.sin(s.rok / 0.8 * Math.PI) ** 2 : 0;   // yumuşak başlar, yumuşak biter
   a.arKafa.rotation.set(Math.sin(t * 2.2 + a.faz) * 0.03 - s.sev * 0.2 - (havada ? 0.18 : 0) + s.ivme * 0.003 - sv * 0.2 - rk * 0.24, s.bak, -s.bak * 0.22 + s.sev * Math.sin(t * 6.5 + a.faz) * 0.2 + sv * 0.1);
   a.arKafa.position.y = 1.76 + sv * 0.035 + s.sev * zs * 0.03;
+  if (elU > 0) { a.arKafa.rotation.y += (elYaw - a.arKafa.rotation.y) * elU; a.arKafa.rotation.z += Math.sin(t * 9) * 0.07 * elU; }   // el sallarken Feza'ya bakar
   if (a.arGoz) {
     const dongu = 3.5 + a.i * 0.29, faz = (t + 1.3 + a.i * 0.57) % dongu;
     const kp = faz > dongu - 0.18 ? Math.sin((faz - dongu + 0.18) / 0.18 * Math.PI) : 0;
@@ -1210,7 +1438,9 @@ function arabaYerlestir(a, dt) {
     arKolQ.setFromUnitVectors(arKolEksen, arKolYon);
     const kutla = Math.max(s.sev, i === 1 ? sv * 0.9 : 0);
     if (kutla > 0.001) { arSevQ.setFromEuler(arSevE.set(-1.95 + el * 0.3 * s.sev + Math.sin(t * 6.5 + a.faz + i * Math.PI) * 0.35 * s.sev, yon * (0.5 + el * 0.16 * s.sev), yon * 0.1)); arKolQ.slerp(arSevQ, kutla); }
-    kg.quaternion.copy(arKolQ); kg.scale.z = lerp(uzun / 0.6, 1, kutla);
+    const elK = i === elKol ? elU : 0;
+    if (elK > 0.001) { arSevQ.setFromEuler(arSevE.set(-1.75, yon * (0.95 + Math.sin(t * 14) * 0.45), yon * 0.12)); arKolQ.slerp(arSevQ, elK); }   // rakip el sallar
+    kg.quaternion.copy(arKolQ); kg.scale.z = lerp(uzun / 0.6, 1, Math.max(kutla, elK));
   }
   // saç ve kulaklar hızla geriye savrulur
   s.sal += ((hiz * 0.6 + (havada ? 0.5 : 0)) - s.sal) * arYumusak(dt, 6);
@@ -1232,6 +1462,13 @@ function arabaYerlestir(a, dt) {
     } else if (tr === 'alev') { const f = Math.sin(t * 67 + a.faz) * 0.5 + Math.sin(t * 41) * 0.5, u = 0.32 + hiz * 0.75; e.visible = a.v > 0.6 && !(a.arAlev && a.arAlev.visible); e.scale.set(0.27 + f * 0.03, u * (1 + f * 0.16), 0.27 + f * 0.03); }
     else if (tr === 'lamba') { const f = Math.sin(t * 9 + a.faz), b = 0.75 + 0.25 * Math.abs(f); if (f > 0) e.material.color.setRGB(0.12 * b, 0.5 * b, 1.0 * b); else e.material.color.setRGB(1.0 * b, 0.2 * b, 0.16 * b); e.scale.set(0.19 + Math.abs(f) * 0.035, 0.24 + Math.abs(f) * 0.04, 0.19 + Math.abs(f) * 0.035); e.rotation.y = t * 7; }   // mavi-kırmızı dönen tepe lambası
     else if (tr === 'anten') { e.rotation.x = -(s.sal * 0.55 + clamp(s.ivme * 0.016, -0.35, 0.35)) + Math.sin(t * 14 + a.faz) * 0.11 * (0.25 + hiz) + (s.inis < 0.7 ? Math.sin(s.inis * 20) * 0.3 * (1 - s.inis / 0.7) : 0); e.rotation.z = yanal * 0.9 - s.egz * 2.2 + Math.sin(t * 11.3 + a.faz) * 0.09 * (0.25 + hiz); }
+    else if (tr === 'bayrak') {   // garaj süsü: anten hızla geriye esner, viraja yatar; fırıldak hızla döner, balon daha çok salınır
+      const bk = e.userData.salin || 1;
+      e.rotation.x = -(s.sal * 0.5 + clamp(s.ivme * 0.014, -0.3, 0.3)) * bk + Math.sin(t * 12 + a.faz) * 0.07 * (0.3 + hiz) * bk + (s.inis < 0.7 ? Math.sin(s.inis * 20) * 0.26 * (1 - s.inis / 0.7) : 0) - (garU < 1 ? Math.sin(garU * Math.PI * 3) * 0.3 * (1 - garU) : 0);
+      e.rotation.z = (yanal * 0.8 - s.egz * 2) * bk + Math.sin(t * 9.7 + a.faz) * 0.06 * (0.3 + hiz) * bk + Math.sin(t * 1.9 + a.faz) * 0.035 * bk;
+      e.scale.y = 1 + Math.sin(t * 12 + a.faz) * 0.012 * hiz - s.sal * 0.03;
+      const dn = e.userData.donen; if (dn) dn.rotation.z = (dn.rotation.z + dt * (2.2 + Math.min(a.v, 30) * 0.75)) % (Math.PI * 2);
+    }
     else if (tr === 'pervane') e.rotation.z = (e.rotation.z + dt * (4 + Math.min(a.v, 14) * 1.1)) % (Math.PI * 2);   // hızda bile kanatlar seçilir (çakışma titremesi olmaz)
     else if (tr === 'yele2') { const dl = e.userData.faz || 0; e.rotation.x = -s.sal * 0.3 - (havada ? 0.15 : 0) + Math.sin(t * 9 + a.faz + dl) * 0.07 * (0.35 + hiz); e.rotation.z = -yanal * 0.5 + Math.sin(t * 6.3 + a.faz + dl) * 0.06 * (0.35 + hiz); }
     else if (tr === 'kanatcik') { const cp = Math.sin(t * (5 + hiz * 7) + a.faz); e.scale.set(1 - cp * 0.06, 1 + cp * (0.2 + (havada ? 0.15 : 0)), 1); }
@@ -1242,5 +1479,6 @@ function arabaYerlestir(a, dt) {
   arSerpinti(a, x, z, a.g.rotation.y, havada, dt);
   a.golge.position.set(x, 0.07, z); a.golge.rotation.z = a.g.rotation.y;
   a.golge.scale.setScalar(1 + Math.min(0.32, y * 0.15)); a.golge.material.opacity = Math.max(0.55, 1 - y * 0.22);
+  if (a.guc || s.gAcik) arGucGorunum(a, s, t, dt);
   a.x = x; a.z = z; a.tx = p.tx; a.tz = p.tz;
 }

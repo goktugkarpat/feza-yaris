@@ -591,6 +591,211 @@ function konfetiAt(x, z) {
   konfeti.visible = true;
 }
 
+// ───────── sürpriz balonlar, patlama, izler ve güç efektleri (yaris-pist) ─────────
+// İki çizim: balon gövdeleri (çoklu kopya) + tek resim paftasından beslenen dörtgen yığını (simge, ip, gölge, halka, iz, şerit).
+// Deneme: window.psSurprizDene = [{s, d, tur, var}] (SURPRIZ yokken), window.psIzDene = 'kalp' (GARAJ yokken ya da izi zorlamak için).
+const psSN = 8, psFQ = 184, psIN = 96, psRN = 30;
+const psSRENK = { dev: 0xff7a2e, baloncuk: 0x25bfe6, gokkusagi: 0xb45cff, miknatis: 0x4fd13a };
+const psSHUCRE = { dev: 0, baloncuk: 1, gokkusagi: 2, miknatis: 3 };
+const psFxDoku = tuvalDoku(512, 512, (g, w, h) => {
+  g.clearRect(0, 0, w, h); g.lineCap = 'round'; g.lineJoin = 'round';
+  const hucre = (c, f) => { g.save(); g.translate((c % 4) * 128 + 64, (c >> 2) * 128 + 64); f(); g.restore(); };
+  const rozet = renk => { g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, 54, 0, 6.2832); g.fill(); g.strokeStyle = renk; g.lineWidth = 7; g.stroke(); };
+  hucre(0, () => {   // dev: kalın yukarı ok
+    rozet('#e0560c'); g.fillStyle = '#ff6a1a'; g.strokeStyle = '#ff6a1a'; g.lineWidth = 8; g.beginPath();
+    g.moveTo(0, -38); g.lineTo(32, -4); g.lineTo(13, -4); g.lineTo(13, 34); g.lineTo(-13, 34); g.lineTo(-13, -4); g.lineTo(-32, -4); g.closePath(); g.fill(); g.stroke();
+  });
+  hucre(1, () => {   // baloncuk: üç köpük
+    rozet('#128fbd');
+    for (const [x, y, r] of [[-14, 8, 25], [24, -16, 15], [22, 24, 10]]) {
+      g.fillStyle = 'rgba(70,205,245,0.4)'; g.strokeStyle = '#149fd0'; g.lineWidth = 5; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill(); g.stroke();
+      g.strokeStyle = '#ffffff'; g.lineWidth = Math.max(2.5, r * 0.2); g.beginPath(); g.arc(x, y, r * 0.58, 3.5, 4.6); g.stroke();
+    }
+  });
+  hucre(2, () => {   // gökkuşağı
+    rozet('#8a3ad0'); const rk = ['#ff4a4a', '#ff9a2e', '#ffd93a', '#4fd13a', '#3a8cff', '#9a5cff'];
+    for (let i = 0; i < 6; i++) { g.strokeStyle = rk[i]; g.lineWidth = 7.4; g.lineCap = 'butt'; g.beginPath(); g.arc(0, 22, 42 - i * 6.6, Math.PI, 6.2832); g.stroke(); }
+  });
+  hucre(3, () => {   // mıknatıs
+    rozet('#2f9a22'); g.lineCap = 'butt';
+    g.strokeStyle = '#ee2f3f'; g.lineWidth = 19; g.beginPath(); g.moveTo(-24, 16); g.lineTo(-24, -6); g.arc(0, -6, 24, Math.PI, 6.2832); g.lineTo(24, 16); g.stroke();
+    g.strokeStyle = '#aeb6c4'; g.beginPath(); g.moveTo(-24, 16); g.lineTo(-24, 33); g.moveTo(24, 16); g.lineTo(24, 33); g.stroke();
+  });
+  hucre(4, () => {   // ip
+    for (const [renk, kal] of [['rgba(40,44,70,0.6)', 11], ['#ffffff', 6]]) { g.strokeStyle = renk; g.lineWidth = kal; g.beginPath(); for (let y = -56; y <= 56; y += 4) g.lineTo(Math.sin((y + 56) / 112 * 8) * 9, y); g.stroke(); }
+  });
+  hucre(5, () => { const r = g.createRadialGradient(0, 0, 0, 0, 0, 58); r.addColorStop(0, 'rgba(20,14,30,0.62)'); r.addColorStop(0.55, 'rgba(20,14,30,0.4)'); r.addColorStop(1, 'rgba(20,14,30,0)'); g.fillStyle = r; g.fillRect(-60, -60, 120, 120); });   // gölge
+  hucre(6, () => { g.strokeStyle = '#ffffff'; g.lineWidth = 9; g.beginPath(); g.arc(0, 0, 50, 0, 6.2832); g.stroke(); });   // halka
+  hucre(7, () => {   // kalp
+    g.beginPath(); g.moveTo(0, 40); g.bezierCurveTo(-58, 4, -44, -48, 0, -18); g.bezierCurveTo(44, -48, 58, 4, 0, 40); g.closePath();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 12; g.stroke(); g.fillStyle = '#ff4f8e'; g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 6; g.beginPath(); g.arc(-20, -12, 10, 3.4, 4.7); g.stroke();
+  });
+  hucre(8, () => {   // yıldız
+    g.beginPath(); for (let i = 0; i < 10; i++) { const a = i / 10 * 6.2832 - Math.PI / 2, r = i % 2 ? 23 : 48; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 12; g.stroke(); g.fillStyle = '#ffd22e'; g.fill();
+  });
+  hucre(9, () => {   // tek köpük
+    g.fillStyle = 'rgba(190,238,255,0.3)'; g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 46, 0, 6.2832); g.fill(); g.stroke();
+    g.strokeStyle = 'rgba(40,150,210,0.55)'; g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 50.5, 0, 6.2832); g.stroke();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 8; g.beginPath(); g.arc(0, 0, 30, 3.5, 4.5); g.stroke();
+  });
+  hucre(10, () => {   // gökkuşağı şeridi (enine altı renk, iki kenarı beyaz)
+    const rk = ['#ff4a4a', '#ff9a2e', '#ffd93a', '#4fd13a', '#3a8cff', '#9a5cff'];
+    g.fillStyle = '#ffffff'; g.fillRect(-56, -64, 112, 128); for (let i = 0; i < 6; i++) { g.fillStyle = rk[i]; g.fillRect(-51 + i * 17, -64, 17.5, 128); }
+  });
+  hucre(11, () => { const r = g.createRadialGradient(0, 0, 0, 0, 0, 54); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.6, 'rgba(255,255,255,0.95)'); r.addColorStop(0.75, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(-60, -60, 120, 120); });   // yuvarlak parça
+});
+// balon gövdesi: hafif uzun küre + altında düğüm
+const psSBalonIM = (() => {
+  const a = new T.SphereGeometry(1, 14, 10).scale(0.95, 1.12, 0.95).toNonIndexed(), b = new T.ConeGeometry(0.2, 0.26, 8).translate(0, -1.2, 0).toNonIndexed();
+  const na = a.attributes.position.count, nb = b.attributes.position.count, pos = new Float32Array((na + nb) * 3), nor = new Float32Array((na + nb) * 3);
+  pos.set(a.attributes.position.array, 0); pos.set(b.attributes.position.array, na * 3); nor.set(a.attributes.normal.array, 0); nor.set(b.attributes.normal.array, na * 3);
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('normal', new T.BufferAttribute(nor, 3));
+  const m = mat(0xffffff);
+  m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n totalEmissiveRadiance += vColor.rgb * 0.42;\n#endif'); };
+  m.customProgramCacheKey = () => 'psSurpriz';
+  const im = new T.InstancedMesh(g, m, psSN); kukla.position.set(0, -50, 0); kukla.scale.setScalar(0.0001); kukla.updateMatrix();
+  for (let i = 0; i < psSN; i++) { im.setMatrixAt(i, kukla.matrix); im.setColorAt(i, renkT.setHex(0xffffff)); }
+  kukla.scale.set(1, 1, 1); im.frustumCulled = false; im.visible = false; scene.add(im); return im;
+})();
+// dörtgen yığını
+const psFP = new Float32Array(psFQ * 12), psFU = new Float32Array(psFQ * 8), psFC = new Float32Array(psFQ * 16);
+const psFx = (() => {
+  const g = new T.BufferGeometry(), ind = new Uint16Array(psFQ * 6);
+  for (let q = 0; q < psFQ; q++) ind.set([q * 4, q * 4 + 1, q * 4 + 2, q * 4 + 2, q * 4 + 1, q * 4 + 3], q * 6);
+  for (const [ad, dizi, k] of [['position', psFP, 3], ['uv', psFU, 2], ['color', psFC, 4]]) { const at = new T.BufferAttribute(dizi, k); at.setUsage(T.DynamicDrawUsage); g.setAttribute(ad, at); }
+  g.setIndex(new T.BufferAttribute(ind, 1)); g.setDrawRange(0, 0);
+  const m = new T.Mesh(g, new T.MeshBasicMaterial({ map: psFxDoku, vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide }));
+  m.frustumCulled = false; m.visible = false; m.renderOrder = 5; scene.add(m); return m;
+})();
+const psSag = new T.Vector3(1, 0, 0), psUst = new T.Vector3(0, 1, 0), psFR = new T.Color();
+let psFn = 0;
+function psFxKose(q, k, x, y, z) { const j = q * 12 + k * 3; psFP[j] = x; psFP[j + 1] = y; psFP[j + 2] = z; }
+function psFxBoya(q, hucre, renk, a0, a1, uPay, vPay) {   // a0: ilk iki köşe, a1: son iki köşe
+  const u0 = (hucre % 4) * 0.25 + uPay, u1 = (hucre % 4) * 0.25 + 0.25 - uPay, v1 = 1 - (hucre >> 2) * 0.25 - vPay, v0 = 1 - (hucre >> 2) * 0.25 - 0.25 + vPay, j = q * 8;
+  psFU[j] = u0; psFU[j + 1] = v0; psFU[j + 2] = u1; psFU[j + 3] = v0; psFU[j + 4] = u0; psFU[j + 5] = v1; psFU[j + 6] = u1; psFU[j + 7] = v1;
+  psFR.setHex(renk); for (let k = 0; k < 4; k++) { const c = q * 16 + k * 4; psFC[c] = psFR.r; psFC[c + 1] = psFR.g; psFC[c + 2] = psFR.b; psFC[c + 3] = k < 2 ? a0 : a1; }
+}
+function psFxBill(x, y, z, gen, yuk, hucre, renk, a, aci) {   // kameraya bakan dörtgen
+  if (psFn >= psFQ) return; const q = psFn++, cs = Math.cos(aci) * 0.5, sn = Math.sin(aci) * 0.5;
+  const ax = (psSag.x * cs + psUst.x * sn) * gen, ay = (psSag.y * cs + psUst.y * sn) * gen, az = (psSag.z * cs + psUst.z * sn) * gen;
+  const bx = (psUst.x * cs - psSag.x * sn) * yuk, by = (psUst.y * cs - psSag.y * sn) * yuk, bz = (psUst.z * cs - psSag.z * sn) * yuk;
+  psFxKose(q, 0, x - ax - bx, y - ay - by, z - az - bz); psFxKose(q, 1, x + ax - bx, y + ay - by, z + az - bz); psFxKose(q, 2, x - ax + bx, y - ay + by, z - az + bz); psFxKose(q, 3, x + ax + bx, y + ay + by, z + az + bz);
+  psFxBoya(q, hucre, renk, a, a, 0.004, 0.004);
+}
+function psFxYer(x, y, z, boy, hucre, renk, a) {   // yere yatık dörtgen
+  if (psFn >= psFQ) return; const q = psFn++, h = boy * 0.5;
+  psFxKose(q, 0, x - h, y, z - h); psFxKose(q, 1, x + h, y, z - h); psFxKose(q, 2, x - h, y, z + h); psFxKose(q, 3, x + h, y, z + h); psFxBoya(q, hucre, renk, a, a, 0.004, 0.004);
+}
+// iz parçacıkları (yıldız, kalp, köpük, patlama parçaları, halkalar): sabit havuz
+const psI = { i: 0, pos: new Float32Array(psIN * 3), hiz: new Float32Array(psIN * 3), omur: new Float32Array(psIN), tam: new Float32Array(psIN), hucre: new Uint8Array(psIN), yer: new Uint8Array(psIN), renk: new Uint32Array(psIN), a0: new Float32Array(psIN), b0: new Float32Array(psIN), b1: new Float32Array(psIN), yc: new Float32Array(psIN), aci: new Float32Array(psIN), don: new Float32Array(psIN) };
+function psIzSac(x, y, z, vx, vy, vz, hucre, renk, a, b0, b1, omur, yc, yer, don) {
+  const i = psI.i, j = i * 3; psI.i = (i + 1) % psIN;
+  psI.pos[j] = x; psI.pos[j + 1] = y; psI.pos[j + 2] = z; psI.hiz[j] = vx; psI.hiz[j + 1] = vy; psI.hiz[j + 2] = vz;
+  psI.hucre[i] = hucre; psI.renk[i] = renk; psI.a0[i] = a; psI.b0[i] = b0; psI.b1[i] = b1; psI.omur[i] = psI.tam[i] = omur; psI.yc[i] = yc; psI.yer[i] = yer ? 1 : 0; psI.don[i] = don || 0; psI.aci[i] = don ? Math.random() * 6.283 : 0;
+}
+// gökkuşağı şeridi: arabanın arkasında bırakılan son noktalar (halka dizi)
+const psRX = new Float32Array(psRN), psRY = new Float32Array(psRN), psRZ = new Float32Array(psRN), psRSX = new Float32Array(psRN), psRSZ = new Float32Array(psRN), psRT = new Float32Array(psRN).fill(-99), psRW = new Float32Array(psRN), psRA = new Float32Array(psRN), psRKes = new Uint8Array(psRN);
+const psR_OMUR = 0.95, psBT = new Float32Array(psSN).fill(1), psBTur = new Array(psSN).fill(''), psMikY = new Uint8Array(YILDIZ.length);
+let psRBas = 0, psRKopuk = true, psIzSay = 0, psDevT = 0, psDevYan = 1, psGucPiril = 0;
+function psIzTur() { try { if (typeof window.psIzDene === 'string') return window.psIzDene; if (typeof GARAJ !== 'undefined' && GARAJ && GARAJ.secili) return GARAJ.secili('iz') || 'yok'; } catch (e) { } return 'yok'; }
+function psGucTur() { return typeof P !== 'undefined' && P.guc && P.guc.kalan > 0 ? P.guc.tur : null; }
+function psSurprizAdim(dt, t, yarista) {
+  psFn = 0; psSag.setFromMatrixColumn(camera.matrixWorld, 0); psUst.setFromMatrixColumn(camera.matrixWorld, 1);
+  const S = typeof SURPRIZ !== 'undefined' ? SURPRIZ : window.psSurprizDene, n = S && psDurum !== 'garaj' ? Math.min(S.length, psSN) : 0;
+  const sx = -P.tz, sz = P.tx, guc = yarista ? psGucTur() : null, iz = yarista ? psIzTur() : 'yok';
+  // 1) balon gövdeleri + yerdeki gölgeleri
+  let renkDegisti = false;
+  for (let i = 0; i < psSN; i++) {
+    const b = i < n ? S[i] : null;
+    if (!b || b.var === false) { if (psBT[i] !== 0) { psBT[i] = 0; kukla.position.set(0, -50, 0); kukla.rotation.set(0, 0, 0); kukla.scale.setScalar(0.0001); kukla.updateMatrix(); psSBalonIM.setMatrixAt(i, kukla.matrix); } continue; }
+    psBT[i] = Math.min(1, psBT[i] + dt / 0.42);
+    const k = psBT[i] - 1, olcek = 1.15 * (1 + 2.70158 * k * k * k + 1.70158 * k * k), p = pist(b.s, psO), ry = rampaYukseklik(b.s, b.d), sal = Math.sin(t * 1.3 + i * 2.1);
+    const x = p.x - p.tz * b.d, z = p.z + p.tx * b.d, y = 2.2 + ry + Math.sin(t * 1.9 + i * 1.7) * 0.14;
+    if (psBTur[i] !== b.tur) { psBTur[i] = b.tur; psSBalonIM.setColorAt(i, renkT.setHex(psSRENK[b.tur] || 0xff7a2e)); renkDegisti = true; }
+    kukla.position.set(x + sal * 0.07, y, z); kukla.rotation.set(0, 0, sal * 0.07); kukla.scale.setScalar(Math.max(0.0001, olcek)); kukla.updateMatrix(); psSBalonIM.setMatrixAt(i, kukla.matrix);
+    psFxYer(x, 0.085 + ry, z, 2.3 * olcek, 5, 0xffffff, psTema.golgeA !== undefined ? Math.min(1, psTema.golgeA * 1.5) : 0.6);
+  }
+  psSBalonIM.visible = n > 0; psSBalonIM.instanceMatrix.needsUpdate = true; if (renkDegisti && psSBalonIM.instanceColor) psSBalonIM.instanceColor.needsUpdate = true;
+  // 2) gökkuşağı şeridi (iz süsü: ince ve hafif; gökkuşağı gücü: geniş ve parlak)
+  const serit = guc === 'gokkusagi' ? 2 : iz === 'gokkusagi' && guc !== 'baloncuk' ? 1 : 0, ax = P.x - P.tx * 1.15, az = P.z - P.tz * 1.15, ay = 0.11 + (P.rampaY || 0);
+  if (serit && P.v > 6 && P.hop <= 0) {
+    const son = (psRBas + psRN - 1) % psRN, dx = ax - psRX[son], dz = az - psRZ[son];
+    if (psRKopuk || dx * dx + dz * dz > 1.3) { const i = psRBas; psRBas = (psRBas + 1) % psRN; psRX[i] = ax; psRY[i] = ay; psRZ[i] = az; psRSX[i] = sx; psRSZ[i] = sz; psRT[i] = t; psRW[i] = serit === 2 ? 1.2 : 0.72; psRA[i] = serit === 2 ? 0.95 : 0.62; psRKes[i] = psRKopuk ? 1 : 0; psRKopuk = false; }
+  } else psRKopuk = true;
+  for (let k = 0; k < psRN; k++) {   // en yeniden en eskiye; her parça bir önceki noktaya bağlanır
+    const i = (psRBas + psRN - 1 - k) % psRN, yas = t - psRT[i]; if (yas > psR_OMUR || yas < 0) break;
+    const a1 = psRA[i] * (1 - yas / psR_OMUR), w = psRW[i];
+    if (k === 0 && !psRKopuk && psFn < psFQ) {   // arabaya bağlı ilk parça
+      const q = psFn++; psFxKose(q, 0, psRX[i] - psRSX[i] * w, psRY[i], psRZ[i] - psRSZ[i] * w); psFxKose(q, 1, psRX[i] + psRSX[i] * w, psRY[i], psRZ[i] + psRSZ[i] * w); psFxKose(q, 2, ax - sx * w, ay, az - sz * w); psFxKose(q, 3, ax + sx * w, ay, az + sz * w); psFxBoya(q, 10, 0xffffff, a1, psRA[i], 0.012, 0.06);
+    }
+    if (psRKes[i] || k === psRN - 1) break;
+    const j = (i + psRN - 1) % psRN, yas2 = t - psRT[j]; if (yas2 > psR_OMUR || psFn >= psFQ) break;
+    const q = psFn++, w2 = psRW[j]; psFxKose(q, 0, psRX[j] - psRSX[j] * w2, psRY[j], psRZ[j] - psRSZ[j] * w2); psFxKose(q, 1, psRX[j] + psRSX[j] * w2, psRY[j], psRZ[j] + psRSZ[j] * w2); psFxKose(q, 2, psRX[i] - psRSX[i] * w, psRY[i], psRZ[i] - psRSZ[i] * w); psFxKose(q, 3, psRX[i] + psRSX[i] * w, psRY[i], psRZ[i] + psRSZ[i] * w);
+    psFxBoya(q, 10, 0xffffff, psRA[j] * (1 - yas2 / psR_OMUR), a1, 0.012, 0.06);
+  }
+  // 3) arabadan çıkan iz parçaları ve güç efektleri
+  if (yarista && P.v > 6) {
+    const yk = P.hop > 0 ? 1 : 0, vx = P.tx * P.v, vz = P.tz * P.v;
+    if (guc === 'baloncuk') {   // arkada minik köpükler
+      psIzSay += dt * 15; while (psIzSay >= 1) { psIzSay--; const g = Math.random() - 0.5, r = Math.random(); psIzSac(P.x - P.tx * 1.6 + sx * g * 1.6, 0.7 + r * 1.3, P.z - P.tz * 1.6 + sz * g * 1.6, vx * 0.55 + sx * g, 0.5 + r * 0.9, vz * 0.55 + sz * g, 9, 0xffffff, 0.9, 0.2 + r * 0.14, 0.42 + r * 0.2, 0.6 + r * 0.25, -0.4, 0, 0); }
+    } else if (guc === 'gokkusagi') {   // şeridin üstünde seyrek pırıltı
+      psGucPiril += dt * 14; while (psGucPiril >= 1) { psGucPiril--; const g = Math.random() - 0.5; psSac(psPiril, P.x - P.tx * 1.8 + sx * g * 2.2, 0.35 + Math.random() * 0.5 + yk, P.z - P.tz * 1.8 + sz * g * 2.2, vx * 0.4, 0.6 + Math.random() * 1.2, vz * 0.4, psPIRIL_RENK[psPiril.i % 5], 0.9, 0.55, 0.1, 0.34, 0, 1.5); }
+    } else if (iz === 'yildiz' || iz === 'kalp' || iz === 'baloncuk') {
+      psIzSay += dt * (iz === 'kalp' ? 10 : 13);
+      while (psIzSay >= 1) {
+        psIzSay--; const g = Math.random() - 0.5, r = Math.random(), x = P.x - P.tx * 1.5 + sx * g * 1.5, z = P.z - P.tz * 1.5 + sz * g * 1.5;
+        if (iz === 'yildiz') psIzSac(x, 0.45 + r * 0.35 + yk, z, vx * 0.55, 0.5 + r, vz * 0.55, 8, 0xffffff, 0.95, 0.56, 0.2, 0.62 + r * 0.2, 1.5, 0, (g > 0 ? 1 : -1) * (2 + r * 3));
+        else if (iz === 'kalp') psIzSac(x, 0.5 + r * 0.3 + yk, z, vx * 0.55, 1.1 + r * 0.8, vz * 0.55, 7, 0xffffff, 0.95, 0.36, 0.56, 0.7 + r * 0.2, -0.6, 0, 0);
+        else psIzSac(x, 0.4 + r * 0.4 + yk, z, vx * 0.55 + sx * g, 0.8 + r, vz * 0.55 + sz * g, 9, 0xffffff, 0.92, 0.28, 0.52, 0.65 + r * 0.25, -0.5, 0, 0);
+      }
+    }
+    if (guc === 'dev' && P.hop <= 0) {   // dev araba: her adımda yerde genişleyen toz halkası
+      psDevT -= dt;
+      if (psDevT <= 0) {
+        psDevT = 0.36; psDevYan = -psDevYan; const x = P.x - P.tx * 0.6 + sx * psDevYan * 1.0, z = P.z - P.tz * 0.6 + sz * psDevYan * 1.0;
+        psIzSac(x, 0.13 + (P.rampaY || 0), z, vx * 0.45, 0, vz * 0.45, 6, psTema.puf, 0.8, 1.5, 4.6, 0.46, 0, 1, 0);
+        for (let k = 0; k < 4; k++) { const a = k * 1.571 + Math.random(); psSac(psToz, x + Math.cos(a) * 0.7, 0.25, z + Math.sin(a) * 0.7, vx * 0.5 + Math.cos(a) * 3, 0.8 + Math.random(), vz * 0.5 + Math.sin(a) * 3, psTema.puf, 0.5, 0.6, 1.5, 0.4, 0, 2.4); }
+      }
+    } else psDevT = 0;
+  }
+  // 4) parçacık adımı; yere yatık olanlar (halkalar) önce çizilir
+  for (let i = 0; i < psIN; i++) {
+    if (psI.omur[i] <= 0) continue;
+    const o = (psI.omur[i] -= dt), j = i * 3; if (o <= 0) { psI.omur[i] = 0; continue; }
+    psI.hiz[j + 1] -= psI.yc[i] * dt; psI.pos[j] += psI.hiz[j] * dt; psI.pos[j + 1] += psI.hiz[j + 1] * dt; psI.pos[j + 2] += psI.hiz[j + 2] * dt; psI.aci[i] += psI.don[i] * dt;
+    if (psI.pos[j + 1] < 0.12) psI.pos[j + 1] = 0.12;
+    if (psI.yer[i]) { const k = 1 - o / psI.tam[i]; psFxYer(psI.pos[j], psI.pos[j + 1], psI.pos[j + 2], lerp(psI.b0[i], psI.b1[i], Math.sqrt(k)), psI.hucre[i], psI.renk[i], psI.a0[i] * (1 - k * k)); }
+  }
+  // 5) balon ipleri ve simgeleri
+  for (let i = 0; i < n; i++) {
+    const b = S[i]; if (b.var === false || psBT[i] <= 0) continue;
+    const k = psBT[i] - 1, olcek = Math.max(0.0001, 1.15 * (1 + 2.70158 * k * k * k + 1.70158 * k * k)), p = pist(b.s, psO), sal = Math.sin(t * 1.3 + i * 2.1);
+    const x = p.x - p.tz * b.d + sal * 0.07, z = p.z + p.tx * b.d, y = 2.2 + rampaYukseklik(b.s, b.d) + Math.sin(t * 1.9 + i * 1.7) * 0.14;
+    psFxBill(x - sal * 0.05, y - 1.78 * olcek, z, 0.42 * olcek, 0.95 * olcek, 4, 0xffffff, 1, 0);
+    let kx = camera.position.x - x, ky = camera.position.y - y, kz = camera.position.z - z; const ku = 1.06 * olcek / Math.max(0.01, Math.hypot(kx, ky, kz));
+    psFxBill(x + kx * ku, y + ky * ku + 0.04, z + kz * ku, 1.22 * olcek, 1.22 * olcek, psSHUCRE[b.tur] || 0, 0xffffff, 1, sal * 0.07);
+  }
+  // 6) kameraya bakan parçacıklar (en üstte)
+  for (let i = 0; i < psIN; i++) {
+    if (psI.omur[i] <= 0 || psI.yer[i]) continue;
+    const j = i * 3, k = 1 - psI.omur[i] / psI.tam[i], boy = lerp(psI.b0[i], psI.b1[i], psI.hucre[i] === 6 ? Math.sqrt(k) : k);
+    psFxBill(psI.pos[j], psI.pos[j + 1], psI.pos[j + 2], boy, boy, psI.hucre[i], psI.renk[i], psI.a0[i] * (1 - k * k * k), psI.aci[i]);
+  }
+  psFx.visible = psFn > 0;
+  if (psFn > 0) { const g = psFx.geometry; g.setDrawRange(0, psFn * 6); g.attributes.position.needsUpdate = true; g.attributes.uv.needsUpdate = true; g.attributes.color.needsUpdate = true; }
+}
+OLAY.on('surpriz', v => {   // balon patlaması: tek halka + renkli parçalar; arabayla birlikte ilerler, kısa sürer
+  const x = v && v.x !== undefined ? v.x : P.x, z = v && v.z !== undefined ? v.z : P.z, renk = psSRENK[v && v.tur] || 0xff7a2e, vx = P.tx * P.v * 0.86, vz = P.tz * P.v * 0.86;
+  psIzSac(x, 2.0, z, vx, 0, vz, 6, renk, 0.95, 1.2, 4.4, 0.42, 0, 0, 0);
+  for (let i = 0; i < 16; i++) {
+    const a = i / 16 * 6.283 + Math.random() * 0.3, r = 4.2 + Math.random() * 3.2, c = Math.cos(a) * r, s = Math.sin(a) * r;
+    psIzSac(x, 2.0, z, vx - P.tz * c, 1.5 + s, vz + P.tx * c, i % 4 === 3 ? 8 : 11, i % 4 === 3 ? 0xffffff : i % 2 ? renk : psRENK[i % 6], 1, i % 4 === 3 ? 0.9 : 0.62, 0.3, 0.58 + Math.random() * 0.16, 7, 0, i % 4 === 3 ? 5 : 0);
+  }
+});
+OLAY.on('yildiz', y => { if (psGucTur() === 'miknatis') { const i = YILDIZ.indexOf(y); if (i >= 0) psMikY[i] = 1; } });   // mıknatıs: toplanan yıldız arabaya uçar
+
 // ───────── olaylar ─────────
 const psKenarA = cvTema === 'kar' || cvTema === 'gokkusagi' || cvTema === 'seker' ? 0.75 : 0.5, psYanSon = psTema.isik > 0.5, psHopR = new Float32Array(12), psO = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };
 let psBitisT = 0, psBitisSay = 0;
@@ -631,7 +836,13 @@ function pistGuncelle(dt, t) {
   for (let i = 0; i < YILDIZ.length; i++) {
     const y = YILDIZ[i], u = y.var ? 0 : clamp((0.3 - y.pat) / 0.3, 0, 1), gor = y.var || y.pat > 0;
     const yuk = 1.55 + Math.sin(t * 2.6 + i * 0.9) * 0.22 + u * 2.4, b = gor ? 0.7 * (1 + Math.sin(t * 5.2 + i) * 0.05 + u * 0.7) * (1 - u * u) : 0;
-    kukla.position.set(y.x, yuk, y.z); kukla.rotation.set(0, t * 2.6 + i * 0.7 + u * 9, 0); kukla.scale.setScalar(Math.max(0.0001, b)); kukla.updateMatrix(); yildizIM.setMatrixAt(i, kukla.matrix);
+    if (psMikY[i] && (y.var || y.pat <= 0)) psMikY[i] = 0;
+    if (psMikY[i]) {   // mıknatıs gücü: toplanan yıldız küçülerek arabaya uçar, ardında pırıltı bırakır
+      const e = u * u * (3 - 2 * u), mx = lerp(y.x, P.x, e), my = lerp(1.55, 1.0, e) + Math.sin(u * Math.PI) * 0.9, mz = lerp(y.z, P.z, e);
+      kukla.position.set(mx, my, mz); kukla.rotation.set(0, t * 2.6 + i * 0.7 + u * 14, 0); kukla.scale.setScalar(Math.max(0.0001, 0.7 * (1 - e * 0.8)));
+      if (u < 0.9) psSac(psPiril, mx, my, mz, P.tx * P.v * 0.5, 0.4, P.tz * P.v * 0.5, i % 2 ? 0xffe066 : 0xffffff, 0.85, 0.5, 0.1, 0.24, 0, 1.5);
+    } else { kukla.position.set(y.x, yuk, y.z); kukla.rotation.set(0, t * 2.6 + i * 0.7 + u * 9, 0); kukla.scale.setScalar(Math.max(0.0001, b)); }
+    kukla.updateMatrix(); yildizIM.setMatrixAt(i, kukla.matrix);
     // Her turdaki yeni yıldız yolu aynı nesneleri taşır; hale de yıldızla birlikte yer değiştirir.
     kukla.position.set(y.x, 0.075 + rampaYukseklik(y.s, y.d), y.z); kukla.rotation.set(0, 0, 0); kukla.scale.setScalar(y.var ? 0.92 - (yuk - 1.55) * 0.5 : 0.0001); kukla.updateMatrix(); psGolgeIM.setMatrixAt(i, kukla.matrix);
     psHale.pos[i * 3] = y.x; psHale.pos[i * 3 + 1] = yuk; psHale.pos[i * 3 + 2] = y.z; psHale.boy[i] = y.var ? 3.3 + Math.sin(t * 5.2 + i) * 0.3 : 0;
@@ -682,6 +893,7 @@ function pistGuncelle(dt, t) {
     psCizgiIM.instanceMatrix.needsUpdate = true; psCizgiIM.visible = true; psCizgiIM.material.opacity = 0.34 * clamp(psRoketT * 4, 0, 1);
     psKenar.visible = true; psKenarMat.uniforms.uT.value = t % 100; psKenarMat.uniforms.uA.value = psKenarA * clamp(psRoketT * 4, 0, 1);
   } else if (psCizgiIM.visible) { psCizgiIM.visible = false; psKenar.visible = false; psCizgiHazir = false; }
+  psSurprizAdim(dt, t, yarista);
   psHavuzAdim(psToz, dt); psHavuzAdim(psPiril, dt);
 
   // konfeti

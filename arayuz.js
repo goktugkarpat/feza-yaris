@@ -465,3 +465,286 @@ function uiSiralamaKur() {
   uiSurucuYok = false;
 }
 OLAY.on('sonuc', uiSiralamaKur);
+
+// ───────── GARAJ, YILDIZ KAVANOZU ve HEDİYE KUTUSU (yazısız, rakamsız) ─────────
+// Veri oyun.js'teki GARAJ'dan gelir (bu dosyadan sonra yüklenir: her kullanımda typeof ile bakılır; GARAJ ya da oyGarajAc yoksa garaj düğmesi gizli kalır).
+// Resimler burada çizilir: uiSusCiz(tur, id) 30 süsün her biri için ayrı bir resim verir; kilitli süs = kapalı kurdeleli kutu (uiKutuCiz).
+const UI_GJ_RENK = { mavi: '#3f8fe8', kirmizi: '#f2483a', yesil: '#49c25a', sari: '#ffd23c', pembe: '#ff7fb8', turuncu: '#ff9a2e', turkuaz: '#2fc4b2' };
+const UI_GJ_GOK = ['#ff5b5b', '#ffa53d', '#ffe14d', '#5fd068', '#4aa8ee', '#a77bf3'];
+const UI_L = 'stroke="#17335c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
+const UI_ONAY = '<i class="gj-onay" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></i>';
+const uiF = v => (+v).toFixed(1);
+function uiYildizYol(cx, cy, R) {
+  let d = '';
+  for (let i = 0; i < 10; i++) { const r = i % 2 ? R * 0.46 : R, a = -Math.PI / 2 + i * Math.PI / 5; d += (i ? 'L' : 'M') + uiF(cx + Math.cos(a) * r) + ' ' + uiF(cy + Math.sin(a) * r); }
+  return d + 'Z';
+}
+function uiKalpYol(cx, cy, s) {
+  return 'M' + uiF(cx) + ' ' + uiF(cy + s * .95) + 'C' + uiF(cx - s * 1.7) + ' ' + uiF(cy - s * .1) + ' ' + uiF(cx - s * .75) + ' ' + uiF(cy - s * 1.35) + ' ' + uiF(cx) + ' ' + uiF(cy - s * .4) +
+    'C' + uiF(cx + s * .75) + ' ' + uiF(cy - s * 1.35) + ' ' + uiF(cx + s * 1.7) + ' ' + uiF(cy - s * .1) + ' ' + uiF(cx) + ' ' + uiF(cy + s * .95) + 'Z';
+}
+function uiKutuCiz() {   // kapalı hediye kutusu: gövde + kapak (kapak ayrı grup: açılırken havaya uçar)
+  return '<svg viewBox="0 0 96 96" aria-hidden="true"><g class="hd-govde"><rect x="16" y="44" width="64" height="43" rx="7" fill="var(--hk,#ff6b8f)" ' + UI_L + '/><path d="M41 45h14v41H41z" fill="#ffd23f" stroke="#17335c" stroke-width="2.4"/>' +
+    '<path d="M22 52v26" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".45"/></g>' +
+    '<g class="hd-kapak"><rect x="10" y="30" width="76" height="18" rx="7" fill="var(--hk2,#ff8fab)" ' + UI_L + '/><path d="M41 31h14v16H41z" fill="#ffd23f" stroke="#17335c" stroke-width="2.4"/>' +
+    '<path d="M48 30C41 13 24 11 23 21s14 11 25 9zM48 30c7-17 24-19 25-9s-14 11-25 9z" fill="#ffd23f" ' + UI_L + '/><circle cx="48" cy="29" r="5.5" fill="#f5a623" ' + UI_L + '/></g></svg>';
+}
+function uiKavanozCiz() {   // yıldız kavanozu: içindeki yıldız yığını --kv (0…1) kadar yükselir
+  let y = '';
+  const yer = [[9, 72], [27, 75], [46, 72], [18, 58], [37, 60], [52, 56], [9, 44], [28, 45], [47, 42], [17, 30], [37, 31], [50, 27], [9, 17], [29, 16], [47, 14]];
+  for (const p of yer) y += '<use href="#ui-yildiz" x="' + p[0] + '" y="' + p[1] + '" width="23" height="23"/>';
+  return '<svg viewBox="0 0 80 100" aria-hidden="true"><rect x="9" y="20" width="62" height="74" rx="19" fill="#eaf7ff" opacity=".86"/><g clip-path="url(#kv-kes)"><g class="kv-dolu"><rect x="9" y="20" width="62" height="80" fill="#ffe9a0"/>' + y + '</g></g>' +
+    '<rect x="9" y="20" width="62" height="74" rx="19" fill="none" stroke="#17335c" stroke-width="4"/><path d="M19 42v28" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>' +
+    '<rect x="19" y="6" width="42" height="15" rx="6" fill="#ff8a5c" stroke="#17335c" stroke-width="4"/></svg>';
+}
+function uiGarajResim() {   // garaj: kırmızı çatılı ev, açık kapıda araba, yanında boya fırçası
+  return '<svg viewBox="0 0 96 96" aria-hidden="true"><g ' + UI_L + '><path d="M12 44h72v43H12z" fill="#fff4d4"/><path d="M5 47 48 12l43 35z" fill="#f36c52"/><path d="' + uiYildizYol(48, 33, 8) + '" fill="#ffd23f" stroke-width="2"/>' +
+    '<rect x="22" y="52" width="52" height="35" rx="4" fill="#2b3a67"/><path d="M22 56q0-4 4-4h44q4 0 4 4v5H22z" fill="#b9c6d8"/>' +
+    '<path d="M36 70l4-7h16l4 7" fill="#bfe9ff"/><rect x="29" y="69" width="38" height="15" rx="6" fill="#f2553f"/><circle cx="36" cy="76" r="3.4" fill="#ffe27a" stroke-width="2"/><circle cx="60" cy="76" r="3.4" fill="#ffe27a" stroke-width="2"/>' +
+    '<path d="M33 86v3M63 86v3" stroke-width="6"/></g>' +
+    '<g transform="rotate(38 80 60)"><path d="M80 36v26" stroke="#17335c" stroke-width="10" stroke-linecap="round"/><path d="M80 36v26" stroke="#ffb53d" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M72 62h16v10q0 12-8 16-8-4-8-16z" fill="#56bdf0" ' + UI_L + '/><path d="M72 62h16v6H72z" fill="#dfe6ee" ' + UI_L + '/></g></svg>';
+}
+function uiBoyaResim() {   // boya kategorisi: boya kovası + fırça + renk damlaları
+  return '<svg viewBox="0 0 96 96" aria-hidden="true"><g ' + UI_L + '><path d="M16 46Q41 12 66 46" fill="none" stroke-width="4"/><path d="M14 46h54l-6 40H20z" fill="#dfe6ee"/><ellipse cx="41" cy="46" rx="27" ry="8" fill="#ff5fa2"/>' +
+    '<path d="M52 52v15a5.5 5.5 0 0 0 11 0V51" fill="#ff5fa2"/></g>' +
+    '<g transform="rotate(35 74 40)"><path d="M74 6v30" stroke="#17335c" stroke-width="11" stroke-linecap="round"/><path d="M74 6v30" stroke="#ffb53d" stroke-width="5.5" stroke-linecap="round"/>' +
+    '<path d="M65 36h18v9q0 13-9 18-9-5-9-18z" fill="#4aa8ee" ' + UI_L + '/><path d="M65 36h18v6H65z" fill="#fff" ' + UI_L + '/></g>' +
+    '<circle cx="82" cy="76" r="6.5" fill="#ffd23c" ' + UI_L + '/><circle cx="72" cy="88" r="4.5" fill="#5fd068" ' + UI_L + '/></svg>';
+}
+function uiSusCiz(tur, id, girdi) {
+  const C = 'cx="48" cy="48"';
+  let g = '';
+  if (tur === 'renk') {
+    if (id === 'varsayilan') {   // arabanın kendi rengi: seçili arabanın küçük resmi
+      try { const a = oyAraba(); for (const t of ARABA_TIPLERI) if (t && t.id === a) return uiArabaCiz(String(a), uiRenk(t.renk, '#f2553f'), uiRenk(t.renk2, '#ffd23f')); } catch (_) { /* yedek aşağıda */ }
+      return uiArabaCiz('kart', '#f2553f', '#ffd23f');
+    }
+    const damla = 'M48 9C62 29 77 44 77 60a29 29 0 0 1-58 0C19 44 34 29 48 9z';
+    if (id === 'gokkusagi') {
+      g = '<g clip-path="url(#gj-damla-kes)">'; UI_GJ_GOK.forEach((c, i) => { g += '<rect x="14" y="' + (5 + i * 14.5) + '" width="68" height="15.5" fill="' + c + '"/>'; });
+      g += '</g><path d="' + damla + '" fill="none" ' + UI_L + '/>';
+    } else g = '<path d="' + damla + '" fill="' + uiRenk(girdi && girdi.renk, UI_GJ_RENK[id] || '#56bdf0') + '" ' + UI_L + '/>';
+    g += '<path d="M32 64q-1-11 8-23" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".7"/>';
+  } else if (tur === 'teker') {
+    const lastik = c => '<circle ' + C + ' r="39" fill="' + c + '" ' + UI_L + '/>', jant = c => '<circle ' + C + ' r="26" fill="' + c + '" stroke="#17335c" stroke-width="2.6"/>';
+    const kol = (n, r, c, w) => { let s = ''; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i * 2 * Math.PI / n; s += 'M48 48L' + uiF(48 + Math.cos(a) * r) + ' ' + uiF(48 + Math.sin(a) * r); } return '<path d="' + s + '" stroke="' + c + '" stroke-width="' + w + '" stroke-linecap="round" fill="none"/>'; };
+    if (id === 'yildiz') g = lastik('#2b3550') + jant('#56bdf0') + '<path d="' + uiYildizYol(48, 49, 21) + '" fill="#ffd23f" stroke="#17335c" stroke-width="2.4" stroke-linejoin="round"/>';
+    else if (id === 'cicek') {
+      g = lastik('#2b3550') + jant('#c9f2a8');
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g += '<circle cx="' + uiF(48 + Math.cos(a) * 13.5) + '" cy="' + uiF(48 + Math.sin(a) * 13.5) + '" r="8.6" fill="#ff8fc0" stroke="#17335c" stroke-width="2"/>'; }
+      g += '<circle ' + C + ' r="7.5" fill="#ffd23f" stroke="#17335c" stroke-width="2"/>';
+    } else if (id === 'gokkusagi') { g = lastik('#2b3550'); UI_GJ_GOK.forEach((c, i) => { g += '<circle ' + C + ' r="' + (26 - i * 4.2) + '" fill="' + c + '"/>'; }); g += '<circle ' + C + ' r="26" fill="none" stroke="#17335c" stroke-width="2.6"/>'; }
+    else if (id === 'altin') g = lastik('#2b3550') + jant('#ffd23f') + '<circle ' + C + ' r="18" fill="#f5a623"/>' + kol(6, 24, '#a86400', 4) + '<circle ' + C + ' r="7" fill="#fff3b0" stroke="#a86400" stroke-width="2.4"/>' +
+      '<path d="M70 12l2.6 7.4 7.4 2.6-7.4 2.6-2.6 7.4-2.6-7.4-7.4-2.6 7.4-2.6z" fill="#fff" stroke="#17335c" stroke-width="2" stroke-linejoin="round"/>';
+    else if (id === 'seker') {
+      g = lastik('#ff7fb8') + jant('#fff');
+      for (let i = 0; i < 6; i += 2) { const a = i * Math.PI / 3 - .3, b = a + Math.PI / 3; g += '<path d="M48 48L' + uiF(48 + Math.cos(a) * 25) + ' ' + uiF(48 + Math.sin(a) * 25) + 'A25 25 0 0 1 ' + uiF(48 + Math.cos(b) * 25) + ' ' + uiF(48 + Math.sin(b) * 25) + 'Z" fill="#ff4f8f"/>'; }
+      g += '<circle ' + C + ' r="26" fill="none" stroke="#17335c" stroke-width="2.6"/><circle ' + C + ' r="6" fill="#fff" stroke="#17335c" stroke-width="2.4"/>';
+    } else g = lastik('#2b3550') + jant('#dfe6ee') + kol(5, 23, '#8d9bb0', 5) + '<circle ' + C + ' r="7.5" fill="#9aa7b8" stroke="#17335c" stroke-width="2.4"/>';
+  } else if (tur === 'bayrak') {
+    g = '<ellipse cx="48" cy="90" rx="13" ry="3.6" fill="#17335c" opacity=".18"/><path d="M48 90V42" fill="none" stroke="#17335c" stroke-width="5" stroke-linecap="round"/>';
+    if (id === 'yildiz') g += '<path d="' + uiYildizYol(48, 31, 25) + '" fill="#ffd23f" ' + UI_L + '/>';
+    else if (id === 'kalp') g += '<path d="' + uiKalpYol(48, 31, 18) + '" fill="#ff5a7a" ' + UI_L + '/><path d="M36 24q2-6 8-6" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".7"/>';
+    else if (id === 'balon') g += '<path d="M48 50l-5 7h10z" fill="#f2483a" ' + UI_L + '/><ellipse cx="48" cy="28" rx="19" ry="23" fill="#f2483a" ' + UI_L + '/><path d="M38 22q2-8 9-10" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" opacity=".7"/>';
+    else if (id === 'firildak') { ['#f2483a', '#ffd23c', '#49c25a', '#3f8fe8'].forEach((c, i) => { g += '<path transform="rotate(' + i * 90 + ' 48 31)" d="M48 31V5q20 5 13 26z" fill="' + c + '" ' + UI_L + '/>'; }); g += '<circle cx="48" cy="31" r="5" fill="#fff" ' + UI_L + '/>'; }
+    else if (id === 'pati') g += '<g fill="#b5764f" ' + UI_L + '><ellipse cx="48" cy="39" rx="16" ry="12.5"/><circle cx="28" cy="25" r="6.5"/><circle cx="41" cy="14" r="7"/><circle cx="55" cy="14" r="7"/><circle cx="68" cy="25" r="6.5"/></g><ellipse cx="48" cy="41" rx="8" ry="5.5" fill="#ffb3c7"/>';
+    else g += '<circle cx="48" cy="38" r="8" fill="#c9d3df" ' + UI_L + '/>';   // yok: yalın anten
+  } else if (tur === 'iz') {
+    const yer = [[21, 70, .55], [44, 53, .8], [71, 31, 1.15]];
+    if (id === 'gokkusagi') UI_GJ_GOK.slice(0, 5).forEach((c, i) => { g += '<path d="M7 ' + (30 + i * 9) + 'q20-17 41 0t41 0" fill="none" stroke="' + c + '" stroke-width="9.5" stroke-linecap="round"/>'; });
+    else if (id === 'yildiz') for (const p of yer) g += '<path d="' + uiYildizYol(p[0], p[1], 17 * p[2]) + '" fill="#ffd23f" ' + UI_L + '/>';
+    else if (id === 'baloncuk') for (const p of yer) g += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + uiF(16 * p[2]) + '" fill="#cfefff" stroke="#3f8fe8" stroke-width="3"/><path d="M' + uiF(p[0] - 9 * p[2]) + ' ' + uiF(p[1] - 2 * p[2]) + 'q1-' + uiF(7 * p[2]) + ' ' + uiF(7 * p[2]) + '-' + uiF(8 * p[2]) + '" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>';
+    else if (id === 'kalp') for (const p of yer) g += '<path d="' + uiKalpYol(p[0], p[1], 12.5 * p[2]) + '" fill="#ff5a7a" ' + UI_L + '/>';
+    else g = '<circle ' + C + ' r="27" fill="none" stroke="#9fb0c6" stroke-width="5" stroke-dasharray="1 12" stroke-linecap="round"/>';   // yok: boş halka
+  } else if (tur === 'korna') {
+    const dalga = '<path d="M83 42q5 14 0 28M90 34q8 22 0 44" fill="none" stroke="#17335c" stroke-width="3.5" stroke-linecap="round"/>';
+    if (id === 'ordek') g = '<g ' + UI_L + '><path d="M18 56 6 46l16 3z" fill="#ffd23c"/><ellipse cx="44" cy="64" rx="29" ry="20" fill="#ffd23c"/><circle cx="64" cy="35" r="18" fill="#ffd23c"/><path d="M79 31l14 6-14 7z" fill="#ff8a2e"/>' +
+      '<path d="M28 62q13-11 26 0-11 12-26 0z" fill="#f5b400"/></g><circle cx="68" cy="31" r="3.4" fill="#17335c"/><circle cx="60" cy="41" r="4" fill="#ff9fb5" opacity=".8"/>';
+    else if (id === 'tren') g = '<g ' + UI_L + '><circle cx="29" cy="15" r="7.5" fill="#fff"/><circle cx="43" cy="9" r="5" fill="#fff"/><rect x="22" y="26" width="13" height="20" rx="2" fill="#2b3550"/>' +
+      '<rect x="10" y="44" width="50" height="29" rx="7" fill="#f2483a"/><rect x="52" y="24" width="30" height="49" rx="6" fill="#3f8fe8"/><rect x="59" y="31" width="16" height="15" rx="3" fill="#bfe9ff"/><path d="M48 21h38v6H48z" fill="#ffd23c"/>' +
+      '<path d="M10 73 4 82h12z" fill="#ffd23c"/></g>' + uiTeker(27, 78, 9, '#ffd23c') + uiTeker(49, 78, 9, '#ffd23c') + uiTeker(71, 78, 9, '#ffd23c');
+    else if (id === 'zil') g = '<g ' + UI_L + '><circle cx="48" cy="80" r="7.5" fill="#f5a623"/><path d="M48 14c-15 0-23 12-23 27v17l-9 14h64l-9-14V41c0-15-8-27-23-27z" fill="#ffd23c"/><circle cx="48" cy="12" r="5.5" fill="#f5a623"/>' +
+      '<path d="M10 28q-6 11 0 22M86 28q6 11 0 22" fill="none"/></g><path d="M35 34q2-9 9-11" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" opacity=".75"/>';
+    else if (id === 'fil') g = '<g ' + UI_L + '><ellipse cx="25" cy="42" rx="17" ry="23" fill="#8aa0c8"/></g><ellipse cx="26" cy="44" rx="9" ry="14" fill="#ffb3c7"/>' +
+      '<path d="M58 60q4 26 20 14 9-8 7-27" fill="none" stroke="#17335c" stroke-width="20" stroke-linecap="round"/><g ' + UI_L + '><circle cx="50" cy="44" r="25" fill="#a9bcdc"/></g>' +
+      '<path d="M58 60q4 26 20 14 9-8 7-27" fill="none" stroke="#a9bcdc" stroke-width="14" stroke-linecap="round"/><circle cx="55" cy="39" r="3.6" fill="#17335c"/><circle cx="44" cy="52" r="4.5" fill="#ff9fb5" opacity=".8"/>';
+    else g = '<g ' + UI_L + '><circle cx="19" cy="56" r="14" fill="#e8483a"/><path d="M30 49l16-3v20l-16-3z" fill="#f5a623"/><path d="M46 44 72 28v56L46 68z" fill="#ffc531"/><ellipse cx="72" cy="56" rx="7" ry="28" fill="#ffe27a"/></g>' +
+      '<path d="M12 50q3-6 9-6" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".7"/>' + dalga;   // dat: klasik lastik korna
+  }
+  return '<svg viewBox="0 0 96 96" aria-hidden="true">' + g + '</svg>';
+}
+
+const uiGj = uiEl('garaj'), uiGjKartlar = uiEl('garaj-kartlar'), uiGjAc = uiEl('garaj-ac'), uiGjEl = uiEl('garaj-el');
+const uiHd = uiEl('hediye'), uiHdKutu = uiEl('hediye-kutu'), uiHdSus = uiEl('hediye-sus'), uiHdGaraj = uiEl('hediye-garaj'), uiSonucKv = uiEl('sonuc-kv');
+const UI_GJ_EL_KAYIT = 'feza-yaris-garaj-el';
+let uiGjTur = 'renk', uiGjElAnim = null, uiGjElZ = 0, uiHdZ = 0, uiKvOlay = null, uiKvZ = [];
+function uiGarajVar() { return typeof GARAJ !== 'undefined' && !!GARAJ && !!GARAJ.katalog && typeof GARAJ.sec === 'function' && typeof GARAJ.sahip === 'function'; }
+function uiSoyle(k) { try { if (typeof SES !== 'undefined' && SES.CUMLE && SES.CUMLE[k]) SES.soyle(k); } catch (_) { /* ses isteğe bağlı */ } }
+function uiGjBekleyen() { try { return uiGarajVar() && typeof GARAJ.hediyeBekleyen === 'function' ? GARAJ.hediyeBekleyen() : 0; } catch (_) { return 0; } }
+function uiKvOran() { try { return uiGarajVar() && typeof GARAJ.kavanoz === 'function' ? clamp(+GARAJ.kavanoz().oran || 0, 0, 1) : 0; } catch (_) { return 0; } }
+function uiKvAyar(el, oran) { if (el) el.style.setProperty('--kv', clamp(+oran || 0, 0, 1).toFixed(3)); }
+function uiYeniden(el, sinif) { if (!el) return; el.classList.remove(sinif); void el.offsetWidth; el.classList.add(sinif); }
+// Başlıktaki garaj düğmesi + kavanoz: GARAJ ve oyGarajAc hazırsa görünür; bekleyen hediye varsa düğme parlar ve üstünde küçük kutu zıplar.
+function uiGarajBaslikAyar() {
+  const hazir = uiGarajVar() && typeof oyGarajAc === 'function';
+  uiEl('garaj-kose').classList.toggle('gizli', !hazir);
+  if (!hazir) return;
+  uiGjAc.classList.toggle('gj-hediye', uiGjBekleyen() > 0);
+  const o = uiKvOran(); uiKvAyar(uiEl('garaj-kavanoz'), o); uiKvAyar(uiEl('garaj-kv'), o);
+}
+function uiGjGirdiler(tur) {
+  const k = uiGarajVar() ? GARAJ.katalog[tur] : null;
+  return Array.isArray(k) ? k.map(x => (typeof x === 'string' ? { id: x } : x)).filter(x => x && x.id) : [];
+}
+function uiGarajKartlar(tur) {
+  if (!uiGarajVar()) return;
+  uiGjTur = tur; uiGjKartlar.dataset.tur = tur;
+  uiGj.querySelectorAll('.gj-tur').forEach(b => b.setAttribute('aria-pressed', b.dataset.tur === tur ? 'true' : 'false'));
+  uiGjKartlar.textContent = '';
+  const secili = GARAJ.secili(tur), girdiler = uiGjGirdiler(tur), n = girdiler.length;
+  uiGjKartlar.style.setProperty('--gn', Math.max(1, n)); uiGjKartlar.style.setProperty('--gn2', Math.max(1, n > 5 ? Math.ceil(n / 2) : n));   // yatayda tek sıra, dikeyde çok süs iki dengeli sıra
+  girdiler.forEach((x, i) => {
+    const b = document.createElement('button'), sahip = GARAJ.sahip(tur, x.id);
+    b.className = 'gj-kart' + (sahip ? '' : ' kilitli'); b.dataset.id = x.id; b.style.setProperty('--i', i);
+    b.setAttribute('aria-label', sahip ? tur + ' ' + x.id : 'Hediye kutusu'); b.setAttribute('aria-pressed', sahip && x.id === secili ? 'true' : 'false');
+    b.innerHTML = (sahip ? uiSusCiz(tur, x.id, x) : uiKutuCiz()) + UI_ONAY;
+    b.addEventListener('click', () => uiGarajDokun(b, tur, x.id));
+    uiGjKartlar.appendChild(b);
+  });
+}
+function uiGarajDokun(b, tur, id) {
+  uiGjElDur(true);
+  if (!GARAJ.sahip(tur, id)) {   // kapalı kutu: bekleyen hediye varsa açılır; yoksa sallanır ve anlatıcı ne yapılacağını söyler
+    if (uiGjBekleyen() > 0) { uiHediyeGoster('garaj'); return; }
+    if (b.animate) b.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-9deg)' }, { transform: 'rotate(8deg)' }, { transform: 'rotate(-6deg)' }, { transform: 'rotate(4deg)' }, { transform: 'rotate(0)' }], { duration: 520, easing: 'ease-in-out' });
+    uiSoyle('garaj_kilit'); return;
+  }
+  let oldu = false;
+  try { oldu = GARAJ.sec(tur, id) !== false; } catch (_) { oldu = false; }
+  if (!oldu) return;
+  uiGjKartlar.querySelectorAll('.gj-kart').forEach(k => k.setAttribute('aria-pressed', k === b ? 'true' : 'false'));
+  uiYeniden(b, 'gj-piril'); uiZipla(b.firstElementChild, 1.25, 420, -6);
+  if (tur === 'korna') { try { if (typeof SES !== 'undefined' && SES.efekt && typeof SES.efekt.korna === 'function') SES.efekt.korna(id); } catch (_) { /* önizleme isteğe bağlı */ } }
+}
+// İlk girişte yazısız ipucu: bir el önce seçili kategoriye, sonra takılabilecek bir karta dokunur (çocuk bir karta dokunana kadar her girişte yeniden gösterilir).
+function uiGjElDur(ogrendi) {
+  clearTimeout(uiGjElZ); if (uiGjElAnim) { uiGjElAnim.cancel(); uiGjElAnim = null; }
+  uiGjEl.classList.add('gizli');
+  if (ogrendi) { try { localStorage.setItem(UI_GJ_EL_KAYIT, '1'); } catch (_) { /* kayıt isteğe bağlı */ } }
+}
+function uiGjElIpucu() {
+  uiGjElDur(false);
+  try { if (localStorage.getItem(UI_GJ_EL_KAYIT)) return; } catch (_) { /* kayıt yoksa ipucu gösterilir */ }
+  uiGjElZ = setTimeout(() => {
+    const tur = uiGj.querySelector('.gj-tur[aria-pressed=true]'), kart = uiGjKartlar.querySelector('.gj-kart:not(.kilitli)[aria-pressed=false]') || uiGjKartlar.querySelector('.gj-kart');
+    if (!tur || !kart || uiGj.classList.contains('gizli') || !uiGjEl.animate) return;
+    const a = tur.getBoundingClientRect(), b = kart.getBoundingClientRect();
+    const p = r => 'translate(' + Math.round(r.left + r.width * .5 - 30) + 'px,' + Math.round(r.top + r.height * .55 - 14) + 'px)';
+    uiGjEl.classList.remove('gizli');
+    uiGjElAnim = uiGjEl.animate([
+      { transform: p(a) + ' scale(1.15)', opacity: 0 }, { transform: p(a) + ' scale(1.15)', opacity: 1, offset: .1 }, { transform: p(a) + ' scale(.92)', opacity: 1, offset: .2 },
+      { transform: p(a) + ' scale(1.15)', opacity: 1, offset: .32 }, { transform: p(b) + ' scale(1.15)', opacity: 1, offset: .6 }, { transform: p(b) + ' scale(.92)', opacity: 1, offset: .7 },
+      { transform: p(b) + ' scale(1.15)', opacity: 1, offset: .82 }, { transform: p(b) + ' scale(1.15)', opacity: 0 }], { duration: 3400, iterations: 3, easing: 'ease-in-out' });
+    uiGjElAnim.onfinish = () => uiGjEl.classList.add('gizli');
+  }, 1300);
+}
+// Hediye kutusu (sonuç ekranında ve garajda aynı): zıplar → dokununca (ya da 6 sn sonra kendiliğinden) açılır → içinden süsün resmi çıkar.
+function uiHediyeKapat() { clearTimeout(uiHdZ); uiHdZ = 0; uiHd.className = 'gizli'; }
+function uiHediyeGoster(yer) {
+  if (!(uiGjBekleyen() > 0)) return;
+  clearTimeout(uiHdZ);
+  uiHd.dataset.yer = yer; uiHd.className = 'hd-bekle';
+  uiHdKutu.classList.remove('gizli'); uiHdSus.classList.add('gizli'); uiHdGaraj.classList.add('gizli');
+  uiSoyle('hediye_var');
+  uiHdZ = setTimeout(uiHediyeAc, 6000);
+}
+function uiHediyeAc() {
+  clearTimeout(uiHdZ);
+  if (uiHd.className !== 'hd-bekle') return;
+  let r = null;
+  try { r = GARAJ.hediyeAc(); } catch (_) { r = null; }
+  if (!r || !r.tur) { uiHediyeKapat(); uiGarajBaslikAyar(); return; }
+  const yer = uiHd.dataset.yer, girdi = uiGjGirdiler(r.tur).find(x => x.id === r.id);
+  uiHd.className = 'hd-aciliyor';
+  uiHdSus.innerHTML = '<i class="hd-isin"></i><div class="hd-kart">' + uiSusCiz(r.tur, r.id, girdi) + '</div>';
+  uiHdZ = setTimeout(() => {
+    uiHd.className = 'hd-acik';
+    uiHdKutu.classList.add('gizli'); uiHdSus.classList.remove('gizli'); uiHdGaraj.classList.toggle('gizli', yer !== 'sonuc' || typeof oyGarajAc !== 'function');
+    uiSoyle('hediye_acildi'); uiGarajBaslikAyar();
+    if (uiSonucKv.firstElementChild) uiKvAyar(uiSonucKv.firstElementChild, uiKvOran());
+    if (yer === 'garaj') uiGarajKartlar(r.tur);
+    uiHdZ = setTimeout(() => { if (uiGjBekleyen() > 0) uiHediyeGoster(yer); else if (yer === 'garaj') uiHediyeKapat(); }, yer === 'garaj' ? 2800 : 3600);
+  }, 700);
+}
+// Sonuç ekranı: toplanan yıldızlar sayaçtan kavanoza uçar, kavanoz dolar; dolduysa içinden hediye kutusu çıkar.
+const uiKvUcan = [];
+for (let i = 0; i < 7; i++) {
+  const el = document.createElement('div'); el.className = 'ui-ucan-yildiz'; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = '<svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg>'; document.body.appendChild(el); uiKvUcan.push({ el, anim: null });
+}
+function uiKvTemizle() { for (const z of uiKvZ) clearTimeout(z); uiKvZ.length = 0; for (const p of uiKvUcan) if (p.anim) { p.anim.cancel(); p.anim = null; } }
+function uiKvUcur() {
+  const a = uiEl('sonuc-yildiz').getBoundingClientRect(), b = uiSonucKv.getBoundingClientRect();
+  if (a.width < 2 || b.width < 2) return;
+  const x = a.left + Math.min(30, a.width * .3) - 20, y = a.top + a.height * .5 - 20, dx = b.left + b.width * .5 - 20 - x, dy = b.top + b.height * .45 - 20 - y;
+  uiKvUcan.forEach((p, i) => {
+    if (!p.el.animate) return;
+    p.el.style.left = x + 'px'; p.el.style.top = y + 'px';
+    p.anim = p.el.animate([{ opacity: 0, transform: 'translate(0,0) scale(.6)' }, { opacity: 1, transform: 'translate(' + uiF(dx * .12) + 'px,' + uiF(dy * .12 - 30) + 'px) scale(1.25)', offset: .15 },
+      { opacity: 1, transform: 'translate(' + uiF(dx * .6) + 'px,' + uiF(dy * .6 - 90 - (i % 3) * 26) + 'px) scale(1.35) rotate(140deg)', offset: .6 },
+      { opacity: 0, transform: 'translate(' + uiF(dx) + 'px,' + uiF(dy) + 'px) scale(.5) rotate(300deg)' }], { duration: 900, delay: i * 130, easing: 'ease-in-out' });
+    uiKvZ.push(setTimeout(() => { try { if (typeof SES !== 'undefined' && SES.efekt && typeof SES.efekt.kavanoz === 'function') SES.efekt.kavanoz(); } catch (_) { /* ses isteğe bağlı */ } }, i * 130 + 860));   // her yıldız kavanoza düşerken tık
+  });
+}
+OLAY.on('kavanoz', o => { if (o) uiKvOlay = { once: +o.once || 0, sonra: +o.sonra || 0, hediye: +o.hediye || 0, eklenen: +o.eklenen || 0 }; });
+OLAY.on('sonuc', () => {
+  uiKvTemizle(); uiHediyeKapat();
+  uiSonucKv.classList.toggle('gizli', !uiGarajVar());
+  if (!uiGarajVar()) return;
+  const kap = uiSonucKv.firstElementChild, simdi = uiKvOran(), o = uiKvOlay || { once: simdi, sonra: simdi, hediye: 0, eklenen: 0 };
+  uiKvOlay = null;
+  uiKvAyar(kap, o.once);
+  const ucus = o.eklenen > 0 || o.sonra !== o.once || o.hediye > 0;
+  if (ucus) {
+    uiKvZ.push(setTimeout(uiKvUcur, 2300));
+    uiKvZ.push(setTimeout(() => { uiKvAyar(kap, o.hediye > 0 ? 1 : o.sonra); uiZipla(uiSonucKv, 1.14, 520, -3); }, 3050));
+  }
+  if (o.hediye > 0 || uiGjBekleyen() > 0) uiKvZ.push(setTimeout(() => { uiZipla(uiSonucKv, 1.2, 420, 4); uiHediyeGoster('sonuc'); }, ucus ? 4500 : 2600));
+});
+OLAY.on('hediye', () => { uiGarajBaslikAyar(); });
+OLAY.on('garaj', o => {   // süs başka yerden değişirse açık kartlar güncel kalsın
+  if (!o || uiGj.classList.contains('gizli') || o.tur !== uiGjTur) return;
+  uiGjKartlar.querySelectorAll('.gj-kart').forEach(k => { if (!k.classList.contains('kilitli')) k.setAttribute('aria-pressed', k.dataset.id === o.id ? 'true' : 'false'); });
+});
+OLAY.on('durum', d => {
+  const garajda = d === 'garaj';
+  uiGj.classList.toggle('gizli', !garajda || !uiGarajVar()); document.body.classList.toggle('ui-garajda', garajda);
+  if (d !== 'bitis') { uiKvTemizle(); uiSonucKv.classList.add('gizli'); }
+  if (d !== 'bitis' && d !== 'garaj') uiHediyeKapat();
+  if (garajda && uiGarajVar()) {
+    uiHediyeKapat(); uiGarajKartlar(uiGjTur); uiGarajBaslikAyar(); uiOdak(uiEl('garaj-kapat'));
+    if (uiGjBekleyen() > 0) { clearTimeout(uiHdZ); uiHdZ = setTimeout(() => uiHediyeGoster('garaj'), 1100); } else uiGjElIpucu();
+  } else uiGjElDur(false);
+  if (d === 'baslik') uiGarajBaslikAyar();
+});
+// kurulum: resimler bir kez yerleştirilir; düğmeler bağlanır
+(function uiGarajKur() {
+  uiGjAc.querySelector('.gj-resim').innerHTML = uiGarajResim(); uiGjAc.querySelector('.gj-kutucuk').innerHTML = uiKutuCiz();
+  document.querySelectorAll('.kv-kap').forEach(k => { k.innerHTML = uiKavanozCiz(); });
+  uiHdKutu.innerHTML = uiKutuCiz(); uiHdGaraj.innerHTML = uiGarajResim();
+  const turResim = { renk: uiBoyaResim(), teker: uiSusCiz('teker', 'yildiz'), bayrak: uiSusCiz('bayrak', 'yildiz'), iz: uiSusCiz('iz', 'yildiz'), korna: uiSusCiz('korna', 'dat') };
+  uiGj.querySelectorAll('.gj-tur').forEach(b => {
+    b.innerHTML = turResim[b.dataset.tur] || ''; b.setAttribute('aria-pressed', b.dataset.tur === uiGjTur ? 'true' : 'false');
+    b.addEventListener('click', () => { uiGjElDur(false); uiGarajKartlar(b.dataset.tur); uiZipla(b.firstElementChild, 1.2, 380, -6); });
+  });
+  uiGjAc.addEventListener('click', () => { if (typeof oyGarajAc === 'function') oyGarajAc(); });
+  uiEl('garaj-kapat').addEventListener('click', () => { uiHediyeKapat(); if (typeof oyGarajKapat === 'function') oyGarajKapat(); });
+  uiHdKutu.addEventListener('click', uiHediyeAc);
+  uiHdGaraj.addEventListener('click', () => {
+    if (typeof oyGarajAc !== 'function' || typeof YARIS === 'undefined') return;
+    uiHediyeKapat(); YARIS.basligaDon(); oyGarajAc();
+  });
+  // oyun.js bu dosyadan sonra yüklenir: düğmenin görünürlüğü bütün betikler hazır olunca belirlenir
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiGarajBaslikAyar); else uiGarajBaslikAyar();
+})();

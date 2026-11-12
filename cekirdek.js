@@ -197,7 +197,20 @@ function yildizDuzenle(tur) {
     y.var = true; y.pat = 0;
     const p = pist(y.s); y.x = p.x - p.tz * y.d; y.z = p.z + p.tx * y.d;
   }
+  oySurprizDuzenle(tur);
   OLAY.emit('turduzen', { tur });
+}
+// Sürpriz balonlar: tur başına 3 balon (yıldız sıraları, oklar ve rampalarla çakışmayan boş yerlerde). s = pist boyunca metre, d = yanal konum,
+// tur = balonun türü ('dev' | 'baloncuk' | 'gokkusagi' | 'miknatis'), var = duruyor mu. Her turda yeniden çıkar; türler ve şeritler sırayla değişir.
+// Nesneler yerinde güncellenir (yeni nesne yok); görselleri pist.js çizer, toplama mantığı oyun.js'te.
+const SURPRIZ_TURLER = ['dev', 'baloncuk', 'gokkusagi', 'miknatis'];
+const SURPRIZ = [0.25, 0.598, 0.94].map((u, j) => ({ s: L * u, d: 0, tur: SURPRIZ_TURLER[j], var: true, j, x: 0, z: 0 }));
+function oySurprizDuzenle(tur) {   // tur = kaçıncı tur (0, 1, 2)
+  const yan = [-2.2, 2.2, 0];
+  for (const b of SURPRIZ) {
+    b.tur = SURPRIZ_TURLER[(tur * 3 + b.j) % SURPRIZ_TURLER.length]; b.d = yan[(b.j + tur) % 3]; b.var = true;
+    const p = pist(b.s); b.x = p.x - p.tz * b.d; b.z = p.z + p.tx * b.d;
+  }
 }
 yildizDuzenle(0);
 const G = { kutu: new T.BoxGeometry(1, 1, 1), kure: new T.SphereGeometry(1, 16, 12), sil: new T.CylinderGeometry(1, 1, 1, 16), koni: new T.ConeGeometry(1, 1, 10) };

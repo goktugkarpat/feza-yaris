@@ -32,6 +32,7 @@
     <path d="M37 19h9v25c0 9 3 16 8 22-11-4-17-12-17-23z" fill="#fff" opacity=".5"/></symbol>
   <symbol id="ui-bayrak" viewBox="0 0 32 32"><rect x="4" y="3" width="4" height="27" rx="2" fill="var(--b3)"/><rect x="8.5" y="5" width="19" height="14" rx="2.5" fill="var(--b1)" stroke="var(--b2)" stroke-width="2"/>
     <path d="M9.5 6h4.5v4.3H9.5zM18.5 6H23v4.3h-4.5zM14 10.3h4.5v3.4H14zM23 10.3h3.5v3.4H23zM9.5 13.7h4.5V18H9.5zM18.5 13.7H23V18h-4.5z" fill="var(--b2)"/></symbol>
+  <clipPath id="gj-damla-kes"><path d="M48 9C62 29 77 44 77 60a29 29 0 0 1-58 0C19 44 34 29 48 9z"/></clipPath><clipPath id="kv-kes"><rect x="11" y="22" width="58" height="70" rx="17"/></clipPath>
   <symbol id="ui-oyna" viewBox="2 0 24 24"><path d="M8.5 5v14l11.5-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -61,6 +62,7 @@
   <h1 aria-label="Feza'nın Yarışı"><span class="ui-ust">Feza'nın</span><span class="ui-alt">Yarışı</span></h1>
   <div class="ui-serit"></div>
   <button id="oyna" class="buyuk" aria-label="Oyna"><svg viewBox="0 0 24 24"><use href="#ui-oyna"/></svg></button>
+  <div id="garaj-kose" class="gizli"><button id="garaj-ac" aria-label="Garaj"><span class="gj-resim"></span><i class="gj-kutucuk" aria-hidden="true"></i></button><div id="garaj-kavanoz" class="kv-kap" aria-hidden="true"></div></div>
 </div>
 
 <!-- Seçim ekranı: tam ekran, iki adım (data-adim = pist | araba). Yazı yok. Araba adımında ortadaki boşluktan 3B araba (aynı çizici) görünür. -->
@@ -104,6 +106,16 @@ if (/[?&]adim=araba(&|$)/.test(location.search) && !/[?&]atla(&|=|$)/.test(locat
 if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList.add('sec-kucuk');
 </script>
 
+<!-- Garaj: yazısız. Üstte 3B araba görünür; altta süs kartları ve beş resimli kategori. Kartları arayuz.js GARAJ.katalog'dan üretir. -->
+<div id="garaj" class="gizli">
+  <button id="garaj-kapat" aria-label="Geri"><svg viewBox="0 0 48 48"><use href="#ui-ev"/></svg></button>
+  <div id="garaj-kv" class="kv-kap" aria-hidden="true"></div>
+  <div class="gj-panel"><div id="garaj-kartlar" aria-label="Süsler"></div>
+    <div id="garaj-turler"><button class="gj-tur" data-tur="renk" aria-label="Boya"></button><button class="gj-tur" data-tur="teker" aria-label="Teker"></button><button class="gj-tur" data-tur="bayrak" aria-label="Bayrak"></button><button class="gj-tur" data-tur="iz" aria-label="İz"></button><button class="gj-tur" data-tur="korna" aria-label="Korna"></button></div></div>
+  <div id="garaj-el" class="gizli" aria-hidden="true"><svg viewBox="0 0 72 92"><circle class="ui-dokun" cx="30" cy="14" r="12" fill="#fff" opacity=".55"/><path d="M23 44V14a7 7 0 0 1 14 0v22l17 3.500a9 9 0 0 1 7 10l-2.500 20A14 14 0 0 1 44.500 82H32a14 14 0 0 1-11.500-6L6.500 57a6.500 6.500 0 0 1 10-8.300z" fill="#fff" stroke="#17335c" stroke-width="4.500" stroke-linejoin="round"/></svg></div>
+</div>
+<div id="hediye" class="gizli"><button id="hediye-kutu" aria-label="Hediye kutusu"></button><div id="hediye-sus" class="gizli"></div><button id="hediye-garaj" class="gizli" aria-label="Garaj"></button></div>
+
 <div id="mola" class="perde gizli" role="dialog" aria-modal="true" aria-label="Mola">
   <div class="mola-kutu">
     <button id="devam" class="buyuk" aria-label="Devam"><svg viewBox="0 0 24 24"><use href="#ui-oyna"/></svg></button>
@@ -112,6 +124,7 @@ if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList
 </div>
 
 <div id="sonuc" class="perde gizli" role="dialog" aria-modal="true" aria-label="Yarış tamamlandı">
+  <div id="sonuc-kv" class="gizli" aria-hidden="true"><div class="kv-kap"></div></div>
   <div class="sonuc-icerik">
   <div class="ui-odul">
     <div class="ui-isin"></div>
