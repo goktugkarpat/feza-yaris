@@ -72,6 +72,12 @@ if (cvTema === 'seker') {
   const skSalMod = cvHAREKET.length;
   cvHAREKET.push('float skF = position.x * 0.37 + position.z * 0.41;\ntransformed.y += cvK.y * sin(cvT * 5.5 + position.x * 1.7 + position.z * 1.3) * 0.11;\ntransformed.x += cvK.z * sin(cvT * 1.3 + skF) * position.y * 0.035; transformed.z += cvK.z * cos(cvT * 1.1 + skF) * position.y * 0.02;');
   const S = cvYapi(), golge = [], loli = [], pamuk = [], skJole = [];
+  // başlangıç çizgisi çevresi sade: oradaki süsler yine "kurulur" (rastgele sıra ve boş yer hesabı aynı kalır, pistin geri kalanı değişmez)
+  // ama skGizle açıkken çizilmez. skBas: çizginin ~50 m önü/arkası.
+  let skGizle = false; const skBas = i => { const j = ((i % N) + N) % N; return Math.min(j, N - j) < 66; }, skKarma = i => (((i * 2654435761) >>> 0) % 997) / 997;
+  { const e = S.ekle; S.ekle = (...a) => { if (!skGizle) e(...a); }; }
+  const skSus = l => { l.push = (...a) => skGizle ? l.length : Array.prototype.push.apply(l, a); };
+  [golge, loli, pamuk, skJole].forEach(skSus);
   const bolge = i => { const f = (((i % N) + N) % N) / N; return f < 0.07 || f >= 0.93 ? 0 : f < 0.25 ? 1 : f < 0.42 ? 2 : f < 0.60 ? 3 : f < 0.78 ? 4 : 5; };
   const yer = (i, yan, uz, r, donuk) => {   // pist kenarında boş yer bul (yola ve başka süslere taşmaz)
     for (let k = 0; k < 8; k++) {
@@ -200,7 +206,7 @@ if (cvTema === 'seker') {
   };
 
   // kurabiye köyü (başlangıç) ve son bölgede iki ev
-  [[0.945, 1, 0xff8fb8], [0.972, -1, 0x8fd6ff], [0.0, 1, 0xfff3f8], [0.022, -1, 0xff8fb8], [0.048, 1, 0x9be8c8], [0.062, -1, 0xc9a8ff], [0.82, -1, 0xfff3f8], [0.9, 1, 0xffe27a]].forEach((e, k) => { const q = yer(cvI(e[0]), e[1], YARI + 9.5 + (k % 2) * 1.5, 4.2, 0.3); if (q) ev(q, e[2], 0.95 + (k % 3) * 0.08); });
+  [[0.945, 1, 0xff8fb8], [0.972, -1, 0x8fd6ff], [0.0, 1, 0xfff3f8], [0.022, -1, 0xff8fb8], [0.048, 1, 0x9be8c8], [0.062, -1, 0xc9a8ff], [0.82, -1, 0xfff3f8], [0.9, 1, 0xffe27a]].forEach((e, k) => { skGizle = skBas(cvI(e[0])) && k !== 4; const q = yer(cvI(e[0]), e[1], YARI + 9.5 + (k % 2) * 1.5, 4.2, 0.3); if (q) ev(q, e[2], 0.95 + (k % 3) * 0.08); skGizle = false; });   // başlangıçta tek odak: ilerideki nane çatılı ev
   [[0.27, 1], [0.35, -1], [0.41, 1]].forEach(e => { const q = yer(cvI(e[0]), e[1], YARI + 10, 2.2); if (q) makaron(q); });
   [[0.63, 1], [0.13, -1]].forEach(e => { const q = yer(cvI(e[0]), e[1], YARI + 10.5, 4.8); if (q) pasta(q); });
   [[0.66, 1], [0.75, -1]].forEach(e => { const q = yer(cvI(e[0]), e[1], YARI + 10.5, 2.6); if (q) kulah(q.x, q.z, q.ry, 2.1); });
@@ -226,12 +232,13 @@ if (cvTema === 'seker') {
     break; } }
   // baston şeker fenerler: yol boyunca eşit aralıkla, sırayla bir sağda bir solda (kancası yola doğru, ucunda sarı şeker fener)
   for (let i0 = 25, k = 0; i0 < N; i0 += 100, k++) {
-    const q = yer(i0, k % 2 ? 1 : -1, YARI + 4.4, 0.5, 0); if (!q) continue;
+    skGizle = skBas(i0); const q = yer(i0, k % 2 ? 1 : -1, YARI + 4.4, 0.5, 0); if (!q) continue;
     S.yer(q.x, q.z, q.ry, 1.15); const r = 0.17, c = k % 2 ? 0xff7fb0 : KIRMIZI;
     for (let j = 0; j < 9; j++) S.ekle(skSil8, 0, 0.3 + j * 0.6, 0, r, 0.6, r, j % 2 ? BEYAZ : c);
     for (let j = 0; j < 5; j++) { const a = (j + 0.5) * Math.PI / 5; S.ekle(skSil8, 0, 5.4 + 0.7 * Math.sin(a), 0.7 - 0.7 * Math.cos(a), r, 0.52, r, j % 2 ? c : BEYAZ, a); }
     S.ekle(skSil8, 0, 5.05, 1.4, 0.03, 0.7, 0.03, BEYAZ); S.ekle(cvG.kure, 0, 4.45, 1.4, 0.36, 0.4, 0.36, SARI); S.ekle(cvG.kureK, 0, 4.82, 1.4, 0.2, 0.1, 0.2, BEYAZ);
   }
+  skGizle = false;
   // donut kemerler: yolun üstünden geçer, ayakları yolun dışında
   for (const f of [0.285, 0.455, 0.755, 0.905]) {
     let i = cvI(f), tamam = false;
@@ -251,7 +258,7 @@ if (cvTema === 'seker') {
       const k = Math.abs(tepe[i]); if (k < 0.016 || k < Math.abs(tepe[(i + 1) % N]) || k < Math.abs(tepe[(i + N - 1) % N]) || i - son < 45) continue; son = i;
       const sag = tepe[i] > 0 ? 1 : -1;
       for (const g of [-14]) {
-        const q = yer(i + g, -sag, YARI + 5.3, 1.2, 2.2); if (!q) continue;
+        skGizle = skBas(i + g); const q = yer(i + g, -sag, YARI + 5.3, 1.2, 2.2); if (!q) continue;
         S.yer(q.x, q.z, q.ry, 1.25);
         for (let j = 0; j < 4; j++) S.ekle(cvG.sil5, 0, 0.28 + j * 0.56, 0, 0.13, 0.56, 0.13, j % 2 ? BEYAZ : KIRMIZI);
         S.ekle(skYK, 0, 2.95, -0.03, 2.9, 1.7, 0.16, BEYAZ); S.ekle(skYK, 0, 2.95, 0.03, 2.6, 1.4, 0.16, 0xff5c9a);
@@ -259,11 +266,12 @@ if (cvTema === 'seker') {
         for (const sx of [-1, 1]) S.ekle(cvG.kureK, sx * 1.45, 3.8, 0, 0.17, 0.17, 0.17, SARI);
       }
     }
+    skGizle = false;
   }
   // şeker serpintili çitler
   for (let i0 = 6; i0 < N; i0 += 58) for (const yan of [-1, 1]) {
     if ((i0 / 58 | 0) % 3 !== (yan > 0 ? 1 : 0)) continue;
-    S.yer(0, 0, 0); let ox = 0, oz = 0, var_ = false;
+    S.yer(0, 0, 0); let ox = 0, oz = 0, var_ = false; skGizle = skBas(i0) || skBas(i0 + 32);
     for (let k = 0; k <= 8; k++) {
       const p = cvKenar(i0 + k * 4, yan, YARI + 3.8), x = p.x, z = p.z;
       if (yakin(x, z) < YARI + 3.5 || !cvBos(x, z, 0.3)) { var_ = false; continue; }
@@ -271,9 +279,12 @@ if (cvTema === 'seker') {
       if (var_) { const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); S.ekle(cvG.kutu, (x + ox) / 2, 0.95, (z + oz) / 2, 0.1, 0.16, l, PEMBE, 0, ry); S.ekle(cvG.kutu, (x + ox) / 2, 0.5, (z + oz) / 2, 0.1, 0.16, l, NANE, 0, ry); }
       ox = x; oz = z; var_ = true;
     }
+    skGizle = false;
   }
 
   // başlangıç köyünde bayrak ipleri: yol kenarındaki şeker direkler arasında sarkan renkli üçgen bayraklar
+  // (sade başlangıç için çizilmez; yerleri boş kalır, kemerin kendi süsü yeter)
+  skGizle = true;
   for (const yan of [-1, 1]) {
     S.yer(0, 0, 0); let ox = 0, oz = 0, var_ = false;
     for (let i = cvI(0.955), k = 0; k < 8; k++, i += 8) {
@@ -293,10 +304,11 @@ if (cvTema === 'seker') {
       ox = x; oz = z; var_ = true;
     }
   }
+  skGizle = false;
 
   // ───────── seyirciler: kurabiye adam, jöle ayıcık, marşmelov (zıplar, el sallar; hareket gölgelendiricide) ─────────
   {
-    const K = cvYapi(), A = cvYapi(), M = cvYapi(), KOYU = 0x3a2416, kl = [], al = [], ml = [];
+    const K = cvYapi(), A = cvYapi(), M = cvYapi(), KOYU = 0x3a2416, kl = [], al = [], ml = []; [kl, al, ml].forEach(skSus);
     // kurabiye adam
     for (const sx of [-1, 1]) { K.ekle(cvG.kureK, sx * 0.27, 0.36, 0, 0.23, 0.42, 0.2, KURABIYE, 0, 0, 0, 1, 1); K.ekle(cvG.ufak, sx * 0.15, 1.93, 0.27, 0.055, 0.055, 0.04, KOYU, 0, 0, 0, 0, 1); K.ekle(cvG.ufak, sx * 0.27, 1.78, 0.24, 0.075, 0.06, 0.04, PEMBE, 0, 0, 0, 0, 1); K.ekle(cvG.kutu, sx * 0.27, 0.2, 0.19, 0.3, 0.06, 0.04, BEYAZ, 0, 0, 0, 0, 1); }
     K.ekle(cvG.kure, 0, 1.0, 0, 0.5, 0.62, 0.27, KURABIYE, 0, 0, 0, 1, 1); K.ekle(cvG.kure, 0, 1.86, 0, 0.43, 0.42, 0.29, KURABIYE, 0, 0, 0, 1, 1);
@@ -313,7 +325,7 @@ if (cvTema === 'seker') {
     for (const sx of [-1, 1]) { M.ekle(cvG.ufak, sx * 0.17, 0.92, 0.47, 0.06, 0.07, 0.04, KOYU, 0, 0, 0, 0, 1); M.ekle(cvG.ufak, sx * 0.3, 0.76, 0.43, 0.09, 0.06, 0.04, PEMBE, 0, 0, 0, 0, 1); M.ekle(cvG.kureK, sx * 0.2, 0.12, 0.08, 0.17, 0.12, 0.22, BEYAZ, 0, 0, 0, 1, 1); }
     M.ekle(cvG.kureK, -0.56, 0.78, 0, 0.14, 0.14, 0.14, BEYAZ, 0, 0, 0, 1, 1); M.ekle(cvG.kureK, 0.58, 1.02, 0, 0.12, 0.27, 0.12, BEYAZ, 0, 0, -0.5, 1, 1, 1);
     for (let i = 5; i < N; i += 13) for (const yan of [-1, 1]) {
-      if (R() < 0.55) continue; const adet = 1 + ((R() * 2) | 0), b = bolge(i);
+      if (R() < 0.55) continue; const adet = 1 + ((R() * 2) | 0), b = bolge(i); skGizle = skBas(i) && skKarma(i * 2 + yan) > 0.25;   // başlangıçta seyircinin çoğu çizilmez
       for (let j = 0; j < adet; j++) {
         const p = cvKenar(i + j * 2, yan, YARI + 4.9 + R() * 1.7, 0.4), x = p.x, z = p.z, ry = p.ry;
         if (yakin(x, z) < YARI + 4.4 || !cvBos(x, z, 0.75)) continue; cvYasak.push([x, z, 0.75]);
@@ -324,11 +336,13 @@ if (cvTema === 'seker') {
         golge.push([x, 0.012, z, 0.85 * s, 1, 0.7 * s, 0]);
       }
     }
+    skGizle = false;
     if (kl.length) cok(K.geo(), cvMalz(2), kl); if (al.length) cok(A.geo(), skCila(cvMalz(2), 0.45, 0.25), al); if (ml.length) cok(M.geo(), cvMalz(2), ml);   // jelibon ayıcık: parlak cam şeker
   }
 
   // ───────── yol boyu şekerler: bölgeye göre değişir ─────────
   for (let i = 0; i < N; i += 4) for (const yan of [-1, 1]) for (let sira = 0; sira < 3; sira++) {   // sıra 0 yol kenarı · 1 arka sıra · 2 uzaktaki iri şekerler
+    skGizle = skBas(i) && (sira === 0 || (sira === 1 && skKarma(i * 7 + yan * 3) > 0.3));   // başlangıçta yola yakın şerit boş, arka sıra seyrek
     if (R() < (sira === 2 ? 0.93 : sira ? 0.86 : 0.84)) continue;   // sade: yarı yarıya seyrek, yola en yakın şeritte geniş boşluk
     const b = bolge(i), p = cvKenar(i + ((R() * 4) | 0), yan, sira === 2 ? YARI + 36 + R() * 36 : sira ? YARI + 15 + R() * 17 : YARI + 9.5 + R() * 4), x = p.x, z = p.z, ry = p.ry;
     if (yakin(x, z) < (sira === 2 ? YARI + 16 : YARI + 8.5) || !cvBos(x, z, sira === 2 ? 4 : 1.7)) continue; cvYasak.push([x, z, sira === 2 ? 4 : 1.7]);
@@ -342,6 +356,7 @@ if (cvTema === 'seker') {
     else if (b === 4) { if (r < 0.34) { kulah(x, z, R() * 6, (0.75 + R() * 0.5) * s); golge.push([x, 0.012, z, 1.4, 1, 1.2, 0]); } else if (r < 0.54) { donut(x, z, ry + (R() - 0.5), (0.8 + R() * 0.5) * s); golge.push([x, 0.012, z, 1.6, 1, 1, 0]); } else if (r < 0.76) pamukEkle(); else topLoli(x, z); }
     else { if (r < 0.58) bastonEkle(); else if (r < 0.78) sakiz(x, z); else if (r < 0.9) pamukEkle(); else lolipop(x, z, ry, s); }
   }
+  skGizle = false;
   { const g = S.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.2 * clamp(p.getY(i) / 5, 0, 1); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); }   // ton geçişi: dipte biraz koyu, yukarı doğru açık
     const m = new T.Mesh(g, skCila(cvMalz(skSalMod), 0.22, 0.1)); m.frustumCulled = false; scene.add(m); }
   if (loli.length) {
