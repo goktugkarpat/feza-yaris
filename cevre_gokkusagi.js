@@ -13,7 +13,7 @@ function cevreEkGuncelle(dt, t) {
 }
 if (cvTema === 'gokkusagi') {
   const BEYAZ = 0xffffff, PEMBE = 0xffa9cf, LILA = 0xc7a8ff, MAVI = 0x8fd0ff, SARI = 0xffe066, NANE = 0x9be8c8, KOYU = 0x4a3350, ALTIN = 0xffd24a;
-  const GK = [0xff5c6c, 0xff9a3c, 0xffe14d, 0x6fdc7a, 0x4db8ff, 0x6c78ff, 0xb884ff];   // gökkuşağı
+  const GK = [0xff5c6c, 0xff9a3c, 0xffe14d, 0x6fdc7a, 0x4db8ff, 0x6c78ff, 0xb884ff].map(c => { const k = new T.Color(c); k.lerp(new T.Color(0xffffff), 0.14); return k.getHex(); });   // gökkuşağı (biraz pastel)
   const TON = [0xffffff, 0xffeef6, 0xfff6ea, 0xf1ecff, 0xeef8ff, 0xffffff];             // bulut tonları
   const sec = l => l[(R() * l.length) | 0];
   let mx = 0, mz = 0; for (let i = 0; i < N; i++) { mx += PX[i] / N; mz += PZ[i] / N; }   // pistin ortası
@@ -86,11 +86,19 @@ if (cvTema === 'gokkusagi') {
   };
 
   // ───────── gökkuşağı kemeri: yedi renkli yarım halka ─────────
-  const gkYay = [], gkYayK = [];
-  for (let k = 0; k < 7; k++) { gkYay.push(new T.TorusGeometry(1 - k * 0.06, 0.031, 3, 16, Math.PI)); gkYayK.push(new T.TorusGeometry(1 - k * 0.06, 0.031, 3, 9, Math.PI)); }
-  const kemer = (x, z, ry, r, kalin, y, ust) => { S.yer(x, z, ry, 1, ust); const G_ = r < 7.5 ? gkYayK : gkYay; for (let k = 0; k < 7; k++) S.ekle(G_[k], 0, y || -0.2, 0, r, r, r * (kalin || 2), GK[k]); };
+  // tek parça yumuşak gökkuşağı: tombul yuvarlak kesitli bant, renkler birbirine akar, kenarlar açık pastel (karton şerit değil)
+  const gkYayGeo = (() => {
+    const NU = 30, NV = 10, rc = 0.82, ra = 0.215, rb = 0.04, pos = [], nor = [], col = [], kk = [], c = new T.Color(), c2 = new T.Color(), ac = new T.Color(0xffffff), RK = GK.slice();
+    const P = (u, v) => { const a = u / NU * Math.PI, b = v / NV * 6.2832, cv = Math.cos(b), sv = Math.sin(b), rr = rc + ra * cv; const nx = cv / ra, nz = sv / rb, l = Math.hypot(nx, nz);
+      const t = (1 - (cv + 1) / 2) * 6, k = Math.min(5, Math.floor(t)); c.setHex(RK[k]); c2.setHex(RK[k + 1]); c.lerp(c2, t - k); c.lerp(ac, 0.32 * Math.pow(Math.abs(cv), 6));
+      return [rr * Math.cos(a), rr * Math.sin(a), rb * sv, nx / l * Math.cos(a), nx / l * Math.sin(a), nz / l, c.r, c.g, c.b]; };
+    for (let u = 0; u < NU; u++) for (let v = 0; v < NV; v++) for (const [du, dv] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) { const q = P(u + du, v + dv); pos.push(q[0], q[1], q[2]); nor.push(q[3], q[4], q[5]); col.push(q[6], q[7], q[8]); kk.push(0, 0, 0); }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new T.Float32BufferAttribute(col, 3)); g.setAttribute('cvK', new T.Float32BufferAttribute(kk, 3)); return g;
+  })();
+  const gkYayL = [];
+  const kemer = (x, z, ry, r, kalin, y) => gkYayL.push([x, (y || -0.2), z, r, r, r * (kalin || 2), ry]);
   // yolun üstünden geçen dev kemerler: ayaklar yolun dışında, bulutların içinde
-  for (const f of [0.115, 0.27, 0.44, 0.585, 0.73, 0.89]) {
+  for (const f of [0.115, 0.44, 0.73]) {   // sade: yalnız üç dev kemer
     for (let k = 0; k < 14; k++) {
       const i = (cvI(f) + (k % 2 ? -1 : 1) * Math.ceil(k / 2) * 5 + N) % N, r = 18.5; let iyi = true;
       for (const yan of [-1, 1]) for (const u of [0.6, 0.8, 1.02]) { const p = cvKenar(i, yan, r * u); if (yakin(p.x, p.z) < YARI + 3.3) iyi = false; }
@@ -117,7 +125,7 @@ if (cvTema === 'gokkusagi') {
     S.ekle(cvG.kutu, 0, 6.4, 3.34, 0.9, 1.4, 0.14, PENCERE);
     for (let k = 0; k < 9; k++) { const a = k / 9 * 6.283, p = S.dunya(Math.cos(a) * 8.6, Math.sin(a) * 7.4 - 0.5); bulut.push([p.x, -0.6, p.z, 2.3 * s, 1.5 * s, 2.3 * s, R() * 6, sec(TON)]); }
     for (const a of [-13, 13]) { const p = S.dunya(a, -5.5); bulut.push([p.x, 0, p.z, 2 * s, 1.6 * s, 2 * s, 0, BEYAZ]); }
-    kemer(0, -5.5, 0, 15, 1.6, 0.5, true);   // şatonun arkasından doğan gökkuşağı
+    { const p = S.dunya(0, -5.5); kemer(p.x, p.z, q.ry, 15 * s, 1.6, 0.5 * s); }   // şatonun arkasından doğan gökkuşağı
   };
   {
     let en = null;
@@ -131,7 +139,7 @@ if (cvTema === 'gokkusagi') {
     S.ekle(cvG.sil5, 0, 9.2, 0, 0.06, 1.5, 0.06, BEYAZ); S.ekle(cvG.ucgen, 0.55, 9.55, 0, 0.7, 0.4, 0.05, sec(GK), 0, 0, -Math.PI / 2, 0, 1);
     for (let k = 0; k < 4; k++) { const a = k * 1.571 + 0.6, p = S.dunya(Math.cos(a) * 1.5, Math.sin(a) * 1.5); bulut.push([p.x, -0.3, p.z, 0.9 * s, 0.7 * s, 0.9 * s, R() * 6, BEYAZ]); }
   };
-  [[0.975, PEMBE], [0.03, MAVI], [0.5, LILA], [0.56, NANE], [0.47, SARI]].forEach((k, n) => { for (const yan of [-1, 1]) { const q = yer(cvI(k[0]), yan, YARI + 8.5 + (n > 1 ? 6 : 0), 2.6, 0.3); if (q) minikKule(q, yan > 0 ? k[1] : GK[(n * 2 + 6) % 7], 1 + (n > 1 ? 0.25 : 0)); } });
+  [[0.975, PEMBE], [0.5, LILA]].forEach((k, n) => { for (const yan of [-1, 1]) { const q = yer(cvI(k[0]), yan, YARI + 8.5 + (n > 1 ? 6 : 0), 2.6, 0.3); if (q) minikKule(q, yan > 0 ? k[1] : GK[(n * 2 + 6) % 7], 1 + (n > 1 ? 0.25 : 0)); } });
 
   // ───────── gökkuşağı bayrak ipleri (bulut direkli) ─────────
   const bayrakIpi = (i0, i1, yan) => {
@@ -145,14 +153,14 @@ if (cvTema === 'gokkusagi') {
       ox = x; oz = z; var_ = true;
     }
   };
-  for (const yan of [-1, 1]) { bayrakIpi(cvI(0.94), N + cvI(0.06), yan); bayrakIpi(cvI(0.34), cvI(0.40), yan); bayrakIpi(cvI(0.66), cvI(0.71), yan); }
+  for (const yan of [-1, 1]) bayrakIpi(cvI(0.96), N + cvI(0.04), yan);   // sade: yalnız başlangıçta
 
   // ───────── virajlarda yazısız ok tabelaları (bulut direkli) ─────────
   {
     let son = -99, adet = 0;
     for (let i = 0; i < N; i += 3) {
       let k = 0; for (let j = -10; j <= 10; j += 2) k += KAP[(i + j + N) % N]; k /= 11;
-      if (Math.abs(k) < 0.0125 || i - son < 26 || adet > 15) continue;
+      if (Math.abs(k) < 0.0125 || i - son < 60 || adet > 7) continue;
       const yon = k > 0 ? 1 : -1, q = yer(i, -yon, YARI + 5, 1.6, 3); if (!q) continue;
       son = i; adet++;
       S.yer(q.x, q.z, q.ry, 1.15);
@@ -190,9 +198,9 @@ if (cvTema === 'gokkusagi') {
     const at = (B, boynuz) => {
       B.ekle(cvG.kure, 0, 0.95, 0, 0.42, 0.42, 0.7, BEYAZ, 0, 0, 0, 1, 1);
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) B.ekle(cvG.sil5, sx * 0.22, 0.34, sz * 0.42, 0.09, 0.68, 0.09, BEYAZ, 0, 0, 0, 1, 1);
-      B.ekle(cvG.kureK, 0, 1.45, 0.55, 0.2, 0.42, 0.22, BEYAZ, 0.5, 0, 0, 1, 1); B.ekle(cvG.kure, 0, 1.82, 0.78, 0.27, 0.26, 0.34, BEYAZ, 0.2, 0, 0, 1, 1);
+      B.ekle(cvG.kureK, 0, 1.45, 0.55, 0.2, 0.42, 0.22, BEYAZ, 0.5, 0, 0, 1, 1); B.ekle(cvG.kure, 0, 1.84, 0.78, 0.31, 0.3, 0.36, BEYAZ, 0.2, 0, 0, 1, 1);
       B.ekle(cvG.kureK, 0, 1.73, 1.05, 0.17, 0.15, 0.16, 0xffd3e2, 0, 0, 0, 0, 1);
-      for (const sx of [-1, 1]) { B.ekle(cvG.ufak, sx * 0.21, 1.9, 0.9, 0.05, 0.075, 0.05, KOYU, 0, 0, 0, 0, 1); B.ekle(cvG.koni6, sx * 0.15, 2.12, 0.68, 0.07, 0.22, 0.07, BEYAZ, 0, 0, 0, 1, 1); B.ekle(cvG.ufak, sx * 0.24, 1.76, 0.95, 0.06, 0.045, 0.04, PEMBE, 0, 0, 0, 0, 1); }
+      for (const sx of [-1, 1]) { B.ekle(cvG.kureK, sx * 0.19, 1.92, 0.93, 0.085, 0.11, 0.06, BEYAZ, 0, 0, 0, 0, 1); B.ekle(cvG.kureK, sx * 0.195, 1.91, 0.965, 0.065, 0.085, 0.04, KOYU, 0, 0, 0, 0, 1); B.ekle(cvG.kureK, sx * 0.17, 1.95, 0.995, 0.025, 0.028, 0.015, BEYAZ, 0, 0, 0, 0, 1); B.ekle(cvG.kutu, sx * 0.23, 2.03, 0.95, 0.06, 0.018, 0.02, KOYU, 0, 0, sx * 0.5, 0, 1); B.ekle(cvG.koni6, sx * 0.15, 2.12, 0.68, 0.07, 0.22, 0.07, BEYAZ, 0, 0, 0, 1, 1); B.ekle(cvG.ufak, sx * 0.24, 1.76, 0.95, 0.06, 0.045, 0.04, PEMBE, 0, 0, 0, 0, 1); }
       for (let k = 0; k < 4; k++) B.ekle(cvG.ufak, 0, 2.06 - k * 0.22, 0.52 - k * 0.14, 0.13, 0.16, 0.16, GK[(k * 2 + (boynuz ? 0 : 3)) % 7], 0, 0, 0, 0, 1);
       for (let k = 0; k < 3; k++) B.ekle(cvG.ufak, 0, 1.1 - k * 0.22, -0.72 - k * 0.12, 0.13, 0.18, 0.13, GK[(k * 2 + (boynuz ? 4 : 1)) % 7], 0, 0, 0, 0, 1, 1);
       if (boynuz) B.ekle(cvG.koni6, 0, 2.32, 0.86, 0.075, 0.5, 0.075, ALTIN, 0.3, 0, 0, 0, 1);
@@ -208,7 +216,7 @@ if (cvTema === 'gokkusagi') {
     C.ekle(cvG.kure, 0, 0.6, 0, 0.44, 0.46, 0.44, BEYAZ, 0, 0, 0, 1, 1); C.ekle(cvG.kureK, 0, 0.5, 0.2, 0.3, 0.32, 0.28, 0xfff6e0, 0, 0, 0, 0, 1); C.ekle(cvG.koni6, 0, 0.66, 0.5, 0.09, 0.2, 0.09, 0xff9a3c, Math.PI / 2, 0, 0, 0, 1); C.ekle(cvG.ufak, 0, 1.08, 0, 0.09, 0.15, 0.09, BEYAZ, 0, 0, 0, 1, 1);
     for (const sx of [-1, 1]) { C.ekle(cvG.ufak, sx * 0.17, 0.78, 0.38, 0.055, 0.07, 0.04, KOYU, 0, 0, 0, 0, 1); C.ekle(cvG.kureK, sx * 0.46, 0.66, 0, 0.12, 0.3, 0.22, BEYAZ, 0, 0, sx * -0.4, 1, 1, 1); C.ekle(cvG.kutu, sx * 0.15, 0.08, 0.12, 0.14, 0.07, 0.24, 0xff9a3c, 0, 0, 0, 0, 1); }
     for (let i = 5; i < N; i += 13) for (const yan of [-1, 1]) {
-      if (R() < 0.45) continue; const adet = 1 + ((R() * 3) | 0), b = bolge(i);
+      if (R() < 0.72) continue; const adet = 1 + ((R() * 2) | 0), b = bolge(i);
       for (let j = 0; j < adet; j++) {
         const p = cvKenar(i + j * 2, yan, YARI + 4.9 + R() * 1.6, 0.4), x = p.x, z = p.z, ry = p.ry;
         if (yakin(x, z) < YARI + 4.4 || !cvBos(x, z, 0.8)) continue; cvYasak.push([x, z, 0.8]);
@@ -226,15 +234,15 @@ if (cvTema === 'gokkusagi') {
 
   // ───────── yol boyu: bulut öbekleri + bölgeye göre süsler ─────────
   for (let i = 0; i < N; i += 5) for (const yan of [-1, 1]) for (let sira = 0; sira < 3; sira++) {   // sıra 0 yol kenarı · 1 arka sıra · 2 uzaktaki iri bulutlar
-    if (R() < (sira === 2 ? 0.7 : sira ? 0.6 : 0.4)) continue;
+    if (R() < (sira === 2 ? 0.78 : sira ? 0.7 : 0.62)) continue;   // sade: daha seyrek, yol kenarında boşluk
     const b = bolge(i), s = sira === 2 ? 2.6 + R() * 2 : sira ? 1.2 + R() * 0.9 : 0.5 + R() * 0.35, rr = 2.3 * s;
-    const p = cvKenar(i + ((R() * 5) | 0), yan, sira === 2 ? YARI + 38 + R() * 40 : sira ? YARI + 14 + R() * 16 : YARI + 5.6 + R() * 4.5), x = p.x, z = p.z, ry = p.ry;
+    const p = cvKenar(i + ((R() * 5) | 0), yan, sira === 2 ? YARI + 38 + R() * 40 : sira ? YARI + 16 + R() * 16 : YARI + 7 + R() * 4.5), x = p.x, z = p.z, ry = p.ry;
     if (yakin(x, z) < YARI + 3.5 + rr || !cvBos(x, z, rr * 0.8)) continue; cvYasak.push([x, z, rr * 0.8]);
     const r = R(), yEkle = (y, k) => yildiz.push([x, y, z, k, k, k, ry + (R() - 0.5), sec(YRENK)]);
     if (sira === 0) {
       bl(x, z, s);
-      if (b === 1) { if (r < 0.5 && yakin(x, z) > YARI + 5.2) kemer(x, z, ry, 2.4 + R() * 1.2, 2.2); else if (r < 0.65) yEkle(2.6 + R() * 1.5, 0.5); }
-      else if (b === 2) { if (r < 0.34) { const k = 0.8 + R() * 0.3; ucurtma.push([x, 0, z, k, k, k, ry + Math.PI + (R() - 0.5) * 0.8, sec(GK)]); } else if (r < 0.6) balon.push([x, 3.2 + R() * 2.2, z, 0.42, 0.42, 0.42, R() * 6, sec(GK)]); }
+      if (b === 1) { if (r > 0.8) yEkle(2.6 + R() * 1.5, 0.5); }
+      else if (b === 2) { if (r < 0.34) { const k = 0.8 + R() * 0.3; ucurtma.push([x, 0, z, k, k, k, ry + Math.PI + (R() - 0.5) * 0.8, sec(GK)]); } }
       else if (b === 3) { if (r < 0.4) { kule(x, z, s * 0.9, 2); S.yer(x, z, ry, 1); S.ekle(cvG.sil5, 0, 2.6, 0, 0.07, 3.4, 0.07, BEYAZ); S.ekle(cvG.ucgen, 0.55, 3.95, 0, 0.7, 0.4, 0.05, sec(GK), 0, 0, -Math.PI / 2, 0, 1); } else if (r < 0.52) yEkle(3 + R(), 0.5); }
       else if (b === 4) { if (r < 0.3) kule(x, z, s * 0.9, 2); else if (r < 0.45) yEkle(3 + R(), 0.5); }
       else if (b === 5) { if (r < 0.62) yEkle(2.4 + R() * 2.4, 0.5 + R() * 0.3); else if (r < 0.85) ay(x, z, 3.3, 0.9, ry); }
@@ -242,24 +250,42 @@ if (cvTema === 'gokkusagi') {
     } else if (sira === 1) {
       if (r < 0.4 || b === 3) kule(x, z, s, b === 3 ? 3 : 2); else bl(x, z, s);
       const r2 = R();
-      if (b === 1 && r2 < 0.55) kemer(x, z, ry + (R() - 0.5) * 0.9, 5.5 + R() * 4, 1.8);
-      else if (b === 2 && r2 < 0.6) { const k = 0.85 + R() * 0.5; balon.push([x, 8 + R() * 9, z, k, k, k, R() * 6, sec(GK)]); }
+      if (b === 1 && r2 < 0.2) kemer(x, z, ry + (R() - 0.5) * 0.9, 5.5 + R() * 4, 1.8);
+      else if (b === 2 && r2 < 0.25) { const k = 0.85 + R() * 0.5; balon.push([x, 8 + R() * 9, z, k, k, k, R() * 6, sec(GK)]); }
       else if (b === 5 && r2 < 0.7) { if (r2 < 0.5) yEkle(7 + R() * 6, 1 + R() * 0.7); else ay(x, z, 5.5, 1.9, ry); }
-      else if (r2 < 0.14) { const k = 0.9 + R() * 0.4; balon.push([x, 11 + R() * 8, z, k, k, k, R() * 6, sec(GK)]); }
-      else if (r2 < 0.26) yEkle(8 + R() * 5, 1.1);
-      else if (r2 < 0.36) kemer(x, z, ry + (R() - 0.5) * 0.9, 6 + R() * 3, 1.8);
+      else if (r2 < 0.1) yEkle(8 + R() * 5, 1.1);
     } else {
       kule(x, z, s, r < 0.25 ? 3 : 2);
       const r2 = R();
-      if ((b === 1 && r2 < 0.6) || r2 < 0.12) kemer(x, z, ry + (R() - 0.5) * 1.2, 13 + R() * 9, 1.6);
-      else if ((b === 2 && r2 < 0.75) || r2 < 0.25) { const k = 1.5 + R() * 0.9; balon.push([x, 20 + R() * 20, z, k, k, k, R() * 6, sec(GK)]); }
+      if (b === 1 && r2 < 0.25) kemer(x, z, ry + (R() - 0.5) * 1.2, 13 + R() * 9, 1.6);
+      else if (b === 2 && r2 < 0.35) { const k = 1.5 + R() * 0.9; balon.push([x, 20 + R() * 20, z, k, k, k, R() * 6, sec(GK)]); }
       else if (b === 5 && r2 < 0.8) { if (r2 < 0.6) yEkle(16 + R() * 14, 2 + R() * 1.2); else ay(x, z, 5.2, 4, ry); }
     }
   }
   // gökte uzak balonlar
-  for (let k = 0; k < 9; k++) { const a = k / 9 * 6.283 + R() * 0.5, r = 190 + R() * 110, s = 2.4 + R() * 1.4; balon.push([mx + Math.cos(a) * r, 48 + R() * 45, mz + Math.sin(a) * r, s, s, s, R() * 6, GK[k % 7]]); }
+  for (let k = 0; k < 4; k++) { const a = k / 4 * 6.283 + R() * 0.5, r = 190 + R() * 110, s = 2.4 + R() * 1.4; balon.push([mx + Math.cos(a) * r, 48 + R() * 45, mz + Math.sin(a) * r, s, s, s, R() * 6, GK[k % 7]]); }
+  // ───────── pofuduk bulut adaları: yolun uzağında, havada süzülen küçük adalar; üstlerinde minik gökkuşağı, yıldız ya da kulecik ─────────
+  let gkT = 90210; const Rg = () => { gkT = (gkT * 1664525 + 1013904223) >>> 0; return gkT / 4294967296; }, secg = l => l[(Rg() * l.length) | 0];   // kendi sayı üreteci: eski yerleşimi kaydırmaz
+  for (let k = 0; k < 8; k++) {
+    const i = cvI((k + 0.5) / 8 + (Rg() - 0.5) * 0.03), yan = k % 2 ? 1 : -1, q = cvKenar(i, yan, YARI + 24 + Rg() * 24), x = q.x, z = q.z, ry = q.ry;
+    const h = 8 + Rg() * 8, s = 1.4 + Rg() * 0.7, t = k % 3;
+    if (yakin(x, z) < YARI + 19) continue;
+    bulut.push([x, h, z, s * 1.5, s * 0.8, s * 1.3, Rg() * 6.28, BEYAZ]);
+    for (let j = 0; j < 4; j++) { const a = j * 1.571 + Rg(), u = s * (0.75 + Rg() * 0.3); bulut.push([x + Math.cos(a) * s * 2.6, h - 0.3 + Rg() * 0.5, z + Math.sin(a) * s * 2.2, u, u * 0.75, u, Rg() * 6.28, secg(TON)]); }
+    golge.push([x, 0.012, z, 4.2 * s, 1, 3.6 * s, 0]);
+    if (t === 0) kemer(x, z, ry, 3.1 * s, 1.8, h + s * 1.1);
+    else if (t === 1) { const u = s * 0.95; yildiz.push([x, h + s * 3.1, z, u, u, u, ry, secg(YRENK)]); }
+    else { S.yer(x, z, ry, s * 0.75); const y = h / (s * 0.75) + 1.4; S.ekle(cvG.sil, 0, y + 1.5, 0, 1.1, 3, 1.1, 0xfff3f9); S.ekle(cvG.koni, 0, y + 4.1, 0, 1.5, 2.3, 1.5, secg([PEMBE, LILA, MAVI, NANE])); S.ekle(cvG.kutu, 0, y + 1.9, 1.06, 0.5, 0.8, 0.12, 0x8fd0ff); }
+  }
+  // dönen rüzgâr gülleri (başlangıç, şenlik ve adacık bölgelerinde; dönüş gölgelendiricide)
+  const gkGul = [];
+  for (let i = 8; i < 0; i += 14) { const b = bolge(i); if (b === 1 || b === 3 || b === 5) continue; for (const yan of [-1, 1]) {   // sade: döngü boş (i < 0), yol kenarındaki rüzgâr gülleri kaldırıldı
+    if (Rg() < 0.35) continue; const p = cvKenar(i + ((Rg() * 5) | 0), yan, YARI + 4.3, 3), x = p.x, z = p.z, ry = p.ry;
+    if (yakin(x, z) < YARI + 4.0 || !cvBos(x, z, 0.5)) continue; cvYasak.push([x, z, 0.7]);
+    const u = 1.15 + Rg() * 0.35; gkGul.push([x, 0, z, u, u, u, ry, secg(GK)]); bulut.push([x, -0.25, z, 0.4, 0.34, 0.4, Rg() * 6, BEYAZ]);
+  } }
   // bulut denizinin kabarıklıkları (alçak, yayvan tümsekler)
-  for (let k = 0; k < 190; k++) {
+  for (let k = 0; k < 110; k++) {
     const a = 4 + R() * 6, q = cvKenar((R() * N) | 0, R() < 0.5 ? -1 : 1, YARI + 4.5 + a + R() * R() * 130), x = q.x, z = q.z;
     if (yakin(x, z) < YARI + 3.6 + a) continue;
     puf.push([x, -0.05, z, a, 0.5 + R() * 0.9, a * (0.7 + R() * 0.3), R() * 6.28, sec(TON)]);
@@ -267,8 +293,39 @@ if (cvTema === 'gokkusagi') {
   // ufuktaki bulut dağları
   for (let k = 0; k < 24; k++) { const a = k / 24 * 6.283 + R() * 0.15, r = 300 + R() * 90, s = 15 + R() * 11; bulut.push([mx + Math.cos(a) * r, -2, mz + Math.sin(a) * r, s, s * (0.75 + R() * 0.5), s, R() * 6, sec(TON)]); if (k % 3 === 0) bulut.push([mx + Math.cos(a + 0.05) * r, s * 1.1, mz + Math.sin(a + 0.05) * r, s * 0.7, s * 0.7, s * 0.7, R() * 6, BEYAZ]); }
 
+  // ───────── ufuk silueti: çok uzakta, sise karışmış soluk dev gökkuşakları ve bulut şatosu (tek çizim) ─────────
+  {
+    const U = cvYapi(), sis = new T.Color(0xffeef4), soluk = (c, o) => { const k = new T.Color(c); k.lerp(sis, o); return k.getHex(); }, yay = [];
+    for (let k = 0; k < 7; k++) yay.push(new T.TorusGeometry(1 - k * 0.05, 0.026, 3, 30, Math.PI));
+    [[2.95, 120, 0.62]].forEach(u => { const r = 350, x = mx + Math.cos(u[0]) * r, z = mz + Math.sin(u[0]) * r; U.yer(x, z, Math.atan2(mx - x, mz - z), 1); for (let k = 0; k < 7; k++) U.ekle(yay[k], 0, -8, 0, u[1], u[1], u[1] * 2, soluk(GK[k], u[2])); });
+    [[1.95, 4.6], [5.6, 4]].forEach((u, n) => {
+      const r = 335, x = mx + Math.cos(u[0]) * r, z = mz + Math.sin(u[0]) * r, D = soluk(0xffdcea, 0.35); U.yer(x, z, Math.atan2(mx - x, mz - z), u[1]);
+      U.ekle(cvG.sil, 0, 9, 0, 3.2, 12, 3.2, D); U.ekle(cvG.koni, 0, 17.5, 0, 3.9, 5, 3.9, soluk(n ? LILA : PEMBE, 0.45));
+      for (const sx of [-1, 1]) { U.ekle(cvG.sil, sx * 5.6, 7, 0, 1.7, 9, 1.7, D); U.ekle(cvG.koni, sx * 5.6, 13.3, 0, 2.2, 3.6, 2.2, soluk(sx > 0 ? MAVI : NANE, 0.45)); U.ekle(cvG.sil, sx * 9.6, 5.5, 0, 1.3, 6.5, 1.3, D); U.ekle(cvG.koni, sx * 9.6, 10.2, 0, 1.7, 3, 1.7, soluk(SARI, 0.45)); }
+      U.ekle(cvG.kutu, 0, 5, 0, 20, 5, 2, D);
+      for (let k = -2; k <= 2; k++) U.ekle(cvG.ico, k * 6.5, 2.2 - Math.abs(k) * 0.4, 1.5, 5, 3.2, 4, 0xfff7fb);
+    });
+    const m = new T.Mesh(U.geo(), new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.frustumCulled = false; scene.add(m);
+  }
+
   // ───────── çizim: birleşik süsler ve çoklu kopyalar ─────────
-  { const m = new T.Mesh(S.geo(), cvMalz(5)); m.frustumCulled = false; scene.add(m); }
+  const gkTon = (g, h) => { const p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.24 * Math.min(1, Math.max(0, p.getY(i) / h)); c.setXYZ(i, Math.min(1, c.getX(i) * k), Math.min(1, c.getY(i) * k), Math.min(1, c.getZ(i) * k)); } return g; };   // ton geçişi: dipte koyu, yukarı doğru açık (düz karton boya yerine)
+  { const m = new T.Mesh(gkTon(S.geo(), 9), cvMalz(5, { emissive: 0x2a2226 })); m.frustumCulled = false; scene.add(m); }
+  if (gkYayL.length) {   // gökkuşakları: çok yavaş nefes alır, kıvrılır; üzerinden yumuşak bir parıltı akar (gölgelendiricide)
+    const yd = cvHAREKET.length;
+    cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 0.05 + instanceMatrix[3].z * 0.07;\n#else\nfloat cvF = 0.0;\n#endif\nfloat cvU = atan(position.y, position.x);\ntransformed.z += sin(cvT * 0.9 + cvU * 3.0 + cvF) * 0.03; transformed.xy *= 1.0 + 0.012 * sin(cvT * 0.7 + cvF);\nvColor.rgb += vec3(0.2) * pow(max(0.0, sin(cvU * 2.0 - cvT * 0.7 + cvF)), 8.0);');
+    const ym = cvMalz(yd, { emissive: 0x1a1618 }), ob = ym.onBeforeCompile;
+    ym.onBeforeCompile = sh => { ob(sh); sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * 0.6;'); };   // kendi renginde hafif ışıldar: canlı ama yumuşak
+    ym.customProgramCacheKey = () => 'gkYay'; cok(gkYayGeo, ym, gkYayL);
+  }
+  if (gkGul.length) {   // rüzgâr gülü: beyaz çubuk + dönen dört kanat
+    const gkDon = cvHAREKET.length;
+    cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 0.7 + instanceMatrix[3].z * 0.9;\n#else\nfloat cvF = 0.0;\n#endif\nfloat cvA = (cvT * 2.2 + cvF) * cvK.z; float cvC = cos(cvA), cvS = sin(cvA); vec2 cvQ = transformed.xy - vec2(0.0, 2.6);\ntransformed.xy = vec2(cvQ.x * cvC - cvQ.y * cvS, cvQ.x * cvS + cvQ.y * cvC) + vec2(0.0, 2.6);');
+    const W = cvYapi();
+    W.ekle(cvG.sil5, 0, 1.3, 0, 0.06, 2.6, 0.06, BEYAZ); W.ekle(cvG.kureK, 0, 2.6, 0.16, 0.13, 0.13, 0.1, ALTIN, 0, 0, 0, 0, 0, 1);
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; W.ekle(cvG.ucgen, Math.cos(a) * 0.36 - Math.sin(a) * 0.14, 2.6 + Math.sin(a) * 0.36 + Math.cos(a) * 0.14, 0.1, 0.3, 0.78, 0.05, k % 2 ? 0xfff6fb : BEYAZ, 0, 0, a - Math.PI / 2 + 0.38, k % 2 ? 0 : 1, 0, 1); }
+    cok(W.geo(), cvMalz(gkDon, { emissive: 0x2a2226 }), gkGul);
+  }
   {   // bulut öbeği + yayvan tümsek
     const C = cvYapi();
     C.ekle(cvG.ico, 0, 0.75, 0, 1.5, 1.15, 1.35, BEYAZ, 0, 0, 0, 1); C.ekle(cvG.kureK, -1.3, 0.45, -0.3, 1.0, 0.75, 0.95, BEYAZ, 0, 0, 0, 1); C.ekle(cvG.kureK, 1.3, 0.5, 0.35, 1.05, 0.8, 1.0, BEYAZ, 0, 0, 0, 1);
@@ -288,7 +345,7 @@ if (cvTema === 'gokkusagi') {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) B.ekle(cvG.sil5, sx * 0.44, 0.85, sz * 0.44, 0.03, 0.8, 0.03, 0x8f5c34);
     const g = B.geo(), p = g.attributes.position, kk = g.attributes.cvK;
     for (let i = 0; i < n0; i += 3) { const a = Math.atan2(p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2), p.getX(i) + p.getX(i + 1) + p.getX(i + 2)); if (Math.floor((a + Math.PI) / 6.2832 * 8 + 0.001) % 2) for (let j = 0; j < 3; j++) kk.setX(i + j, 0); }
-    cok(g, cvMalz(gkSuz), balon);
+    cok(g, cvMalz(gkSuz, { emissive: 0x2a2226 }), balon);
   }
   if (ucurtma.length) {   // uçurtma: ip + baklava + kuyruk fiyonkları (rüzgârda salınır)
     const U = cvYapi();
@@ -311,10 +368,10 @@ if (cvTema === 'gokkusagi') {
     for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + R() * 0.4, r = 150 + R() * 300, s = 0.8 + R() * 1.0; gb.push([Math.cos(a) * r, 100 + R() * 60, Math.sin(a) * r, s, s * 0.9, s, R() * 6, [0xffffff, 0xffdcea, 0xfff2e2, 0xe4eeff][i % 4]]); }
     gkBulut = cok(g, new T.MeshBasicMaterial({ vertexColors: true, fog: false }), gb); gkBulut.position.set(mx, 0, mz);
     const B = cvYapi(), kus = [];
-    B.ekle(cvG.kure, 0, 0, 0, 0.2, 0.2, 0.6, BEYAZ); B.ekle(cvG.ufak, 0, 0.08, 0.6, 0.16, 0.16, 0.18, BEYAZ); B.ekle(cvG.koni, 0, 0.06, 0.85, 0.06, 0.2, 0.06, 0xffa53d, Math.PI / 2);
+    B.ekle(cvG.kure, 0, 0, 0, 0.2, 0.2, 0.6, BEYAZ); B.ekle(cvG.ufak, 0, 0.08, 0.6, 0.16, 0.16, 0.18, BEYAZ); B.ekle(cvG.koni, 0, 0.06, 0.85, 0.06, 0.2, 0.06, 0xffa53d, Math.PI / 2); for (const sx of [-1, 1]) { B.ekle(cvG.kureK, sx * 0.11, 0.15, 0.68, 0.045, 0.05, 0.04, KOYU); B.ekle(cvG.kureK, sx * 0.13, 0.04, 0.66, 0.05, 0.035, 0.03, PEMBE); }
     for (const sx of [-1, 1]) { B.ekle(cvG.kutu, sx * 0.55, 0.05, 0.05, 0.9, 0.05, 0.5, 0xfff2f8); B.ekle(cvG.kutu, sx * 1.3, 0.05, -0.05, 0.7, 0.05, 0.32, 0xffa9cf); }
     B.ekle(cvG.kutu, 0, 0.02, -0.7, 0.3, 0.04, 0.4, 0xffa9cf);
-    for (let i = 0; i < 12; i++) { const a = (i < 7 ? 0.4 + (i % 4) * 0.13 + (i > 3 ? 0.07 : 0) : 3.5 + (i - 7) * 0.17) + R() * 0.04, r = (i < 7 ? 100 + (i > 3 ? 9 : 0) : 62) + (i % 3) * 7, s = 2.2 + R() * 0.8; kus.push([Math.cos(a) * r, 30 + (i % 4) * 4 + R() * 4, Math.sin(a) * r, s, s, s, Math.atan2(Math.sin(a), -Math.cos(a))]); }
+    for (let i = 0; i < 7; i++) { const a = (i < 7 ? 0.4 + (i % 4) * 0.13 + (i > 3 ? 0.07 : 0) : 3.5 + (i - 7) * 0.17) + R() * 0.04, r = (i < 7 ? 100 + (i > 3 ? 9 : 0) : 62) + (i % 3) * 7, s = 2.2 + R() * 0.8; kus.push([Math.cos(a) * r, 30 + (i % 4) * 4 + R() * 4, Math.sin(a) * r, s, s, s, Math.atan2(Math.sin(a), -Math.cos(a))]); }
     gkKus = cok(B.geo(), cvMalz(3), kus); gkKus.position.set(mx, 0, mz);
     const H = cvYapi(), yon = a => Math.atan2(Math.sin(a), -Math.cos(a));
     {   // zeplin
@@ -340,7 +397,7 @@ if (cvTema === 'gokkusagi') {
 
   // ───────── pırıltı: yol kenarında göz kırpan küçük yıldızlar (hareket tamamen GPU'da) ─────────
   {
-    const n = 260, p = new Float32Array(n * 3);
+    const n = 120, p = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) { const q = cvKenar((R() * N) | 0, R() < 0.5 ? -1 : 1, YARI + 3.6 + R() * 10); p[i * 3] = q.x; p[i * 3 + 1] = 0.3 + R() * 2.2; p[i * 3 + 2] = q.z; }
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3));
     const m = new T.ShaderMaterial({

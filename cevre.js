@@ -6,13 +6,15 @@ const cvTema = typeof PIST_TEMA === 'string' ? PIST_TEMA : 'orman';
 // ───────── gök, ışık ─────────
 scene.background = tuvalDoku(8, 512, (g, w, h) => {
   const gr = g.createLinearGradient(0, 0, 0, h);
-  gr.addColorStop(0, cvTema==='kiyi'?'#239bde':cvTema==='kar'?'#559fdb':'#2f8fe6'); gr.addColorStop(0.22, '#58b2f3'); gr.addColorStop(0.42, '#9ad6fb'); gr.addColorStop(0.55, '#d3f0ff'); gr.addColorStop(0.63, '#fff6df'); gr.addColorStop(1, '#eafaff');
+  // Gök dokusu ekrana sabittir; ufuk çizgisi ekranın ~%40'ında olduğundan açık ve sıcak tonlar oraya denk getirilir.
+  const d = cvTema==='kiyi' ? ['#1b8fdc', '#3fa9ec', '#86d3f6', '#c9f0fb', '#fff0cf'] : cvTema==='kar' ? ['#4388d2', '#69a9e6', '#a6d0f4', '#dcecff', '#ffe6ec'] : ['#2a84e2', '#4ea6f1', '#8fcff9', '#cfeeff', '#fff2d2'];
+  [0, 0.14, 0.29, 0.39, 0.47].forEach((u, i) => gr.addColorStop(u, d[i])); gr.addColorStop(1, d[4]);
   g.fillStyle = gr; g.fillRect(0, 0, w, h);
 });
 scene.fog = new T.Fog(0xdaf2ff, 330, 950);
 // Yeşil zemin ışığı yüzleri yeşertmesin; ten ve beyazlar nötr, ortam yine aydınlık kalır.
-const cvGokIsik = new T.HemisphereLight(0xffffff, cvTema==='kiyi'?0xd1bda0:cvTema==='kar'?0xc4dbe4:0xb8aa94, cvTema==='kar'?.85:1.18); scene.add(cvGokIsik);   // seker/uzay/col pistleri kendi dosyalarında (cevre_<ad>.js) gök, ışık ve zemini değiştirir
-const gunes = new T.DirectionalLight(0xfff2d0, cvTema==='kar'?1.05:1.5); gunes.position.set(95, 120, -45); scene.add(gunes);
+const cvGokIsik = new T.HemisphereLight(0xffffff, cvTema==='kiyi'?0xd1bda0:cvTema==='kar'?0xc4dbe4:0xb8aa94, cvTema==='kar'?1.0:1.18); scene.add(cvGokIsik);   // seker/uzay/col pistleri kendi dosyalarında (cevre_<ad>.js) gök, ışık ve zemini değiştirir
+const gunes = new T.DirectionalLight(0xfff2d0, cvTema==='kar'?1.15:1.5); gunes.position.set(95, 120, -45); scene.add(gunes);
 
 const cvZ = { value: 0 };   // ortak zaman (gölgelendiriciler için)
 const cvOyuncu = { value: new T.Vector2(0,0) };
@@ -41,8 +43,9 @@ function cvMalz(mod, o) {   // köşe renkli malzeme; kopya rengi yalnız cvK.x 
       .replace('#include <common>', '#include <common>\nuniform float cvT;\nuniform vec2 cvP;\nattribute vec3 cvK;')
       .replace('#include <color_vertex>', 'vColor = color;\n#ifdef USE_INSTANCING_COLOR\nvColor *= mix(vec3(1.0), instanceColor.xyz, cvK.x);\n#endif')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + cvHAREKET[mod]);
+    if (cvTema === 'kar') sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.30 * smoothstep(0.80, 0.93, min(vColor.r, min(vColor.g, vColor.b)));\n#endif');   // karlı parçalar (çatı, yığın, dal üstü) zemindeki kar gibi ak kalsın
   };
-  m.customProgramCacheKey = () => 'cv' + mod;
+  m.customProgramCacheKey = () => 'cv' + mod + cvTema;
   return m;
 }
 function cvYapi() {   // birçok basit parçayı tek geometride toplar (tek çizim çağrısı)
@@ -54,10 +57,12 @@ function cvYapi() {   // birçok basit parçayı tek geometride toplar (tek çiz
       o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.rotation.set(rx || 0, ry || 0, rz || 0); o.updateMatrix();
       m.multiplyMatrices(taban, o.matrix); nm.getNormalMatrix(m); c.setHex(renk);
       const g = geo.userData.cvD || (geo.userData.cvD = geo.index ? geo.toNonIndexed() : geo), p = g.attributes.position, n = g.attributes.normal;
+      const tn = geo.userData.cvTon;   // yumuşak biçimlerde alttan üste ton geçişi (alt hafif koyu, üst açık)
       for (let i = 0; i < p.count; i++) {
+        const f = tn ? 0.84 + 0.24 * clamp(p.getY(i) + 0.5, 0, 1) : 1;
         v.fromBufferAttribute(p, i).applyMatrix4(m); pos.push(v.x, v.y, v.z);
         v.fromBufferAttribute(n, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z);
-        col.push(c.r, c.g, c.b); kk.push(kt || 0, kz || 0, ke || 0);
+        col.push(Math.min(1, c.r * f), Math.min(1, c.g * f), Math.min(1, c.b * f)); kk.push(kt || 0, kz || 0, ke || 0);
       }
     },
     dunya(x, z) { return v.set(x, 0, z).applyMatrix4(taban); },
@@ -71,9 +76,9 @@ function cvYapi() {   // birçok basit parçayı tek geometride toplar (tek çiz
 }
 const cvG = {
   kure: new T.SphereGeometry(1, 7, 5), kureK: new T.SphereGeometry(1, 6, 4), cicek: new T.ConeGeometry(1, 1, 6), sil3: new T.CylinderGeometry(1, 1, 1, 3, 1, true), ico: new T.IcosahedronGeometry(1, 1), ufak: new T.IcosahedronGeometry(1, 0), okt: new T.OctahedronGeometry(1, 0),
-  sil: new T.CylinderGeometry(1, 1, 1, 10), sil5: new T.CylinderGeometry(1, 1, 1, 5, 1, true), govde: new T.CylinderGeometry(0.7, 1, 1, 5, 1, true), govdeK: new T.CylinderGeometry(0.8, 1, 1, 10),
-  koni: new T.ConeGeometry(1, 1, 7), koni6: new T.ConeGeometry(1, 1, 6), ucgen: new T.ConeGeometry(1, 1, 3), yarim: new T.SphereGeometry(1, 12, 4, 0, 6.2832, 0, 1.5708), yarimK: new T.SphereGeometry(1, 8, 3, 0, 6.2832, 0, 1.5708),
-  daire: new T.CircleGeometry(1, 16), tac: new T.SphereGeometry(1, 8, 5), kutu: G.kutu
+  sil: new T.CylinderGeometry(1, 1, 1, 10), sil5: new T.CylinderGeometry(1, 1, 1, 5, 1, true), govde: new T.CylinderGeometry(0.7, 1, 1, 6, 1, true), govdeK: new T.CylinderGeometry(0.8, 1, 1, 10),
+  koni: new T.ConeGeometry(1, 1, 7), koni6: new T.ConeGeometry(1, 1, 6), ucgen: new T.ConeGeometry(1, 1, 3), yarim: new T.SphereGeometry(1, 16, 6, 0, 6.2832, 0, 1.5708), yarimK: new T.SphereGeometry(1, 8, 3, 0, 6.2832, 0, 1.5708),
+  daire: new T.CircleGeometry(1, 16), tac: new T.SphereGeometry(1, 8, 5), tacY: new T.SphereGeometry(1, 10, 7), kureY: new T.SphereGeometry(1, 8, 5), kutu: G.kutu
 };
 { // Yerdeki çiçeklerde görünmeyen alt yüzler çizilmez; üstteki kabarık taç yaprağı korunur.
   const g=cvG.okt.index?cvG.okt.toNonIndexed():cvG.okt,p=g.attributes.position,n=g.attributes.normal,pos=[],nor=[];
@@ -82,6 +87,33 @@ const cvG = {
   const catilar=[-2.8,0,2.4,0,1.7,2.4,-2.8,0,-2.4,0,1.7,2.4,0,1.7,-2.4,-2.8,0,-2.4,0,1.7,2.4,2.8,0,2.4,0,1.7,-2.4,2.8,0,2.4,2.8,0,-2.4,0,1.7,-2.4,-2.8,0,2.4,2.8,0,2.4,0,1.7,2.4,2.8,0,-2.4,-2.8,0,-2.4,0,1.7,-2.4];
   cvG.cati=new T.BufferGeometry();cvG.cati.setAttribute('position',new T.Float32BufferAttribute(catilar,3));cvG.cati.computeVertexNormals();
   cvG.semsiye=new T.BufferGeometry();cvG.semsiye.setAttribute('position',new T.Float32BufferAttribute([0,.6,0,Math.SQRT1_2,0,Math.SQRT1_2,1,0,0],3));cvG.semsiye.computeVertexNormals();
+}
+function cvTon(g) {   // çizgi film gölgesi: tacın altı koyu-serin, üstü açık-sıcak (yalnız boyanan taç parçaları, cvK.x = 1)
+  const n = g.attributes.normal, c = g.attributes.color, k = g.attributes.cvK;
+  for (let i = 0; i < n.count; i++) if (k.getX(i) > 0.5) { const u = n.getY(i), f = u > 0 ? 1 + u * 0.07 : 1 + u * 0.13; c.setXYZ(i, Math.min(1, c.getX(i) * f), Math.min(1, c.getY(i) * f), Math.min(1, c.getZ(i) * f)); }
+  return g;
+}
+let cvDagYG = null;
+function cvDagY() {   // yumuşak omuzlu, yuvarlak doruklu çizgi film dağı (kendine benzer: üst %40'ı aynı biçimde kar başlığı olur)
+  if (cvDagYG) return cvDagYG;
+  const g = new T.ConeGeometry(1, 1, 16, 6), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) { const t = p.getY(i) + .5, k = t < 1 ? Math.pow(1 - t, .62) / (1 - t) : 0; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); }
+  g.computeVertexNormals(); return (cvDagYG = g);
+}
+function cvBulutGeo() {   // pofuduk çizgi film bulutu: düz taban, üstte yuvarlak kümeler; alt yüz hafif mavi gölgeli, üst bembeyaz
+  const B = cvYapi(), k = new T.SphereGeometry(1, 9, 6);
+  for (const q of [[0, 1, 0, 11, 8.5, 9], [-10, -.5, 1, 8.5, 6.5, 7.5], [10.5, -.3, -1, 9, 6.8, 7.5], [4.5, 5, 1.5, 7.5, 6.5, 6.5], [-4.5, 4, -1, 6.5, 5.5, 6], [-18, -2.5, 0, 5.5, 4, 5], [18.5, -2.5, .5, 5.5, 4, 5], [0, -1.5, 5, 9, 5, 4.5]]) B.ekle(k, q[0], q[1], q[2], q[3], q[4], q[5], 0xffffff);
+  const g = B.geo(), p = g.attributes.position, n = g.attributes.normal, c = g.attributes.color;
+  for (let i = 0; i < p.count; i++) { const y = Math.max(p.getY(i), -3.4); p.setY(i, y); const t = clamp((y + 3.4) / 7, 0, 1) * .6 + clamp(n.getY(i) * .5 + .5, 0, 1) * .4, r = 1 - .05 * Math.max(0, n.getX(i)); c.setXYZ(i, lerp(.74, 1, t) * r, lerp(.83, 1, t) * r, lerp(.97, 1, t)); }
+  return g;
+}
+{ // Karton gibi durmasın: yuvarlak köşeli tombul kutu ve kalın, saçaklı, kabarık çatı (yumuşak normaller + ton geçişi)
+  const g = new T.BoxGeometry(1, 1, 1, 2, 2, 2), p = g.attributes.position, n = g.attributes.normal, r = 0.2, q = new T.Vector3(), c = new T.Vector3();
+  for (let i = 0; i < p.count; i++) { q.fromBufferAttribute(p, i); c.set(clamp(q.x, -.5 + r, .5 - r), clamp(q.y, -.5 + r, .5 - r), clamp(q.z, -.5 + r, .5 - r)); q.sub(c).normalize(); n.setXYZ(i, q.x, q.y, q.z); q.multiplyScalar(r).add(c); p.setXYZ(i, q.x, q.y, q.z); }
+  g.userData.cvTon = true; cvG.kutuY = g;
+  const sk = new T.Shape(); sk.moveTo(-2.55, 0); sk.quadraticCurveTo(-1.3, 1.05, -0.2, 1.62); sk.quadraticCurveTo(0, 1.72, 0.2, 1.62); sk.quadraticCurveTo(1.3, 1.05, 2.55, 0); sk.quadraticCurveTo(0, 0.55, -2.55, 0);
+  const cg = new T.ExtrudeGeometry(sk, { depth: 4.5, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.16, bevelSegments: 2, curveSegments: 6 }); cg.translate(0, 0, -2.25); cg.computeVertexNormals();
+  cg.userData.cvTon = true; cvG.catiY = cg;   // cati ile aynı ölçü (x ±2.8, y 0..1.7, z ±2.4), ama kalın ve kubbemsi
 }
 function cvSerit(pts, w) {   // yerde kıvrılan şerit (dere)
   const pos = [];
@@ -126,9 +158,10 @@ const cimDoku = tuvalDoku(512, 512, (g, w, h) => {
 const zemin = new T.Mesh(new T.PlaneGeometry(1500, 1500, 44, 44), mat(0xffffff, { map: cimDoku, vertexColors: true }));
 {
   const p = zemin.geometry.attributes.position, c = new Float32Array(p.count * 3);
-  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.9 + 0.1 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017) + 0.07 * Math.sin(x * 0.05 + y * 0.043); c[i * 3] = v * (0.96 + 0.06 * Math.sin(y * 0.03)); c[i * 3 + 1] = v; c[i * 3 + 2] = v * 0.92; }
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.9 + 0.1 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017) + 0.07 * Math.sin(x * 0.05 + y * 0.043); c[i * 3] = v * (0.96 + 0.06 * Math.sin(y * 0.03)); c[i * 3 + 1] = v; c[i * 3 + 2] = v * 0.92; if (cvTema === 'kar') { const k = 0.95 + (v - 0.9) * 0.35; c[i * 3] = k * 0.95; c[i * 3 + 1] = k * 0.985; c[i * 3 + 2] = Math.min(1, k * 1.04); } }
   zemin.geometry.setAttribute('color', new T.BufferAttribute(c, 3));
 }
+if (cvTema === 'kar') { zemin.material.emissive.setHex(0xffffff); zemin.material.emissiveMap = cimDoku; zemin.material.emissiveIntensity = 0.26; }   // kar loş ışıkta grileşmesin
 zemin.rotation.x = -Math.PI / 2; zemin.position.set(0, -0.02, -70); scene.add(zemin);
 if(cvTema==='orman') { // yol kenarına doğru açılan çim ve ince toprak şeridi
   const W = YARI + 9, kenarDoku = tuvalDoku(256, 256, (g, w, h) => {
@@ -152,7 +185,7 @@ if(cvTema==='orman') { // yol kenarına doğru açılan çim ve ince toprak şer
 const cvGunes = new T.Sprite(new T.SpriteMaterial({
   map: tuvalDoku(256, 256, (g, w, h) => {
     const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
-    gr.addColorStop(0, 'rgba(255,254,240,1)'); gr.addColorStop(0.13, 'rgba(255,248,200,1)'); gr.addColorStop(0.17, 'rgba(255,240,165,0.6)'); gr.addColorStop(0.45, 'rgba(255,244,190,0.16)'); gr.addColorStop(1, 'rgba(255,244,190,0)');
+    gr.addColorStop(0, 'rgba(255,254,240,1)'); gr.addColorStop(0.13, 'rgba(255,248,200,1)'); gr.addColorStop(0.17, 'rgba(255,246,196,0.6)'); gr.addColorStop(0.45, 'rgba(255,252,232,0.16)'); gr.addColorStop(1, 'rgba(255,252,232,0)');   // hale açık renk: soluk gökte koyu halka yapmaz
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
   }), transparent: true, depthWrite: false, fog: false
 }));
@@ -171,7 +204,7 @@ if(cvTema==='orman') {
     for (let k = 0; k <= say; k++) {
       const p = cvKenar(i0 + k * 4, yan, YARI + 3.7), x = p.x, z = p.z;
       if (yakin(x, z) < YARI + 3.2) { var_ = false; continue; }
-      S.ekle(cvG.kutu, x, 0.65, z, 0.3, 1.3, 0.3, KOYU, 0, p.ry); S.ekle(cvG.kutu, x, 1.34, z, 0.38, 0.1, 0.38, 0xd9a566, 0, p.ry);
+      S.ekle(cvG.kutuY, x, 0.65, z, 0.3, 1.3, 0.3, KOYU, 0, p.ry); S.ekle(cvG.kutu, x, 1.34, z, 0.38, 0.1, 0.38, 0xd9a566, 0, p.ry);
       if (var_) { const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); for (const y of [0.5, 0.98]) S.ekle(cvG.kutu, (x + ox) / 2, y, (z + oz) / 2, 0.11, 0.2, l, AHSAP, 0, ry); }
       ox = x; oz = z; var_ = true;
     }
@@ -198,23 +231,23 @@ if(cvTema==='orman') {
   const tabela = (i, sag) => {
     const p = cvKenar(i, -sag, YARI + 5.2); if (yakin(p.x, p.z) < YARI + 4.2) return;
     S.yer(p.x, p.z, Math.atan2(-TX[i] - TZ[i] * sag * 0.35, -TZ[i] + TX[i] * sag * 0.35), 1.35); cvYasak.push([p.x, p.z, 3.2]);
-    for (const x of [-0.85, 0.85]) S.ekle(cvG.kutu, x, 1.3, -0.1, 0.2, 2.6, 0.2, KOYU);
-    S.ekle(cvG.kutu, 0, 2.35, -0.02, 2.7, 1.35, 0.1, KOYU); S.ekle(cvG.kutu, 0, 2.35, 0.03, 2.45, 1.1, 0.1, 0xffeeb0);
-    S.ekle(cvG.kutu, -0.32 * sag, 2.35, 0.09, 1.05, 0.32, 0.06, 0xf0503c); S.ekle(cvG.ucgen, 0.52 * sag, 2.35, 0.09, 0.5, 0.75, 0.05, 0xf0503c, 0, 0, -sag * Math.PI / 2);
+    for (const x of [-0.85, 0.85]) S.ekle(cvG.kutuY, x, 1.3, -0.1, 0.2, 2.6, 0.2, KOYU);
+    S.ekle(cvG.kutuY, 0, 2.35, -0.02, 2.7, 1.35, 0.1, KOYU); S.ekle(cvG.kutuY, 0, 2.35, 0.03, 2.45, 1.1, 0.1, 0xffeeb0);
+    S.ekle(cvG.kutuY, -0.32 * sag, 2.35, 0.09, 1.05, 0.32, 0.06, 0xf0503c); S.ekle(cvG.ucgen, 0.52 * sag, 2.35, 0.09, 0.5, 0.75, 0.05, 0xf0503c, 0, 0, -sag * Math.PI / 2);
   };
   // ── mantar ev ──
   const mantarEv = (x, z, ry, s, renk) => {
     S.yer(x, z, ry, s); cvYasak.push([x, z, 6.2 * s]);
     S.ekle(cvG.govdeK, 0, 1.3, 0, 1.75, 2.6, 1.75, 0xfff1d6); S.ekle(cvG.sil, 0, 2.6, 0, 3.0, 0.3, 3.0, 0xf3d9b4); S.ekle(cvG.yarim, 0, 2.7, 0, 3.3, 2.5, 3.3, renk);
     for (let k = 0; k < 8; k++) { const fi = k < 2 ? 0.25 : 0.62 + (k % 2) * 0.42, a = k * 2.4 + 0.5, b = 0.5 - (k % 3) * 0.1; S.ekle(cvG.ufak, 3.3 * Math.sin(fi) * Math.sin(a), 2.72 + 2.5 * Math.cos(fi), 3.3 * Math.sin(fi) * Math.cos(a), b, 0.16, b, 0xffffff, fi * 0.8, a); }
-    S.ekle(cvG.kutu, 0, 0.72, 1.58, 0.95, 1.45, 0.22, 0xa5673a); S.ekle(cvG.sil, 0, 1.45, 1.56, 0.475, 0.22, 0.475, 0xa5673a, Math.PI / 2); S.ekle(cvG.ufak, 0.27, 0.8, 1.72, 0.08, 0.08, 0.08, 0xffd84a);
-    S.ekle(cvG.kutu, 0, 0.08, 2.0, 1.4, 0.16, 0.7, 0xc9ccd4);
+    S.ekle(cvG.kutuY, 0, 0.72, 1.58, 0.95, 1.45, 0.22, 0xa5673a); S.ekle(cvG.sil, 0, 1.45, 1.56, 0.475, 0.22, 0.475, 0xa5673a, Math.PI / 2); S.ekle(cvG.ufak, 0.27, 0.8, 1.72, 0.08, 0.08, 0.08, 0xffd84a);
+    S.ekle(cvG.kutuY, 0, 0.08, 2.0, 1.4, 0.16, 0.7, 0xc9ccd4);
     for (const a of [-1.0, 1.0]) {
       const wx = Math.sin(a) * 1.5, wz = Math.cos(a) * 1.5;
       S.ekle(cvG.sil, wx, 1.6, wz, 0.5, 0.2, 0.5, 0xa5673a, Math.PI / 2, a); S.ekle(cvG.sil, wx, 1.6, wz, 0.38, 0.26, 0.38, 0xffe27a, Math.PI / 2, a);
-      S.ekle(cvG.kutu, wx, 1.6, wz, 0.76, 0.07, 0.3, 0xa5673a, 0, a); S.ekle(cvG.kutu, wx, 1.6, wz, 0.07, 0.76, 0.3, 0xa5673a, 0, a);
+      S.ekle(cvG.kutuY, wx, 1.6, wz, 0.76, 0.07, 0.3, 0xa5673a, 0, a); S.ekle(cvG.kutuY, wx, 1.6, wz, 0.07, 0.76, 0.3, 0xa5673a, 0, a);
     }
-    S.ekle(cvG.kutu, -1.4, 4.9, -0.6, 0.5, 1.3, 0.5, 0xe08a62); S.ekle(cvG.kutu, -1.4, 5.6, -0.6, 0.68, 0.18, 0.68, KOYU);
+    S.ekle(cvG.kutuY, -1.4, 4.9, -0.6, 0.5, 1.3, 0.5, 0xe08a62); S.ekle(cvG.kutuY, -1.4, 5.6, -0.6, 0.68, 0.18, 0.68, KOYU);
     for (let k = 0; k < 3; k++) S.ekle(cvG.sil, (k % 2 ? 0.35 : -0.3), 0.04, 3.1 + k * 1.15, 0.5, 0.08, 0.42, 0xd6d9df);
   };
   // ── kütük yığını ──
@@ -254,6 +287,26 @@ if(cvTema==='orman') {
     }
     for (let k = 0; k < 3; k++) { const q = cvKenar(ei - 22 + k * 20, ey, YARI + 5 + (k % 2) * 1.2, 0.7); if (cvBos(q.x, q.z, 1.2)) { geyik.push([q.x, 0, q.z, 1.5, 1.5, 1.5, q.ry, [0xd9a066, 0xc98d55, 0xe2b07a][k]]); cvYasak.push([q.x, q.z, 1.6]); } }
   }
+  // ── yol üstünde ahşap köprü görünümü: tahta döşeme, korkuluk, altından geçen dere (yalnız görünüş; yol düzdür) ──
+  {
+    const i0 = cvI(0.585), n = 9, SU = 0x4bbcf3;
+    S.yer(0, 0, 0);
+    for (let k = -n; k <= n; k++) { const i = (i0 + k + N) % N; S.ekle(cvG.kutu, PX[i], 0.035, PZ[i], GEN - 0.7, 0.04, DS * 0.97, k % 2 ? 0xd4a062 : 0xca9656, 0, Math.atan2(TX[i], TZ[i])); }
+    for (const yan of [-1, 1]) {
+      let ox = 0, oz = 0, var_ = false;
+      for (let k = -n; k <= n; k += 3) {
+        const p = cvKenar(i0 + k, yan, YARI + 1.5), x = p.x, z = p.z;
+        S.ekle(cvG.kutuY, x, 0.85, z, 0.32, 1.7, 0.32, KOYU, 0, p.ry); S.ekle(cvG.ufak, x, 1.82, z, 0.25, 0.25, 0.25, 0xffc93d);
+        if (var_) { const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); for (const y of [0.68, 1.3]) S.ekle(cvG.kutuY, (x + ox) / 2, y, (z + oz) / 2, 0.14, 0.2, l, AHSAP, 0, ry); }
+        ox = x; oz = z; var_ = true; cvYasak.push([x + (x - PX[(i0 + k + N) % N]) * 0.3, z + (z - PZ[(i0 + k + N) % N]) * 0.3, 2.6]);
+      }
+      const a = cvKenar(i0, yan, YARI + 1.1), ax = a.x, az = a.z, b = cvKenar(i0, yan, YARI + 15), dx = b.x - ax, dz = b.z - az, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz);
+      S.ekle(cvG.kutu, (ax + b.x) / 2, 0.03, (az + b.z) / 2, 7.2, 0.02, l, 0xf2e2a6, 0, ry); S.ekle(cvG.kutu, (ax + b.x) / 2, 0.06, (az + b.z) / 2, 4.6, 0.02, l, SU, 0, ry);
+      S.ekle(cvG.daire, b.x, 0.045, b.z, 5.2, 5.2, 1, 0xf2e2a6, -Math.PI / 2); S.ekle(cvG.daire, b.x, 0.075, b.z, 3.9, 3.9, 1, SU, -Math.PI / 2);
+      for (let j = 0; j < 4; j++) { const u = 0.2 + j * 0.2; S.ekle(cvG.kutu, ax + dx * u, 0.085, az + dz * u, 1.3 + (j % 2) * 0.6, 0.012, 0.14, 0xe8f9ff, 0, ry + 1.2); cvYasak.push([ax + dx * (u + 0.1), az + dz * (u + 0.1), 4.6]); }
+      cvYasak.push([b.x, b.z, 6]);
+    }
+  }
   // ── mantar köyü ──
   {
     const KAPAK = [0xf2553d, 0xffa53d, 0xe85aa0, 0x9b7be8, 0xf2553d, 0x38b8d8, 0xffa53d, 0xe85aa0];
@@ -273,8 +326,8 @@ if(cvTema==='orman') {
     else baykus.push([p.x, 0, p.z, s, s, s, p.ry, [0xb98a5e, 0xa9a2b8][k % 2]]);
   };
   for (const yan of [-1, 1]) {
-    cit(N - 44, 24, yan); bayrak(N - 39, 7, yan); cit(cvI(0.86), 14, yan);
-    for (let k = 0; k < 11; k++) {
+    cit(N - 44, 24, yan); cit(cvI(0.86), 14, yan);   // başlangıçta bayrak ipi yok: kemerin kendi süsü yeter
+    for (let k = 0; k < 11; k += 2) {
       const p = cvKenar(N - 40 + k * 8 + (yan > 0 ? 3 : 0), yan, YARI + 5.6 + (k % 3) * 0.9, 0.8); if (yakin(p.x, p.z) < YARI + 4.6 || !cvBos(p.x, p.z, 1.3)) continue;
       hayvan(p, (k + (yan > 0 ? 2 : 0)) % 4, 1.45 + (k % 3) * 0.15, k);
     }
@@ -283,7 +336,7 @@ if(cvTema==='orman') {
   for (let k = 0; k < 7; k++) { const yan = k % 2 ? -1 : 1, p = cvKenar(cvI(0.655 + k * 0.026), yan, YARI + 7.5 + (k % 3) * 1.5); if (yakin(p.x, p.z) > YARI + 6.5 && cvBos(p.x, p.z, 3.5)) kutuk(p.x, p.z, p.ry + 1.2 + k * 0.5, 0.95 + (k % 3) * 0.12); }
   {
     const F = [0.13, 0.16, 0.19, 0.22, 0.25, 0.33, 0.37, 0.41, 0.45, 0.52, 0.6, 0.66, 0.69, 0.72, 0.75, 0.78, 0.81, 0.85, 0.88, 0.91, 0.115, 0.205, 0.29, 0.48, 0.635, 0.835];
-    for (let k = 0; k < F.length; k++) {
+    for (let k = 0; k < F.length; k += 2) {
       const i = cvI(F[k]), yan = (k * 5) % 3 === 0 ? -1 : 1, p = cvKenar(i, yan, YARI + 5.3 + (k % 4) * 0.8, 0.8); if (yakin(p.x, p.z) < YARI + 4.6 || !cvBos(p.x, p.z, 1.3)) continue;
       const b = cvBolge(i); hayvan(p, b === 1 ? (k % 3 === 2 ? 2 : 0) : b === 4 ? (k % 2 ? 3 : 1) : b === 2 ? (k % 2 ? 0 : 1) : k % 4, 1.4 + (k % 3) * 0.17, k);
     }
@@ -291,9 +344,9 @@ if(cvTema==='orman') {
   // ── virajlarda ok tabelaları ──
   {
     let son = -999, say = 0;
-    for (let i = 30; i < N - 30 && say < 9; i++) {
+    for (let i = 30; i < N - 30 && say < 6; i++) {
       let k = 0; for (let j = -10; j <= 10; j++) k += KAP[(i + j + N) % N]; k /= 21;
-      if (Math.abs(k) > 0.017 && i - son > 85) { const sag = k > 0 ? 1 : -1; tabela((i - 26 + N) % N, sag); tabela((i - 6 + N) % N, sag); son = i; say++; }
+      if (Math.abs(k) > 0.017 && i - son > 85) { const sag = k > 0 ? 1 : -1; tabela((i - 14 + N) % N, sag); son = i; say++; }   // sade: her virajda tek tabela
     }
   }
   // ── bölge simgeleri: uzaktan seçilen, yolun dışına yerleşen küçük masal yapıları ──
@@ -384,8 +437,8 @@ if(cvTema==='orman') {
   { const p = odakYeri(0.885, -1, YARI + 10.5, 3.9);
     if (p) { S.yer(p.x, p.z, p.ry);
       S.ekle(cvG.govdeK,0,3.6,0,.95,7.2,.95,KOYU); S.ekle(cvG.sil,0,3.3,0,2.8,.22,2.8,AHSAP);
-      S.ekle(cvG.kutu,0,4.5,-.2,2.6,2.2,2.3,0xf2d49c); S.ekle(cvG.cati,0,5.6,-.2,.62,.9,.62,0xe96d57);
-      S.ekle(cvG.kutu,.55,4.15,.96,.7,1.5,.08,0x7a4a2a); S.ekle(cvG.kutu,-.6,4.75,.96,.6,.6,.08,0xffe28a); S.ekle(cvG.ufak,.33,4.15,1.02,.06,.06,.06,0xffd13e);
+      S.ekle(cvG.kutuY,0,4.5,-.2,2.6,2.2,2.3,0xf2d49c); S.ekle(cvG.catiY,0,5.6,-.2,.62,.9,.62,0xe96d57);
+      S.ekle(cvG.kutuY,.55,4.15,.96,.7,1.5,.08,0x7a4a2a); S.ekle(cvG.kutuY,-.6,4.75,.96,.6,.6,.08,0xffe28a); S.ekle(cvG.ufak,.33,4.15,1.02,.06,.06,.06,0xffd13e);
       for (const a of [-1, 1]) S.ekle(cvG.kutu, a * .38, 1.7, 2.85, .1, 3.5, .1, AHSAP, .17);
       for (let k = 0; k < 6; k++) { const y = .45 + k * .5; S.ekle(cvG.kutu, 0, y, 3.14 - y * .17, .8, .08, .1, 0xe4bc81); }
       for (let k = 0; k < 8; k++) { const a = k * .785; S.ekle(cvG.kutu, Math.cos(a) * 2.6, 3.8, Math.sin(a) * 2.6, .1, .8, .1, AHSAP); }
@@ -402,7 +455,7 @@ if(cvTema==='orman') {
       const w = S.dunya(2.3, .2), a = { x: w.x, z: w.z, ry: p.ry - 1.5 }; hayvan(a, 0, 1.5, 0);
       const w2 = S.dunya(-2.3, .1), b = { x: w2.x, z: w2.z, ry: p.ry + 1.5 }; hayvan(b, 1, 1.5, 1);
     } }
-  for (const yan of [-1, 1]) for (let k = 0; k < 4; k++) {   // başlangıçta balon demetleri
+  for (const yan of [-1, 1]) for (let k = 1; k < 4; k += 2) {   // başlangıçta balon demetleri (seyrek)
     const p = cvKenar(N - 26 + k * 17, yan, YARI + 7.6 + (k % 2) * 1.2); if (yakin(p.x, p.z) < YARI + 6 || !cvBos(p.x, p.z, 1.1)) continue;
     cvYasak.push([p.x, p.z, 1.2]); S.yer(p.x, p.z, p.ry); S.ekle(cvG.kutu, 0, .25, 0, .5, .5, .5, BAYRAK[(k + 3) % 6]);
     for (let j = 0; j < 3; j++) { const x = (j - 1) * .75, y = 4.2 + (j % 2) * .9; S.ekle(cvG.kutu, x * .55, y / 2 + .1, 0, .035, y - .4, .035, 0xffffff, 0, 0, -x * .13); S.ekle(cvG.kure, x, y + .5, 0, .62, .75, .62, BAYRAK[(k * 2 + j) % 6]); }
@@ -448,15 +501,15 @@ if(cvTema==='orman') {
 
   // ───────── ağaçlar ─────────
   const camN = [], camF = [], yuvN = [], yuvF = [], hus = [], cali = [], cicek = [], kaya = [], mantar = [];
-  const YESIL = [0x2f9e4f, 0x3bb25a, 0x278a45, 0x45bf63], ACIK = [0x7fd35a, 0x93dd66, 0x6cc74e, 0xa6e36f, 0x58b84a, 0x8fd95c], PEMBE = [0xffb3d9, 0xffd0e6, 0xffe9f4, 0xff9fcc, 0xffdcee, 0xffc2e0], HUS = [0xc8e86a, 0xd9ef7a, 0xb5e060, 0xf0e267];
-  const CICEK = [0xff6fa3, 0xffd84a, 0xffffff, 0xff9248, 0xb98cff, 0x6fd3ff];
-  const ORAN = [[0.3, 0.14, 0.26], [0.08, 0.14, 0.5], [0.22, 0.1, 0.22], [0.2, 0.45, 0.1], [0.8, 0.05, 0.02], [0.2, 0.5, 0.1], [0.4, 0.12, 0.15]];   // bölgeye göre [çam, huş, çiçekli]
+  const YESIL = [0x2f9e4f, 0x3bb25a, 0x278a45, 0x45bf63], ACIK = [0x7fd35a, 0x93dd66, 0x6cc74e, 0xa6e36f, 0x58b84a, 0x8fd95c], PEMBE = [0xffa6cc, 0xffbcd8, 0xffcadf, 0xff96c2, 0xffc0d9, 0xffb1d1], HUS = [0x8fd95c, 0x7fd35a, 0x93dd66, 0x6cc74e]   // sade: huş tacı da yeşil (renk kalabalığı yok);
+  const CICEK = [0xffffff, 0xffd84a, 0xffffff, 0xff8fbf, 0xffffff, 0xffd84a];   // sade: beyaz-sarı, tek pembe vurgu
+  const ORAN = [[0.3, 0.08, 0.12], [0.08, 0.08, 0.24], [0.22, 0.06, 0.1], [0.2, 0.22, 0.05], [0.8, 0.04, 0.01], [0.2, 0.26, 0.05], [0.4, 0.07, 0.07]];   // sade: pembe/huş az, yeşil çoğunluk   // bölgeye göre [çam, huş, çiçekli]
   const agac = (x, z, b, i, yakinMi) => {
     const o = ORAN[cvBolge(((i % N) + N) % N)], t = R(), ry = R() * 6.28, h = b * (0.9 + R() * 0.3);
     if (t < o[0]) (yakinMi ? camN : camF).push([x, 0, z, b, h, b, ry, YESIL[(R() * 4) | 0]]);
     else if (t < o[0] + o[1]) { if (yakinMi) hus.push([x, 0, z, b, h, b, ry, HUS[(R() * 4) | 0]]); else yuvF.push([x, 0, z, b * 0.85, h * 1.1, b * 0.85, ry, HUS[(R() * 4) | 0]]); }
     else if (t < o[0] + o[1] + o[2]) (yakinMi ? yuvN : yuvF).push([x, 0, z, b, h, b, ry, PEMBE[(R() * 6) | 0]]);
-    else (yakinMi ? yuvN : yuvF).push([x, 0, z, b, h, b, ry, R() < 0.04 ? 0xffe07a : ACIK[(R() * 6) | 0]]);
+    else (yakinMi ? yuvN : yuvF).push([x, 0, z, b, h, b, ry, ACIK[(R() * 6) | 0]]);
   };
   // yol kenarında düzenli büyük ağaçlar (hız hissi)
   for (let i = 0; i < N; i += 11) for (const yan of [-1, 1]) {
@@ -471,25 +524,25 @@ if(cvTema==='orman') {
     agac(x, z, 0.85 + R() * 0.95 + (ya > 40 ? 0.3 : 0), i, ya < YARI + 19);
   }
   // çiçek, çalı, mantar, kaya
-  for (let i = 0; i < 1750; i++) {
-    const cayir = i < 520, k = cayir ? cvI(0.1 + R() * 0.18) : (R() * N) | 0, b = cvBolge(k), yan = R() < 0.5 ? -1 : 1, uz = YARI + 3.2 + (cayir ? R() * 26 : R() * R() * 20), x = PX[k] - TZ[k] * uz * yan + (R() - 0.5) * 2, z = PZ[k] + TX[k] * uz * yan + (R() - 0.5) * 2;
+  for (let i = 0; i < 1100; i++) {   // sade: çiçek/çalı yarıya yakın azaltıldı
+    const cayir = i < 330, k = cayir ? cvI(0.1 + R() * 0.18) : (R() * N) | 0, b = cvBolge(k), yan = R() < 0.5 ? -1 : 1, uz = YARI + 3.2 + (cayir ? R() * 26 : R() * R() * 20), x = PX[k] - TZ[k] * uz * yan + (R() - 0.5) * 2, z = PZ[k] + TX[k] * uz * yan + (R() - 0.5) * 2;
     if (yakin(x, z) < YARI + 3.1 || !cvBos(x, z, cayir ? 0.2 : 0.9)) continue;
     const t = R(), s = 0.7 + R() * 0.6;
     if (cayir || t < 0.6) cicek.push([x, 0, z, s, s * (0.8 + R() * 0.5), s, R() * 6, CICEK[(R() * 6) | 0]]);
-    else if (t < 0.76) cali.push([x, 0.4, z, 0.9 + R() * 0.9, 0.65 + R() * 0.5, 0.9 + R() * 0.9, R() * 6, b === 1 && R() < 0.4 ? PEMBE[(R() * 6) | 0] : R() < 0.45 ? ACIK[(R() * 6) | 0] : YESIL[(R() * 4) | 0]]);
+    else if (t < 0.76) cali.push([x, 0.4, z, 0.9 + R() * 0.9, 0.65 + R() * 0.5, 0.9 + R() * 0.9, R() * 6, R() < 0.45 ? ACIK[(R() * 6) | 0] : YESIL[(R() * 4) | 0]]);
     else if (t < (b === 2 ? 0.97 : 0.88)) { const m = (b === 2 ? 1.1 : 0.7) + R() * (b === 2 ? 1.5 : 0.9); mantar.push([x, 0, z, m, m, m, R() * 6, [0xf2553d, 0xffb13d, 0xf2553d, 0xe85aa0, 0x9b7be8][(R() * (b === 2 ? 5 : 3)) | 0]]); }
     else kaya.push([x, 0.25, z, 0.6 + R() * 0.8, 0.5 + R() * 0.5, 0.6 + R() * 0.8, R() * 6, R() < 0.5 ? 0xb9bcc4 : 0xcfd2d8]);
   }
-  for (const l of [camF, yuvF]) for (let k = l.length - 1; k >= 0; k--) if (k % 3 === 2 && yakin(l[k][0], l[k][2]) > YARI + 40) l.splice(k, 1);   // cv3: arkada kalan, görünmeyen ağaçlar ayıklanır
+  for (const l of [camF, yuvF]) for (let k = l.length - 1; k >= 0; k--) if (k % 2 === 1 && yakin(l[k][0], l[k][2]) > YARI + 36) l.splice(k, 1);   // cv3: arkada kalan, görünmeyen ağaçlar ayıklanır
   const ruzgar = cvMalz(1);
-  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.1, 0, 0.42, 2.2, 0.42, 0x8a5a36); B.ekle(cvG.koni, 0, 3.3, 0, 2.35, 3.3, 2.35, 0xd0d0d0, 0, 0, 0, 1); B.ekle(cvG.koni, 0, 5.0, 0, 1.85, 2.9, 1.85, 0xe6e6e6, 0, 0.4, 0, 1); B.ekle(cvG.koni, 0, 6.6, 0, 1.3, 2.5, 1.3, 0xffffff, 0, 0.9, 0, 1); cok(B.geo(), ruzgar, camN); }
-  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.0, 0, 0.42, 2.0, 0.42, 0x8a5a36); B.ekle(cvG.koni6, 0, 3.5, 0, 2.3, 3.8, 2.3, 0xd6d6d6, 0, 0, 0, 1); B.ekle(cvG.koni6, 0, 5.8, 0, 1.55, 3.0, 1.55, 0xf4f4f4, 0, 0.5, 0, 1); cok(B.geo(), ruzgar, camF); }
-  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.6, 0, 0.5, 3.2, 0.5, 0x9a6a40); B.ekle(cvG.govde,.45,2.65,.18,.22,1.65,.22,0xad7946,0,0,-.55);B.ekle(cvG.govde,-.42,2.9,-.2,.19,1.5,.19,0xa87342,0,0,.6);B.ekle(cvG.tac, 0.1, 5.0, 0, 2.45, 2.3, 2.45, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kureK, 1.6, 3.95, 0.5, 1.65, 1.45, 1.65, 0xd9e1d5, 0, 0, 0, 1); B.ekle(cvG.kureK, -1.4, 4.15, -0.8, 1.6, 1.4, 1.6, 0xe5eadc, 0, 1, 0, 1); cok(B.geo(), ruzgar, yuvN); }
-  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.4, 0, 0.5, 2.8, 0.5, 0x9a6a40); B.ekle(cvG.kureK, 0, 4.4, 0, 2.5, 2.3, 2.5, 0xf6f6f6, 0, 0, 0, 1); cok(B.geo(), ruzgar, yuvF); }
-  { const B = cvYapi(); B.ekle(cvG.sil5, 0, 2.6, 0, 0.24, 5.2, 0.24, 0xf7f4ec); for (let k = 0; k < 3; k++) B.ekle(cvG.sil5, 0, 0.9 + k * 1.3, 0, 0.255, 0.18, 0.255, 0x4a4a4a, 0, k * 1.3); B.ekle(cvG.kure, 0, 6.3, 0, 1.7, 2.0, 1.7, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kureK, 0.95, 5.0, 0.3, 1.2, 1.3, 1.2, 0xe2e2e2, 0, 0, 0, 1); B.ekle(cvG.kureK, -0.85, 5.4, -0.4, 1.1, 1.2, 1.1, 0xececec, 0, 1, 0, 1); cok(B.geo(), ruzgar, hus); }
+  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.1, 0, 0.42, 2.2, 0.42, 0x8a5a36); B.ekle(cvG.koni, 0, 3.3, 0, 2.35, 3.3, 2.35, 0xd0d0d0, 0, 0, 0, 1); B.ekle(cvG.koni, 0, 5.0, 0, 1.85, 2.9, 1.85, 0xe6e6e6, 0, 0.4, 0, 1); B.ekle(cvG.koni, 0, 6.6, 0, 1.3, 2.5, 1.3, 0xffffff, 0, 0.9, 0, 1); cok(cvTon(B.geo()), ruzgar, camN); }
+  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.0, 0, 0.42, 2.0, 0.42, 0x8a5a36); B.ekle(cvG.koni6, 0, 3.5, 0, 2.3, 3.8, 2.3, 0xd6d6d6, 0, 0, 0, 1); B.ekle(cvG.koni6, 0, 5.8, 0, 1.55, 3.0, 1.55, 0xf4f4f4, 0, 0.5, 0, 1); cok(cvTon(B.geo()), ruzgar, camF); }
+  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.6, 0, 0.5, 3.2, 0.5, 0x9a6a40); B.ekle(cvG.govde,.45,2.65,.18,.22,1.65,.22,0xad7946,0,0,-.55);B.ekle(cvG.govde,-.42,2.9,-.2,.19,1.5,.19,0xa87342,0,0,.6);B.ekle(cvG.tacY, 0.1, 5.0, 0, 2.45, 2.3, 2.45, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kureK, 1.6, 3.95, 0.5, 1.65, 1.45, 1.65, 0xd9e1d5, 0, 0, 0, 1); B.ekle(cvG.kureK, -1.4, 4.15, -0.8, 1.6, 1.4, 1.6, 0xe5eadc, 0, 1, 0, 1); B.ekle(cvG.kureK, -0.3, 6.35, 0.5, 1.25, 1.05, 1.25, 0xffffff, 0, 0, 0, 1); cok(cvTon(B.geo()), ruzgar, yuvN); }
+  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.4, 0, 0.5, 2.8, 0.5, 0x9a6a40); B.ekle(cvG.tac, 0, 4.4, 0, 2.5, 2.4, 2.5, 0xf6f6f6, 0, 0, 0, 1); cok(cvTon(B.geo()), ruzgar, yuvF); }
+  { const B = cvYapi(); B.ekle(cvG.sil5, 0, 2.6, 0, 0.24, 5.2, 0.24, 0xf7f4ec); for (let k = 0; k < 3; k++) B.ekle(cvG.sil5, 0, 0.9 + k * 1.3, 0, 0.255, 0.18, 0.255, 0x4a4a4a, 0, k * 1.3); B.ekle(cvG.kure, 0, 6.3, 0, 1.7, 2.0, 1.7, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kureK, 0.95, 5.0, 0.3, 1.2, 1.3, 1.2, 0xe2e2e2, 0, 0, 0, 1); B.ekle(cvG.kureK, -0.85, 5.4, -0.4, 1.1, 1.2, 1.1, 0xececec, 0, 1, 0, 1); cok(cvTon(B.geo()), ruzgar, hus); }
   { const B = cvYapi(); B.ekle(cvG.sil3, 0, 0.3, 0, 0.038, 0.6, 0.038, 0x4caf50);B.ekle(cvG.petal,.13,.27,.06,.2,.045,.08,0x5bbf56,0,0,.42);for(let k=0;k<5;k++){const a=k/5*Math.PI*2;B.ekle(cvG.petal,Math.sin(a)*.25,.66,Math.cos(a)*.25,.23,.10,.22,0xffffff,0,0,0,1);}B.ekle(cvG.petal,0,.73,0,.17,.085,.17,0xffcf39);cok(B.geo(),cvMalz(0),cicek); }
   { const B = cvYapi(); B.ekle(cvG.govde, 0, 0.3, 0, 0.24, 0.6, 0.24, 0xfff3e0); B.ekle(cvG.yarimK, 0, 0.5, 0, 0.62, 0.48, 0.62, 0xffffff, 0, 0, 0, 1); for (let k = 0; k < 2; k++) { const a = k * 2.6 + 0.4; B.ekle(cvG.okt, Math.sin(a) * 0.36, 0.86, Math.cos(a) * 0.36, 0.11, 0.05, 0.11, 0xffffff, 0.6, a); } cok(B.geo(), cvMalz(0), mantar); }
-  cok(cvG.kureK, beyaz, cali); cok(new T.DodecahedronGeometry(1, 0), beyaz, kaya);
+  cok(cvG.kureK, beyaz, cali); cok(new T.IcosahedronGeometry(1, 1), beyaz, kaya);   // yuvarlak çakıl (köşeli karton taş değil)
   for(const liste of [camN,yuvN,hus])for(const a of liste)cvGolgeler.push([a[0]-.6*a[3],.008,a[2]+.3*a[3],2.5*a[3],1,1.7*a[3],-.4]);
   for(const a of cvOdak)cvGolgeler.push([a.x-.5,.008,a.z+.4,a.yaricap*.9,1,a.yaricap*.65,-.4]);
 
@@ -503,16 +556,16 @@ if(cvTema==='orman') {
     g.setAttribute('color',new T.BufferAttribute(c,3));g.computeVertexNormals();cok(g,new T.MeshLambertMaterial({vertexColors:true}),tepe);
   }
   {
-    const g = new T.ConeGeometry(1, 1, 9, 5).toNonIndexed(), p = g.attributes.position, c = new Float32Array(p.count * 3);
-    for (let i = 0; i < p.count; i++) {const x=p.getX(i),z=p.getZ(i),y=p.getY(i),a=Math.atan2(z,x),t=y+.5;p.setX(i,x*(1+.13*Math.sin(a*3+.8)*(1-t)));p.setZ(i,z*(1+.11*Math.cos(a*2-.7)*(1-t)));const neige=clamp((y-.04+.035*Math.sin(a*3))/.20,0,1);c[i*3]=lerp(.64,1,neige);c[i*3+1]=lerp(.77,1,neige);c[i*3+2]=lerp(.86,1,neige);}
+    // Çizgi film dağı: yuvarlatılmış doruk, dalgalı kar başlığı, eteğe doğru göğe karışan mavi-lila ton (atmosfer).
+    const g = new T.ConeGeometry(1, 1, 16, 8), p = g.attributes.position, c = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) {const x=p.getX(i),z=p.getZ(i),y=p.getY(i),a=Math.atan2(z,x),t=y+.5,yu=Math.pow(1-t,.62)/Math.max(1e-4,1-t);p.setX(i,x*yu*(1+.10*Math.sin(a*3+.8)*(1-t)));p.setZ(i,z*yu*(1+.08*Math.cos(a*2-.7)*(1-t)));p.setY(i,y-.06*t*t);const neige=clamp((t-.72+.05*Math.sin(a*4)+.03*Math.cos(a*7))/.04,0,1),e=clamp(t*1.4,0,1);c[i*3]=lerp(lerp(.47,.60,e),1,neige);c[i*3+1]=lerp(lerp(.60,.66,e),1,neige);c[i*3+2]=lerp(lerp(.84,.88,e),1,neige);}
     g.setAttribute('color', new T.BufferAttribute(c, 3)); g.computeVertexNormals();
-    for (let i = 0; i < 20; i++) { const a = i / 20 * 6.283 + R() * 0.2, r = 520 + R() * 50, h = 110 + R() * 90, w = 95 + R() * 60; dag.push([Math.cos(a) * r, h / 2 - 6, -70 + Math.sin(a) * r, w, h, w, R() * 6, [0xffffff, 0xe8e4ff, 0xdff0ff][i % 3]]); }
-    cok(g, new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }), dag);
+    for (let i = 0; i < 20; i++) { const a = i / 20 * 6.283 + R() * 0.2, r = 520 + R() * 50, h = 110 + R() * 90, w = 95 + R() * 60; dag.push([Math.cos(a) * r, h / 2 - 6, -70 + Math.sin(a) * r, w, h, w, R() * 6, [0xffffff, 0xf1edff, 0xe9f5ff][i % 3]]); }
+    const dm = new T.MeshLambertMaterial({ vertexColors: true }); dm.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.16;\n#endif'); }; dm.customProgramCacheKey = () => 'cvDag';
+    cok(g, dm, dag);
   }
   {
-    const B = cvYapi(); B.ekle(cvG.ico, 0, 0, 0, 13, 8, 10, 0xffffff); B.ekle(cvG.ico, -12, -1.5, 1, 9, 5.6, 8, 0xffffff); B.ekle(cvG.ico, 12, -1, -1, 10, 6.2, 8, 0xffffff); B.ekle(cvG.ico, 5, 3.5, 2, 8, 5.5, 7, 0xffffff); B.ekle(cvG.ico, -21, -3, 0, 6, 3.4, 5.5, 0xffffff); B.ekle(cvG.ico, 21.5, -3, 0, 6, 3.4, 5.5, 0xffffff);
-    const g = B.geo(), p = g.attributes.position, c = g.attributes.color;
-    for (let i = 0; i < p.count; i++) { const y = Math.max(p.getY(i), -3.6); p.setY(i, y); const t = clamp((y + 3.6) / 9, 0, 1); c.setXYZ(i, lerp(0.68, 1, t), lerp(0.84, 1, t), lerp(0.97, 1, t)); }
+    const g = cvBulutGeo();
     for (let i = 0; i < 15; i++) { const a = i / 15 * 6.283 + R() * 0.5, r = 120 + R() * 330, s = 0.9 + R() * 1.1; bulut.push([Math.cos(a) * r, 95 + R() * 60, Math.sin(a) * r, s, s * 0.9, s, R() * 6]); }
     cvBulut = cok(g, new T.MeshBasicMaterial({ vertexColors: true, fog: false }), bulut); cvBulut.position.set(0, 0, -70);
   }
@@ -532,7 +585,7 @@ if(cvTema==='orman') {
   const Sb=(g,x,y,z,sx,sy,sz,r,rx,ry,rz)=>S.ekle(g,x,y,z,sx,sy,sz,r,rx,ry,rz,0,0,1);   // suda sallanan parça
   const cvE=B=>(g,x,y,z,sx,sy,sz,r,kt,ke,rx,ry,rz)=>B.ekle(g,x,y,z,sx,sy,sz,r,rx||0,ry||0,rz||0,kt||0,1,ke||0);
   const cvKayik=r=>{Sb(cvG.kureK,0,.22,0,.95,.25,2.1,r);Sb(cvG.sil,0,.46,0,.74,.05,1.7,0xf7e3b8);for(const z of [-.6,.5])Sb(cvG.kutu,0,.53,z,1.4,.07,.3,0xc48a4c);};
-  const cvSezlong=(x,z,r)=>{S.ekle(cvG.kutu,x,.36,z+.2,.8,.09,1.3,r);S.ekle(cvG.kutu,x,.66,z-.72,.8,.09,.85,r,.95);S.ekle(cvG.kutu,x,.37,z+.2,.82,.05,.2,0xffffff);for(const a of [-.33,.33])for(const b of [-.3,.7])S.ekle(cvG.kutu,x+a,.16,z+b,.07,.32,.07,0xc9a06a);};
+  const cvSezlong=(x,z,r)=>{S.ekle(cvG.kutuY,x,.36,z+.2,.8,.09,1.3,r);S.ekle(cvG.kutuY,x,.66,z-.72,.8,.09,.85,r,.95);S.ekle(cvG.kutuY,x,.37,z+.2,.82,.05,.2,0xffffff);for(const a of [-.33,.33])for(const b of [-.3,.7])S.ekle(cvG.kutuY,x+a,.16,z+b,.07,.32,.07,0xc9a06a);};
   const cvTop=(x,z,k)=>{const C=[0xff6b6b,0x5fd0e0,0xffd95a,0x8fe39a];S.ekle(cvG.kure,x,.5,z,.5,.5,.5,0xffffff);S.ekle(cvG.sil,x,.5,z,.5,.24,.5,C[k%4]);S.ekle(cvG.kureK,x,.87,z,.3,.14,.3,C[(k+1)%4]);};
   if(!kisin) {
     const kum=tuvalDoku(256,256,(g,w,h)=>{g.fillStyle='#f4db9f';g.fillRect(0,0,w,h);for(let k=0;k<700;k++){g.fillStyle=k%3?'#e7c789':'#ffedc3';g.globalAlpha=.5;g.fillRect(R()*w,R()*h,1+R()*2,1+R()*2);}g.globalAlpha=1;},true);
@@ -546,7 +599,7 @@ if(cvTema==='orman') {
     const p=koy(.42,1,YARI+14,6.2);
     if(p){S.yer(p.x,p.z,p.ry);S.ekle(cvG.daire,0,.012,0,11,11,1,0xf6dda6,-Math.PI/2);S.ekle(cvG.sil,0,.22,0,4.0,.42,4.0,0xddbc83);for(let k=0;k<7;k++)S.ekle(cvG.govdeK,0,.55+(k+.5)*1.2,0,2.25-k*.13,1.22,2.25-k*.13,k%2?0xfff7e3:0xef7664);S.ekle(cvG.sil,0,9.2,0,2.25,.35,2.25,0x7d9aab);S.ekle(cvG.sil,0,10.05,0,1.38,1.45,1.38,0xa8e6f2);S.ekle(cvG.koni,0,11.35,0,2.0,1.3,2.0,0xe8705b);S.ekle(cvG.kureK,0,12.05,0,.19,.25,.19,0xffd957);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;S.ekle(cvG.sil5,Math.sin(a)*1.4,10.0,Math.cos(a)*1.4,.07,1.6,.07,0xfff5dc);}S.ekle(cvG.kutu,0,1.35,2.15,.9,1.65,.13,0x4590ad);for(let k=0;k<3;k++)S.ekle(cvG.kutu,0,.1+k*.075,2.9-k*.3,1.6,.15,.8,0xdbc394);}
     // Deniz fenerinin çevresinde yelkenliler: yolun dışındaki suya demirli.
-    for(let k=0;k<5;k++){const q=cvKenar(cvI(.12+k*.17),k%2?-1:1,YARI+32+k%3*3);if(yakin(q.x,q.z)<YARI+27)continue;S.yer(q.x,q.z,q.ry+.6);Sb(cvG.kureK,0,.35,0,1.2,.32,2.1,[0xff8670,0x6cbbdb,0xffd261][k%3]);Sb(cvG.sil5,0,2.3,0,.055,4.4,.055,0xe7c595);Sb(cvG.ucgen,-.65,2.8,.05,.75,2.6,.055,0xfff7e6,0,0,-.25);Sb(cvG.ucgen,.5,2.7,.05,.5,2.3,.055,0xffb972,0,0,.2);}
+    for(let k=0;k<5;k++){const q=cvKenar(cvI(.12+k*.17),k%2?-1:1,YARI+32+k%3*3);if(yakin(q.x,q.z)<YARI+27)continue;S.yer(q.x,q.z,q.ry+.6,1.7);Sb(cvG.kureK,0,.35,0,1.2,.32,2.1,[0xff8670,0x6cbbdb,0xffd261][k%3]);Sb(cvG.sil5,0,2.3,0,.055,4.4,.055,0xe7c595);Sb(cvG.ucgen,-.65,2.8,.05,.75,2.6,.055,0xfff7e6,0,0,-.25);Sb(cvG.ucgen,.5,2.7,.05,.5,2.3,.055,0xffb972,0,0,.2);}
     // Kumsaldaki renkli güneş şemsiyeleri, örtüler ve deniz kabukları.
     for(let k=0;k<10;k++){const p=koy(.06+k*.085,k%2?-1:1,YARI+10+(k%3)*1.5,2.3);if(!p)continue;S.yer(p.x,p.z,p.ry);S.ekle(cvG.daire,0,.012,0,3.1,3.1,1,0xf4db9f,-Math.PI/2);S.ekle(cvG.kutu,0,.03,0,2.8,.03,2.0,k%2?0xfaa9a0:0x93d5e9);cvSezlong(-1.25,.3,k%2?0xfff5df:0xffd27a);cvSezlong(1.85,.2,k%2?0x9fe0ea:0xfff5df);if(k%2===0)cvTop(.9,1.7,k);S.ekle(cvG.sil5,.3,1.8,0,.065,3.6,.065,0xf4edda);for(let j=0;j<8;j++)S.ekle(cvG.semsiye,.3,3.35,0,1.8,1,1.8,j%2?0xfff5df:[0xffb753,0x79c6d4,0xf18e99,0xa496d6][k%4],0,j*Math.PI/4);}
     // Alçak kum tepeleri bir çiçek/deniz kabuğu kompozisyonu oluşturur; yol boş kalır.
@@ -566,10 +619,12 @@ if(cvTema==='orman') {
   } else {
     // Kar köyü: ahşap dağ evleri, kalın kar saçakları ve amber pencereler.
     const chalet=(p,k,s)=>{
-      S.yer(p.x,p.z,p.ry,s||1);S.ekle(cvG.sil,0,.12,0,4.8,.24,4.8,0xd2e9f8);S.ekle(cvG.kutu,0,1.7,0,4.5,3.4,3.7,k%2?0xb88459:0xc59a72);S.ekle(cvG.cati,0,3.35,0,1,1,1,0xf9fdff);S.ekle(cvG.kutu,0,.85,1.94,.9,1.7,.16,0x785843);
-      for(const x of [-1.4,1.4]){S.ekle(cvG.kutu,x,1.9,1.93,.9,1.1,.13,0x795b45);S.ekle(cvG.kutu,x,1.9,2.02,.66,.85,.05,0xffd685);S.ekle(cvG.kutu,x,1.9,2.07,.07,.87,.06,0xffffff);S.ekle(cvG.kutu,x,1.9,2.07,.68,.07,.06,0xffffff);}
-      for(let j=0;j<5;j++)S.ekle(cvG.kutu,0,.6+j*.56,1.87,4.5,.06,.06,0x966b49);S.ekle(cvG.kutu,-1.2,4.8,-.7,.55,1.8,.65,0xba8e7b);S.ekle(cvG.kutu,-1.2,5.72,-.7,.83,.18,.84,0xffffff);
-      for(let j=0;j<9;j++){const x=(j-4)*.48,y=3.26-.23*(1-x*x/4);S.ekle(cvG.kureK,x,y,2.13,.095,.095,.075,[0xf4c572,0xe99482,0x99d3da,0xf7dfa3][j%4]);if(j<8)S.ekle(cvG.kutu,x+.24,y+.02,2.10,.5,.035,.035,0x9a7e64);}
+      S.yer(p.x,p.z,p.ry,s||1);S.ekle(cvG.tacY,0,0,0,3.6,.32,3.2,0xf2f8ff);S.ekle(cvG.kutuY,0,1.7,0,4.5,3.4,3.7,k%2?0xb88459:0xc59a72);S.ekle(cvG.catiY,0,3.35,0,1,1,1,0xf9fdff);S.ekle(cvG.kutuY,0,.85,1.94,.9,1.7,.16,0x785843);
+      for(const x of [-1.4,1.4]){S.ekle(cvG.kutuY,x,1.9,1.93,.9,1.1,.13,0x795b45);S.ekle(cvG.kutuY,x,1.9,2.02,.66,.85,.05,0xffd685);S.ekle(cvG.kutuY,x,1.9,2.07,.07,.87,.06,0xffffff);S.ekle(cvG.kutuY,x,1.9,2.07,.68,.07,.06,0xffffff);}
+      for(let j=0;j<5;j++)S.ekle(cvG.kutu,0,.6+j*.56,1.87,3.5,.06,.06,0x966b49);
+      
+      S.ekle(cvG.sil5,2.6,1.0,2.6,.06,1.6,.06,0x6b4a36);S.ekle(cvG.kutuY,2.6,1.95,2.6,.34,.42,.34,0xffd24f);S.ekle(cvG.koni6,2.6,2.3,2.6,.34,.28,.34,0x6b4a36);S.ekle(cvG.kureK,2.6,2.52,2.6,.2,.1,.2,0xffffff);   // kapı feneriS.ekle(cvG.kutuY,-1.2,4.8,-.7,.55,1.8,.65,0xba8e7b);S.ekle(cvG.kutuY,-1.2,5.72,-.7,.83,.18,.84,0xffffff);
+      for(let j=0;j<9;j++){const x=(j-4)*.48,y=3.26-.23*(1-x*x/4);S.ekle(cvG.kureK,x,y,2.13,.095,.095,.075,[0xf4c572,0xe99482,0x99d3da,0xf7dfa3][j%4]);if(j<8)S.ekle(cvG.kutuY,x+.24,y+.02,2.10,.5,.035,.035,0x9a7e64);}
     };
     for(let k=0;k<5;k++){const p=koy(.13+k*.16,k%2?-1:1,YARI+12,4.3);if(p)chalet(p,k,1);}
     // İlk dağ evinin komşuları: tek bir sıcak küçük köy, yeni rastgele ev sırası değil.
@@ -588,14 +643,14 @@ if(cvTema==='orman') {
   const cvTabela=(i,sag)=>{
     const p=cvKenar(i,-sag,YARI+5.2);if(yakin(p.x,p.z)<YARI+4.2||!cvBos(p.x,p.z,1.4))return;
     S.yer(p.x,p.z,Math.atan2(-TX[i]-TZ[i]*sag*.35,-TZ[i]+TX[i]*sag*.35),1.35);cvYasak.push([p.x,p.z,3.0]);
-    for(const x of [-.85,.85])S.ekle(cvG.kutu,x,1.3,-.1,.2,2.6,.2,cvKOYU);
-    S.ekle(cvG.kutu,0,2.35,-.02,2.7,1.35,.1,cvKOYU);S.ekle(cvG.kutu,0,2.35,.03,2.45,1.1,.1,kisin?0xfdfdf2:0xfff1c4);
-    S.ekle(cvG.kutu,-.32*sag,2.35,.09,1.05,.32,.06,0xf0503c);S.ekle(cvG.ucgen,.52*sag,2.35,.09,.5,.75,.05,0xf0503c,0,0,-sag*Math.PI/2);
+    for(const x of [-.85,.85])S.ekle(cvG.kutuY,x,1.3,-.1,.2,2.6,.2,cvKOYU);
+    S.ekle(cvG.kutuY,0,2.35,-.02,2.7,1.35,.1,cvKOYU);S.ekle(cvG.kutuY,0,2.35,.03,2.45,1.1,.1,kisin?0xfdfdf2:0xfff1c4);
+    S.ekle(cvG.kutuY,-.32*sag,2.35,.09,1.05,.32,.06,0xf0503c);S.ekle(cvG.ucgen,.52*sag,2.35,.09,.5,.75,.05,0xf0503c,0,0,-sag*Math.PI/2);
     if(kisin)S.ekle(cvG.kureK,0,3.06,-.02,1.45,.16,.2,0xffffff);
   };
   { let son=-999,say=0;
-    for(let i=30;i<N-30&&say<9;i++){let k=0;for(let j=-10;j<=10;j++)k+=KAP[(i+j+N)%N];k/=21;
-      if(Math.abs(k)>.017&&i-son>85){const sag=k>0?1:-1;cvTabela((i-26+N)%N,sag);cvTabela((i-6+N)%N,sag);son=i;say++;}}
+    for(let i=30;i<N-30&&say<6;i++){let k=0;for(let j=-10;j<=10;j++)k+=KAP[(i+j+N)%N];k/=21;
+      if(Math.abs(k)>.017&&i-son>85){const sag=k>0?1:-1;cvTabela((i-14+N)%N,sag);son=i;say++;}}
   }
   const cvIp=(i0,say,yan)=>{   // renkli bayrak ipi; bayraklar rüzgârda dalgalanır (cvK.y)
     S.yer(0,0,0);let ox=0,oz=0,var_=false,n=0;
@@ -607,12 +662,12 @@ if(cvTema==='orman') {
       ox=x;oz=z;var_=true;
     }
   };
-  for(const yan of [-1,1])cvIp(N-39,11,yan);
+  for(const yan of [-1,1])cvIp(N-30,4,yan);   // sade: kısa bayrak ipi
   const cvHay=[[],[],[],[]], cvHRENK=kisin?[[0xe8503c,0x3f8fe0,0xffc23d],[0xffffff,0xf6efe4,0xeef4fa],[0xffffff,0xf4f1ea,0xfafcff],[0xc98d55,0xd9a066,0xb87a4a]]:[[0x5fbf7a,0x7ac86a,0x4fae8c],[0xffffff,0xffffff,0xffffff],[0x5fbf7a,0x8fce6a,0x4fae8c],[0xffffff,0xffffff,0xffffff]];
   const cvYer=(i,yan,uz,r)=>{const p=cvKenar(i,yan,uz,.8);if(yakin(p.x,p.z)<YARI+4.3||!cvBos(p.x,p.z,r))return null;cvYasak.push([p.x,p.z,r+.5]);return p;};
   const cvHayKoy=(p,tur,s,k)=>{if(!kisin)s*=tur%2?1:1.15;cvHay[tur].push([p.x,0,p.z,s,s,s,p.ry,cvHRENK[tur][k%3]]);};
-  for(const yan of [-1,1])for(let k=0;k<12;k++){const p=cvYer(N-42+k*8+(yan>0?4:0),yan,YARI+5.6+(k%3)*1.0,1.0);if(p)cvHayKoy(p,(k+(yan>0?2:0))%4,1.25+(k%3)*.12,k);}
-  for(let k=0;k<28;k++){const f=.1+k*.03,p=cvYer(cvI(f+.006),(k*5)%3===0?-1:1,YARI+5.3+(k%4)*.7,1.0);if(!p)continue;
+  for(const yan of [-1,1])for(let k=0;k<12;k+=2){const p=cvYer(N-42+k*8+(yan>0?4:0),yan,YARI+5.6+(k%3)*1.0,1.0);if(p)cvHayKoy(p,(k+(yan>0?2:0))%4,1.25+(k%3)*.12,k);}
+  for(let k=0;k<28;k+=2){const f=.1+k*.03,p=cvYer(cvI(f+.006),(k*5)%3===0?-1:1,YARI+5.3+(k%4)*.7,1.0);if(!p)continue;
     cvHayKoy(p,kisin?(f<.33?1+(k%2):f<.44?0:f<.62?2:f<.82?3:0):(k%3===2?1:k%2?2:0),1.2+(k%3)*.14,k);}
   if(!kisin){
     const KUM=0xedc986;
@@ -703,10 +758,10 @@ if(cvTema==='orman') {
       for(let j=0;j<5;j++){const a=j*1.26+k,r=j?.95:0,h=j?1.1+(j%3)*.5:2.7;S.ekle(cvG.okt,Math.cos(a)*r,h*.75,Math.sin(a)*r,h*.26,h,h*.26,[0x8fdcf5,0xbff0ff,0x6fc6ee,0xd9f7ff][(j+k)%4],j?Math.sin(a)*.3:0,j,j?-Math.cos(a)*.3:0);}
     }
     // kayak pisti kapıları: kırmızı ve mavi bayraklar
-    for(let k=0;k<12;k++)for(const yan of [-1,1]){const q=cvKenar(cvI(.635+k*.014),yan,YARI+4.3),x=q.x,z=q.z;if(yakin(x,z)<YARI+3.6||!cvBos(x,z,.6))continue;cvYasak.push([x,z,.9]);S.yer(x,z,q.ry);
+    for(let k=0;k<12;k+=2)for(const yan of [-1,1]){const q=cvKenar(cvI(.635+k*.014),yan,YARI+4.3),x=q.x,z=q.z;if(yakin(x,z)<YARI+3.6||!cvBos(x,z,.6))continue;cvYasak.push([x,z,.9]);S.yer(x,z,q.ry);
       const r=k%2?0xe8503c:0x3f8fe0;S.ekle(cvG.sil5,0,1.4,0,.07,2.8,.07,r);S.ekle(cvG.kutu,0,2.3,-.55,.05,.7,1.0,r,0,0,0,0,1);S.ekle(cvG.kutu,0,2.3,-.55,.06,.24,1.02,0xffffff,0,0,0,0,1);S.ekle(cvG.kureK,0,.1,0,.4,.2,.4,0xf4faff);}
     // köy yolunda fenerler
-    for(let k=0;k<14;k++){const q=cvKenar(cvI(.095+k*.016),k%2?1:-1,YARI+4.2),x=q.x,z=q.z;if(yakin(x,z)<YARI+3.6||!cvBos(x,z,.6))continue;cvYasak.push([x,z,.9]);S.yer(x,z,q.ry);
+    for(let k=0;k<14;k+=2){const q=cvKenar(cvI(.095+k*.016),k%2?1:-1,YARI+4.2),x=q.x,z=q.z;if(yakin(x,z)<YARI+3.6||!cvBos(x,z,.6))continue;cvYasak.push([x,z,.9]);S.yer(x,z,q.ry);
       S.ekle(cvG.sil5,0,1.6,0,.09,3.2,.09,0x5a4a44);S.ekle(cvG.kutu,0,3.1,.3,.09,.09,.8,0x5a4a44);S.ekle(cvG.kureK,0,2.75,.62,.26,.3,.26,0xffd97a);S.ekle(cvG.koni,0,3.03,.62,.36,.24,.36,0xffffff);}
     // kızaklar
     for(let k=0;k<6;k++){const p=cvYer(cvI(.115+k*.045),k%2?1:-1,YARI+5.4,1.3);if(!p)continue;const r=[0xe8503c,0x3fb37a,0xffc23d][k%3];S.yer(p.x,p.z,p.ry+1.1);
@@ -722,7 +777,7 @@ if(cvTema==='orman') {
       }
     }
     // yumuşak kar tepecikleri ve uzak çam sıraları: boş düzlüğü doldurur
-    for(let k=0;k<26;k++){const q=cvKenar(cvI(k/26+.017),k%2?1:-1,YARI+24+(k%4)*9),x=q.x,z=q.z;if(yakin(x,z)<YARI+20)continue;S.yer(x,z,k*1.1);S.ekle(cvG.tac,0,-1.2,0,13+(k%3)*4,3.4+(k%4)*.9,10+(k%2)*4,k%2?0xf3f9ff:0xe8f3fc);}
+    for(let k=0;k<26;k++){const q=cvKenar(cvI(k/26+.017),k%2?1:-1,YARI+24+(k%4)*9),x=q.x,z=q.z;if(yakin(x,z)<YARI+20)continue;S.yer(x,z,k*1.1);S.ekle(cvG.tacY,0,-1.2,0,13+(k%3)*4,3.4+(k%4)*.9,10+(k%2)*4,k%2?0xf3f9ff:0xe8f3fc);}
     for(let k=0;k<120;k++){const q=cvKenar((R()*N)|0,R()<.5?1:-1,YARI+15+R()*34),x=q.x,z=q.z;if(yakin(x,z)<YARI+13.5||!cvBos(x,z,2.4))continue;const s=1+R()*.8;agaclar.push([x,0,z,s,s*(.9+R()*.3),s,R()*6.28,[0x4d9b89,0x4a948b,0x6fb3a6,0x3f8a7c][k%4]]);}
     { // penguen
       const B=cvYapi(),e=cvE(B);
@@ -754,7 +809,7 @@ if(cvTema==='orman') {
   }
   // ───────── cv3 ikinci tur: şenlikli başlangıç, büyük ön plan süsleri, köpük, kayan penguenler, uzak katman ─────────
   { const BAL=[0xff5d5d,0xffd23f,0x4fc3f7,0x7be07b,0xff8fc7,0xb48cff];
-    for(const yan of [-1,1])for(let k=0;k<4;k++){const p=cvYer(N-26+k*17,yan,YARI+7.2+(k%2)*1.3,1.1);if(!p)continue;S.yer(p.x,p.z,p.ry);
+    for(const yan of [-1,1])for(let k=1;k<4;k+=2){const p=cvYer(N-26+k*17,yan,YARI+7.2+(k%2)*1.3,1.1);if(!p)continue;S.yer(p.x,p.z,p.ry);
       S.ekle(cvG.kutu,0,.25,0,.5,.5,.5,BAL[(k+3)%6]);
       for(let j=0;j<3;j++){const x=(j-1)*.75,y=4.2+(j%2)*.9;S.ekle(cvG.kutu,x*.55,y/2+.1,0,.035,y-.4,.035,0xffffff,0,0,-x*.13);S.ekle(cvG.kure,x,y+.5,0,.62,.75,.62,BAL[(k*2+j)%6],0,0,0,0,0,1);}}
     if(!kisin){
@@ -763,9 +818,9 @@ if(cvTema==='orman') {
           S.ekle(cvG.sil5,0,1.9,0,.09,3.8,.09,0xffffff);S.ekle(cvG.yarim,0,3.3,0,2.6,.9,2.6,r);S.ekle(cvG.yarim,0,3.36,0,1.3,.78,1.3,0xffffff);S.ekle(cvG.ufak,0,4.25,0,.14,.14,.14,0xffd23f);
           cvSezlong(-1.3,.6,BAL[(k+2)%6]);cvSezlong(1.3,.6,BAL[(k+4)%6]);cvTop(0,2.4,k);
         }else if(k%3===1){   // cankurtaran kulesi
-          for(const a of [-1,1])for(const b of [-1,1])S.ekle(cvG.kutu,a*1.0,1.3,b*1.0,.16,2.6,.16,0xffffff);
-          S.ekle(cvG.kutu,0,2.65,0,2.8,.16,2.8,0xf7e3b8);S.ekle(cvG.kutu,0,3.6,-.2,2.2,1.8,2.0,0xffffff);S.ekle(cvG.kutu,0,3.7,.82,1.3,.8,.06,0x7fd6ff);
-          S.ekle(cvG.cati,0,4.5,-.2,.5,.6,.55,0xf0503c);S.ekle(cvG.kutu,0,3.0,-.2,2.24,.3,2.04,0xf0503c);
+          for(const a of [-1,1])for(const b of [-1,1])S.ekle(cvG.kutuY,a*1.0,1.3,b*1.0,.16,2.6,.16,0xffffff);
+          S.ekle(cvG.kutuY,0,2.65,0,2.8,.16,2.8,0xf7e3b8);S.ekle(cvG.kutuY,0,3.6,-.2,2.2,1.8,2.0,0xffffff);S.ekle(cvG.kutuY,0,3.7,.82,1.3,.8,.06,0x7fd6ff);
+          S.ekle(cvG.catiY,0,4.5,-.2,.5,.6,.55,0xf0503c);S.ekle(cvG.kutuY,0,3.0,-.2,2.24,.3,2.04,0xf0503c);
           S.ekle(cvG.sil5,1.2,5.6,-1.0,.04,1.6,.04,0xffffff);S.ekle(cvG.ucgen,1.55,6.0,-1.0,.3,.7,.04,0xffd23f,0,0,-Math.PI/2,0,1);
           for(let j=0;j<5;j++)S.ekle(cvG.kutu,0,.4+j*.5,2.0-j*.12,.9,.07,.12,0xc9a06a);for(const a of [-1,1])S.ekle(cvG.kutu,a*.45,1.35,1.72,.08,2.8,.08,0xc9a06a,.22);
           S.ekle(cvG.sil,-1.9,.5,1.2,.55,.3,.55,0xff8a3d,Math.PI/2);S.ekle(cvG.sil,-1.9,.5,1.2,.25,.32,.25,0xffffff,Math.PI/2);
@@ -812,12 +867,15 @@ if(cvTema==='orman') {
           const g=new T.Group(),m=new T.Mesh(B.geo(),cvMalz(0));g.position.set(px,.05,pz);g.add(m);scene.add(g);cvKayan=g;}
       }
       // orta uzaklıkta karlı sivri tepeler
+      const cvKarDag=[];   // yuvarlak doruklu karlı tepeler: dalgalı kar başlığı köşe renginde, karlı ışıkta grileşmez (tek çizim)
       for(let k=0;k<8;k++){const a=k/8*6.283+.2,r=230+(k%3)*40,x=Math.cos(a)*r,z=-70+Math.sin(a)*r;if(yakin(x,z)<90)continue;S.yer(x,z,k*1.7);const H=46+(k%3)*12,h=H*.4;
-        S.ekle(cvG.koni6,0,H/2-1,0,36,H,30,0xcfe6f5);S.ekle(cvG.koni6,0,H-1-h/2+.3,0,15.3,h,12.8,0xffffff);S.ekle(cvG.koni6,24,12,6,24,26,20,0xdcedf8);}
+        const w=S.dunya(0,0),wx=w.x,wz=w.z,w2=S.dunya(24,6);cvKarDag.push([wx,H/2-1,wz,36,H,30,k*1.7,0xffffff],[w2.x,12,w2.z,24,26,20,k*1.7+.5,0xf2f7ff]);}
+      {const g=cvDagY().clone(),p=g.attributes.position,c=new Float32Array(p.count*3);for(let i=0;i<p.count;i++){const t=p.getY(i)+.5,a=Math.atan2(p.getZ(i),p.getX(i)),f=clamp((t-.58+.05*Math.sin(a*5)+.025*Math.cos(a*9))/.04,0,1);c[i*3]=lerp(.66,1,f);c[i*3+1]=lerp(.76,1,f);c[i*3+2]=lerp(.95,1,f);}g.setAttribute('color',new T.BufferAttribute(c,3));
+        const m=new T.MeshLambertMaterial({vertexColors:true});m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.42;\n#endif');};m.customProgramCacheKey=()=>'cvKarDag';if(cvKarDag.length)cok(g,m,cvKarDag);}
     }
   }
   // Yol boyunca direkler ve bayraklar; kapıyı daraltan rastgele dekor yok.
-  for(let i=0;i<N;i+=12)for(const yan of [-1,1]){const p=cvKenar(i,yan,YARI+3.2);if(yakin(p.x,p.z)<YARI+2.8)continue;S.yer(p.x,p.z,p.ry);S.ekle(cvG.sil5,0,.56,0,.12,1.1,.12,kisin?0x967d66:0xf7f3dc);S.ekle(cvG.kureK,0,1.17,0,.16,.14,.16,kisin?0xeb8d67:0x61c8cf);}
+  for(let i=0;i<N;i+=24)for(const yan of [-1,1]){const p=cvKenar(i,yan,YARI+3.2);if(yakin(p.x,p.z)<YARI+2.8)continue;S.yer(p.x,p.z,p.ry);S.ekle(cvG.sil5,0,.56,0,.12,1.1,.12,kisin?0x967d66:0xf7f3dc);S.ekle(cvG.kureK,0,1.17,0,.16,.14,.16,kisin?0xeb8d67:0x61c8cf);}
   for(let i=0;i<N;i+=9)for(const yan of [-1,1]){if((!kisin&&((i/9|0)%7===3||(i/9|0)%7===4))||(kisin&&((i/9|0)%9===3||(i/9|0)%9===4)))continue;const p=cvKenar(i+((R()*7)|0),yan,YARI+(kisin?6:6.5)+R()*(kisin?8:3));if(yakin(p.x,p.z)<YARI+(kisin?5:6)||!cvBos(p.x,p.z,2.7))continue;const s=.8+R()*.5;agaclar.push([p.x,0,p.z,s,s*(.85+R()*.35),s,R()*6.28,kisin?[0x4d9b89,0x4a948b,0x6fb3a6][i%3]:[0x46af75,0x64bf76,0x59b96f][i%3]]);cvYasak.push([p.x,p.z,2.0]);cvGolgeler.push([p.x-.5,.012,p.z+.3,2.2*s,1,1.4*s,-.4]);}
   if(kisin){
     const B=cvYapi();B.ekle(cvG.govdeK,0,.85,0,.28,1.7,.28,0x947552);
@@ -827,7 +885,7 @@ if(cvTema==='orman') {
       for(let j=0;j<3;j++){const a=j/3*Math.PI*2+k*.8;B.ekle(cvG.kureK,Math.cos(a)*r*.47,y+.34+(j%2)*.10,Math.sin(a)*r*.47,r*.50,.31,r*.49,j%2?0xe4f1fa:0xf4fbff);}
       for(const s of [-1,1])B.ekle(cvG.govde,s*r*.34,y-.52,0,.09,r*.85,.09,0x759283,0,0,s*.93);
     }
-    cok(B.geo(),cvMalz(1),agaclar);
+    cok(cvTon(B.geo()),cvMalz(1),agaclar);
   }else{
     // Yapraklar düz şerit değil: kavisli omurga, ortada kıvrım ve yan yaprakçıklar.
     const pos=[],ind=[];
@@ -849,14 +907,14 @@ if(cvTema==='orman') {
   // Hacimli, farklı doruklu arka plan. Kar pistinde dağ etekleri bile karla kaplıdır.
   if(kisin){
     // Bir sıradağ: aynı koniyi çoğaltmak yerine kıvrımlı, çok doruklu bir yükseklik ağı.
-    const nx=20,nz=10,pos=[],col=[],idx=[];
+    const nx=32,nz=12,pos=[],col=[],idx=[];
     for(let j=0;j<=nz;j++)for(let k=0;k<=nx;k++){
-      const x=k/nx*2-1,z=j/nz*2-1,yan=Math.pow(Math.max(0,1-z*z),.70),p1=Math.pow(Math.max(0,1-Math.abs(x+.52)/.45),.85)*.72,p2=Math.pow(Math.max(0,1-Math.abs(x-.02)/.40),.88),p3=Math.pow(Math.max(0,1-Math.abs(x-.54)/.42),.85)*.79,h=yan*Math.max(p1,p2,p3)*(1+.04*Math.sin(z*3+x*5)),f0=clamp((h-.31)/.25,0,1),f=f0*f0*(3-2*f0),golge=.06*Math.exp(-(x+.28)*(x+.28)*75)+.05*Math.exp(-(x-.30)*(x-.30)*70);
-      pos.push(x,h,z);col.push(lerp(.34,1,f)-golge*.4,lerp(.40,1,f)-golge*.25,lerp(.65,1,f)-golge*.10);if(j<nz&&k<nx){const a=j*(nx+1)+k;idx.push(a,a+nx+1,a+1,a+1,a+nx+1,a+nx+2);}
+      const x=k/nx*2-1,z=j/nz*2-1,yan=Math.pow(Math.max(0,1-z*z),.70),p1=(1-Math.pow(Math.min(1,Math.abs(x+.52)/.45),1.25))*.72,p2=1-Math.pow(Math.min(1,Math.abs(x-.02)/.40),1.25),p3=(1-Math.pow(Math.min(1,Math.abs(x-.54)/.42),1.25))*.79,h=yan*Math.max(p1,p2,p3)*(1+.04*Math.sin(z*3+x*5)),f0=clamp((h-.2)/.22,0,1),f=f0*f0*(3-2*f0),golge=.06*Math.exp(-(x+.28)*(x+.28)*75)+.05*Math.exp(-(x-.30)*(x-.30)*70);
+      pos.push(x,h,z);col.push(lerp(.60,1,f)-golge*.4,lerp(.68,1,f)-golge*.25,lerp(.92,1,f)-golge*.10);if(j<nz&&k<nx){const a=j*(nx+1)+k;idx.push(a,a+nx+1,a+1,a+1,a+nx+1,a+nx+2);}
     }
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
     for(let k=0;k<12;k++){const a=k/12*Math.PI*2,r=390+(k%3)*50,x=Math.cos(a)*r,z=-65+Math.sin(a)*r,w=72+(k%3)*16,h=44+(k%4)*9;if(yakin(x,z)<YARI+w+25)continue;daglar.push([x,-.6,z,w,h,60+(k%3)*12,k*.73,0xffffff]);}
-    const karDagMat=new T.MeshLambertMaterial({vertexColors:true});karDagMat.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.32;\n#endif');};karDagMat.customProgramCacheKey=()=> 'cvSnowRidge';cok(g,karDagMat,daglar);
+    const karDagMat=new T.MeshLambertMaterial({vertexColors:true});karDagMat.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.46;\n#endif');};karDagMat.customProgramCacheKey=()=> 'cvSnowRidge';cok(g,karDagMat,daglar);
   }else{
     // Kıyı silueti dağ konileri değil: sıcak kumtaşı katmanları ve yeşil tepeli adacıklar.
     const pos=[],col=[],idx=[],kat=[[0,1.00],[.16,1.08],[.22,1.02],[.23,1.00],[.255,1.035],[.265,1.03],[.44,.90],[.45,.89],[.475,.925],[.49,.92],[.67,.81],[.69,.84],[.77,.79]],renk=[0xbe946a,0xd6b17e,0xe7c89a,0xb28860,0xb28860,0xe2be8a,0xe3c28e,0xaf815c,0xaf815c,0xe3c18b,0xe7c99a,0x669b6a,0x7ab679],dilim=14,c=new T.Color();
@@ -869,7 +927,7 @@ if(cvTema==='orman') {
     for(let k=0;k<11;k++){const a=k/11*Math.PI*2+.25,r=230+(k%3)*45,x=Math.cos(a)*r,z=-65+Math.sin(a)*r,w=34+(k%4)*9,h=19+(k%4)*7;if(yakin(x,z)<YARI+w+35)continue;daglar.push([x,-.4,z,w,h,w*(.65+(k%3)*.12),k*.8,0xffffff]);}cok(bir,new T.MeshLambertMaterial({vertexColors:true}),daglar);
     const p=koy(.75,1,YARI+73,18);if(p){S.yer(p.x,p.z,p.ry);S.ekle(new T.TorusGeometry(1,.24,6,18,Math.PI),0,.3,0,13,12,4.5,0xe7c995);for(const x of [-13,13])S.ekle(cvG.tac,x,.1,0,4.6,2.2,5.5,0xe1bd86);}
   }
-  const B=cvYapi();B.ekle(cvG.tac,0,0,0,12,5,8,0xffffff);B.ekle(cvG.tac,-9,-1,0,8,3.5,6,0xffffff);B.ekle(cvG.tac,9,-1,0,8,3.5,6,0xffffff);for(let k=0;k<12;k++){const a=k/12*Math.PI*2,r=140+(k%3)*60;bulutlar.push([Math.cos(a)*r,75+(k%4)*11,Math.sin(a)*r,1,1,1,k]);}cvBulut=cok(B.geo(),new T.MeshBasicMaterial({vertexColors:true}),bulutlar);
+  for(let k=0;k<12;k++){const a=k/12*Math.PI*2,r=140+(k%3)*60,s=.75+(k%4)*.12;bulutlar.push([Math.cos(a)*r,75+(k%4)*11,Math.sin(a)*r,s,s*.85,s,k]);}cvBulut=cok(cvBulutGeo(),new T.MeshBasicMaterial({vertexColors:true}),bulutlar);
   const m=new T.Mesh(S.geo(),cvMalz(5));m.frustumCulled=false;scene.add(m);
   for(const p of cvOdak)cvGolgeler.push([p.x-.5,.012,p.z+.4,p.yaricap*.8,1,p.yaricap*.55,-.4]);
 }
@@ -879,7 +937,7 @@ if(cvTema==='orman') {
   const d=tuvalDoku(64,64,(g,w,h)=>{const r=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);r.addColorStop(0,'rgba(36,66,61,.26)');r.addColorStop(.4,'rgba(36,66,61,.14)');r.addColorStop(1,'rgba(36,66,61,0)');g.fillStyle=r;g.fillRect(0,0,w,h);});
   const g=new T.PlaneGeometry(2,2);g.rotateX(-Math.PI/2);const m=new T.MeshBasicMaterial({map:d,transparent:true,depthWrite:false});const sh=cok(g,m,cvGolgeler);sh.renderOrder=1;
 }
-if(cvTema==='kar') { // Sakin, küçük kar taneleri: sabit 96 nokta, hareket tamamen GPU'da.
+if(cvTema==='kar' && typeof HAVA === 'undefined' && !document.querySelector('script[src*="hava.js"]')) { // Sakin, küçük kar taneleri (yalnız hava.js yoksa; kar yağışı artık hava.js'te: iki kat kar olmasın)
   const p=new Float32Array(96*3);for(let i=0;i<96;i++){p[i*3]=(R()-.5)*76;p[i*3+1]=R()*20;p[i*3+2]=(R()-.5)*76;}
   const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(p,3));
   const m=new T.ShaderMaterial({uniforms:{cvT:cvZ,cvP:cvOyuncu},transparent:true,depthWrite:false,

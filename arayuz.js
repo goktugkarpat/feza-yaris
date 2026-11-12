@@ -66,10 +66,11 @@ function uiRozetOku(pist) {
   if (pist === PIST_TEMA) return uiKayit.sira;
   try { const k = JSON.parse(localStorage.getItem('feza-yaris-anilar-v1:' + pist) || '{}'); return k.sira >= 1 && k.sira <= 3 ? Math.floor(k.sira) : 0; } catch (_) { return 0; }
 }
+// Kartlar pisti yalnız İŞARETLER (parlak çerçeve + zıplama + o pistin giriş cümlesi); pist, yeşil ileri düğmesiyle açılır (aşağıda: Seçim ekranı).
 document.querySelectorAll('.pist-kart').forEach(b => {
   const secili = b.dataset.pist === PIST_TEMA; b.setAttribute('aria-pressed', secili ? 'true' : 'false');
   uiRozetAyar(b, uiRozetOku(b.dataset.pist));
-  b.addEventListener('click', () => { if (b.dataset.pist === PIST_TEMA) return; const u = new URL(location.href); u.searchParams.set('pist', b.dataset.pist); location.href = u.href; });
+  b.addEventListener('click', () => uiPistIsaretle(b.dataset.pist, true));
 });
 for (const id of ['sonuc-ev', 'mola-ev']) uiEl(id).addEventListener('click', () => YARIS.basligaDon());
 
@@ -120,6 +121,7 @@ function uiAnilar(o) {
   uiEl('rekor').classList.toggle('gizli', !yeni); uiEl('rekor-say').textContent = o.yildiz;
   const iyiSira = o.sira >= 1 && o.sira <= 3 && (!uiKayit.sira || o.sira < uiKayit.sira);
   if (yeni) uiKayit.yildiz = o.yildiz;
+  if (yeni) uiYildizRozet(document.querySelector('.pist-kart[data-pist="' + PIST_TEMA + '"]'), uiKayit.yildiz);
   if (iyiSira) { uiKayit.sira = Math.floor(o.sira); uiRozetAyar(document.querySelector('.pist-kart[data-pist="' + PIST_TEMA + '"]'), uiKayit.sira); }
   if (yeni || iyiSira) { try { localStorage.setItem(uiKayitAnahtar, JSON.stringify(uiKayit)); } catch (_) {} }
 }
@@ -147,7 +149,7 @@ OLAY.on('mola', m => {
 });
 OLAY.on('durum', d => {
   if (d !== 'yaris') uiUcusTemizle();
-  if (d === 'baslik') { document.body.classList.remove('ui-durmus'); uiEl('hud').inert = false; uiOdak(document.querySelector('.pist-kart[aria-pressed=true]')); }
+  if (d === 'baslik') { document.body.classList.remove('ui-durmus'); uiEl('hud').inert = false; }
   if (d === 'giris' || d === 'sayim') uiOdak(uiEl('c'));
 });
 OLAY.on('sonuc', () => uiOdak(uiEl('tekrar')));
@@ -162,32 +164,37 @@ function uiRenk(r, yedek) {
 function uiTeker(x, y, r, gobek) {
   return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#2b3550" stroke="#17335c" stroke-width="2.6"/><circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.42).toFixed(1) + '" fill="' + (gobek || '#dfe6ee') + '"/>';
 }
+// Sürücü (Feza): kahverengi kıvırcık saç, kırmızı saç bandı — 3B modeldeki gibi açık üstlü arabada başı görünür.
+function uiSurucu(x, y) {
+  return '<g stroke="#17335c" stroke-width="2.2"><circle cx="' + x + '" cy="' + y + '" r="7.5" fill="#f2c39b"/><path d="M' + (x - 8) + ' ' + (y + 1) + 'q-1-10 8-10 9 0 8 10-3-4-8-4t-8 4z" fill="#6b3f22"/></g>' +
+    '<path d="M' + (x - 7.6) + ' ' + (y - 2) + 'q7.6-4 15.2 0" fill="none" stroke="#e8433a" stroke-width="2.6" stroke-linecap="round"/><circle cx="' + (x + 3.6) + '" cy="' + (y + 1.5) + '" r="1.1" fill="#17335c"/>';
+}
 // Yandan görünüş (sağa bakar), 96×60. c1 = gövde, c2 = süs rengi.
 function uiArabaCiz(id, c1, c2) {
   const cam = '#bfe9ff';
   let g;
   if (id === 'kart') {
     g = '<g ' + UI_CIZGI + '><rect x="11" y="27" width="13" height="12" rx="3" fill="#9aa7b8"/><path d="M27 39V25q0-5 5-5h5v19z" fill="' + c2 + '"/>' +
-      '<path d="M12 39h60q11 0 13 8v2H10v-6q0-4 2-4z" fill="' + c1 + '"/><path d="M62 39 55 25" fill="none" stroke-width="3.4"/><circle cx="54" cy="23" r="5" fill="' + c2 + '"/>' +
+      '</g>' + uiSurucu(42, 30) + '<g ' + UI_CIZGI + '><path d="M12 39h60q11 0 13 8v2H10v-6q0-4 2-4z" fill="' + c1 + '"/><path d="M62 39 55 25" fill="none" stroke-width="3.4"/><circle cx="54" cy="23" r="5" fill="' + c2 + '"/>' +
       '<path d="M76 39l8-7h5v9" fill="' + c2 + '"/></g>' + uiTeker(24, 48, 9.5, c2) + uiTeker(70, 49, 8.5, c2);
   } else if (id === 'yaris') {
     g = '<g ' + UI_CIZGI + '><path d="M5 17h17v7H5zM11 24h6v11h-6z" fill="' + c2 + '"/>' +
-      '<path d="M7 46q0-9 10-10l17-3q9-11 23-10 10 1 15 10l14 3q6 2 6 9v3H7z" fill="' + c1 + '"/><path d="M39 32q7-8 17-7 7 1 10 7z" fill="' + cam + '"/>' +
+      '<path d="M7 46q0-9 10-10l17-3q9-11 23-10 10 1 15 10l14 3q6 2 6 9v3H7z" fill="' + c1 + '"/></g>' + uiSurucu(51, 28) + '<g ' + UI_CIZGI + '><path d="M40 34q11-4 22 0" fill="' + c1 + '"/>' +
       '<path d="M7 42h85" fill="none" stroke="' + c2 + '" stroke-width="3.4"/><circle cx="50" cy="40" r="6" fill="#fff"/></g>' + uiTeker(25, 48, 9.5, c2) + uiTeker(74, 48, 9.5, c2);
   } else if (id === 'cip') {
-    g = '<g ' + UI_CIZGI + '><path d="M27 21 32 7h27l8 14z" fill="' + c1 + '"/><path d="M33 19l3-8h8v8zM48 11h9l5 8H48z" fill="' + cam + '"/>' +
+    g = uiSurucu(46, 15) + '<g ' + UI_CIZGI + '><path d="M30 21 34 6h24l6 15" fill="none" stroke-width="4"/>' +
       '<rect x="9" y="20" width="78" height="16" rx="6" fill="' + c1 + '"/><rect x="5" y="23" width="7" height="12" rx="3" fill="#2b3550"/><path d="M80 25h7" fill="none" stroke="#ffe14d" stroke-width="5"/>' +
-      '<path d="M14 30h68" fill="none" stroke="' + c2 + '" stroke-width="3.4"/><path d="M36 7V4h20v3" fill="none" stroke-width="3"/></g>' + uiTeker(25, 43, 14, c2) + uiTeker(71, 43, 14, c2);
+      '<path d="M14 30h68" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(25, 43, 14, c2) + uiTeker(71, 43, 14, c2);
   } else if (id === 'roket') {
     g = '<g ' + UI_CIZGI + '><path d="M20 27 3 35l17 8z" fill="#ffb53d"/><path d="M20 31l-9 4 9 4z" fill="#ffe14d" stroke="none"/>' +
       '<path d="M22 22 13 9h15l11 13zM22 46l-8 9h13l9-9z" fill="' + c2 + '"/><path d="M20 22h44q20 2 28 12-8 10-28 12H20z" fill="' + c1 + '"/>' +
       '<path d="M66 22q18 3 26 12-8 9-26 12z" fill="' + c2 + '"/><circle cx="47" cy="34" r="7.5" fill="' + cam + '"/><path d="M28 23v22" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' +
       uiTeker(34, 51, 6.5, c2) + uiTeker(66, 51, 6.5, c2);
-  } else if (id === 'dondurma') {
-    g = '<g ' + UI_CIZGI + '><path d="M30 6l7 13 7-13z" fill="#e8a95b"/><circle cx="37" cy="5" r="6.5" fill="' + c2 + '"/>' +
-      '<path d="M8 23q0-5 5-5h52q4 0 4 4v25H8z" fill="' + c1 + '"/><path d="M69 26h9q10 2 11 13v8H69z" fill="' + c1 + '"/><path d="M72 29h6q6 2 7 9H72z" fill="' + cam + '"/>' +
-      '<rect x="15" y="27" width="32" height="12" rx="2" fill="' + cam + '"/><path d="M12 22h38v4q-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.300 0-3.200 4-6.500 0z" fill="' + c2 + '"/>' +
-      '<path d="M8 44h81" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(24, 49, 8.5, c2) + uiTeker(72, 49, 8.5, c2);
+  } else if (id === 'dondurma') {   // açık üstlü pembe-krem araba, önde ve arkada külahta top dondurma (3B modele benzer)
+    g = '<g ' + UI_CIZGI + '><path d="M8 44q0-12 12-13h56q12 1 12 13z" fill="' + c1 + '"/><path d="M8 40h80" fill="none" stroke="#fff3df" stroke-width="5"/>' +
+      '</g>' + uiSurucu(48, 26) + '<g ' + UI_CIZGI + '><path d="M12 31l6 14 6-14zM72 31l6 14 6-14z" fill="#e8a95b"/>' +
+      '<circle cx="18" cy="26" r="8" fill="#8fe3c8"/><circle cx="78" cy="26" r="8" fill="#ff9cc8"/><circle cx="18" cy="17" r="3" fill="#ff4b5c"/><circle cx="78" cy="17" r="3" fill="#ff4b5c"/>' +
+      '<path d="M48 33l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#ffd23f" stroke-width="1.6"/></g>' + uiTeker(24, 49, 8.5, c2) + uiTeker(72, 49, 8.5, c2);
   } else if (id === 'unicorn') {
     g = '<g ' + UI_CIZGI + '><path d="M15 34Q3 32 5 17q5 8 13 8z" fill="' + c2 + '"/><path d="M10 34q0-9 9-9h43l6 21H16q-6 0-6-6z" fill="' + c1 + '"/>' +
       '<path d="M79 15 86 1l2 15z" fill="#ffd23f"/><path d="M71 15l1-8 6 6z" fill="' + c1 + '"/><path d="M60 46V31q0-15 14-17 10-1 13 9l3 9q1 6-5 6h-7l-2 8z" fill="' + c1 + '"/>' +
@@ -236,7 +243,8 @@ function uiArabaKur() {
     b.innerHTML = uiArabaCiz(String(t.id), uiRenk(t.renk, '#f2553f'), uiRenk(t.renk2, '#ffd23f')) + onay;
     b.addEventListener('click', () => {
       try { if (oyArabaSec(t.id) === false) return; } catch (_) { return; }
-      uiArabaIsaretle(t.id); uiZipla(b.firstElementChild, 1.22, 420, -5);
+      uiArabaIsaretle(t.id); uiZipla(b.firstElementChild, 1.22, 420, -5); uiSecZipla(b);
+      if (typeof SES !== 'undefined' && SES.CUMLE && SES.CUMLE['araba_' + t.id]) SES.soyle('araba_' + t.id);
     });
     uiArabaSec.appendChild(b);
   }
@@ -246,7 +254,7 @@ function uiArabaKur() {
 }
 // oyun.js bu dosyadan sonra yüklenir: kartlar bütün betikler hazır olunca kurulur.
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiArabaKur); else uiArabaKur();
-OLAY.on('araba', id => uiArabaIsaretle(id && id.id ? id.id : id));
+OLAY.on('araba', id => { uiArabaIsaretle(id && id.id ? id.id : id); uiSecArabaRenk(); });
 OLAY.on('durum', d => { if (d === 'baslik') uiArabaKur(); });
 
 // ───────── Sonuç: yıldız sayısı sıfırdan sayarak artar (saniyede ~18 yazma; kare başına değil). ─────────
@@ -271,3 +279,109 @@ OLAY.on('sonuc', () => {
   }, 1150);
 });
 OLAY.on('durum', d => { if (d !== 'bitis') uiSayDur(); });
+
+// ───────── Seçim ekranı (ayrı, tam ekran): pist adımı → araba adımı → yeşil düğme. Ekranı oyun.js açar (oyEkranAc, 'ekran' olayı); burada kartlar, rozetler,
+// küçük pist resimleri, kaydırma ve ileri/geri var. Pist değişirse sayfa o pistle yeniden açılır ve doğrudan araba adımına gelir (?adim=araba). ─────────
+const uiSec = uiEl('secim'), uiSecSahne = uiEl('sec-sahne');
+const UI_SON_PIST = 'feza-yaris-pist';
+let uiPistSecili = PIST_TEMA, uiSecGidiyor = false;
+function uiSecZipla(el) { if (!el) return; el.classList.remove('sec-zipla'); void el.offsetWidth; el.classList.add('sec-zipla'); }
+function uiYildizRozet(kart, n) {   // kartın sol altında: o pistte toplanan en çok yıldız (resim + rakam)
+  if (!kart) return;
+  let r = kart.querySelector('.ui-yrozet');
+  if (!(n > 0)) { if (r) r.remove(); return; }
+  if (!r) { r = document.createElement('i'); r.className = 'ui-yrozet'; r.setAttribute('aria-hidden', 'true'); r.innerHTML = '<svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><b></b>'; kart.appendChild(r); }
+  r.lastChild.textContent = Math.floor(n);
+}
+function uiYildizOku(pist) {
+  if (pist === PIST_TEMA) return uiKayit.yildiz;
+  try { const k = JSON.parse(localStorage.getItem('feza-yaris-anilar-v1:' + pist) || '{}'); return Number.isFinite(k.yildiz) && k.yildiz > 0 ? Math.floor(k.yildiz) : 0; } catch (_) { return 0; }
+}
+function uiPistResim(kart) {   // gerçek pist görüntüsü (hazır dosya: icons/pist_<ad>.jpg) çizimin üstüne konur; dosya açılmazsa çizim kalır
+  if (!kart || kart.querySelector('.pist-resim')) return;
+  const im = document.createElement('img'); im.className = 'pist-resim'; im.alt = ''; im.draggable = false; im.decoding = 'async';
+  im.addEventListener('error', () => im.remove(), { once: true });
+  im.src = 'icons/pist_' + kart.dataset.pist + '.jpg';
+  kart.insertBefore(im, kart.firstElementChild.nextSibling);
+}
+function uiPistIsaretle(pist, dokunus) {
+  if (uiSecGidiyor) return;
+  uiPistSecili = pist;
+  document.querySelectorAll('.pist-kart').forEach(b => { const s = b.dataset.pist === pist; b.setAttribute('aria-pressed', s ? 'true' : 'false'); if (s && dokunus) uiSecZipla(b); });
+  // kısa pist adı (uzun giriş cümlesi yarışa girerken zaten söylenir; iki kez duyulmasın)
+  if (dokunus && typeof SES !== 'undefined' && SES.CUMLE && SES.CUMLE['ad_' + pist]) SES.soyle('ad_' + pist);
+}
+function uiSecArabaRenk() {   // üstteki küçük araba simgesi seçili arabanın renginde
+  try { const id = oyAraba(); for (const t of ARABA_TIPLERI) if (t && t.id === id) uiSec.style.setProperty('--ar', uiRenk(t.renk, '#f2553f')); } catch (_) { /* süs */ }
+}
+function uiSecIleri() {
+  if (uiSecGidiyor || typeof YARIS === 'undefined' || YARIS.durum !== 'baslik') return;
+  if (uiSec.dataset.adim === 'araba') { YARIS.basla(); return; }
+  try { localStorage.setItem(UI_SON_PIST, uiPistSecili); } catch (_) { /* kayıt isteğe bağlı */ }
+  if (uiPistSecili === PIST_TEMA) { oyEkranAc('araba'); return; }
+  uiSecGidiyor = true; uiSec.classList.add('sec-cikis');   // başka pist: yumuşakça kararıp o pistle yeniden açılır
+  const u = new URL(location.href); u.searchParams.set('pist', uiPistSecili); u.searchParams.set('adim', 'araba'); u.searchParams.delete('atla');
+  setTimeout(() => { location.href = u.href; }, 240);
+}
+function uiSecGeri() {
+  if (uiSecGidiyor || typeof YARIS === 'undefined' || YARIS.durum !== 'baslik') return;
+  if (typeof SES !== 'undefined') SES.sus();
+  oyEkranAc(uiSec.dataset.adim === 'araba' ? 'pist' : 'acilis');
+}
+function uiArabaKaydir(yon) {   // +1 = sonraki, -1 = önceki araba (uçtan uca döner)
+  const k = [...uiArabaSec.querySelectorAll('.araba-kart')]; if (k.length < 2) return;
+  let i = k.findIndex(b => b.getAttribute('aria-pressed') === 'true'); if (i < 0) i = 0;
+  const b = k[(i + yon + k.length) % k.length]; b.click();
+}
+uiEl('sec-ileri').addEventListener('click', uiSecIleri);
+uiEl('sec-geri').addEventListener('click', uiSecGeri);
+{ // araba sahnesi: sağa/sola kaydır ya da yandaki oklara dokun
+  let pid = null, x0 = 0, ok = null;
+  uiSecSahne.addEventListener('pointerdown', e => { if (pid !== null) return; pid = e.pointerId; x0 = e.clientX; ok = e.target.closest && e.target.closest('.sec-kay'); try { uiSecSahne.setPointerCapture(pid); } catch (_) { /* yedek: pointerup yine gelir */ } });
+  const bitti = e => {
+    if (e.pointerId !== pid) return; pid = null;
+    if (e.type !== 'pointerup' || uiSec.dataset.adim !== 'araba') return;
+    const dx = e.clientX - x0;
+    if (Math.abs(dx) > 45) uiArabaKaydir(dx < 0 ? 1 : -1);
+    else if (ok) uiArabaKaydir(ok.classList.contains('sag') ? 1 : -1);
+  };
+  uiSecSahne.addEventListener('pointerup', bitti); uiSecSahne.addEventListener('pointercancel', bitti);
+}
+document.querySelectorAll('.pist-kart').forEach(b => {
+  const sv = b.querySelector('svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  uiYildizRozet(b, uiYildizOku(b.dataset.pist)); uiPistResim(b);
+});
+// ?kucuk (yalnız geliştirici): oyun.js bu pistin resmini çizer; resim dosyası üretmek için sayfada bırakılır.
+OLAY.on('kucuk', veri => { window.uiKucukVeri = veri; });
+// Eski sürüm resimleri tarayıcı kaydında tutuyordu (bu oyunun kendi küçük-resim anahtarları); artık gerekmez, yer açılır.
+try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.indexOf('feza-yaris-kucuk-') === 0) localStorage.removeItem(k); } } catch (_) { /* kayıt isteğe bağlı */ }
+OLAY.on('ekran', ad => {
+  if (ad === 'pist') { uiPistIsaretle(uiPistSecili, false); uiOdak(document.querySelector('.pist-kart[aria-pressed=true]')); }
+  else if (ad === 'araba') { uiArabaKur(); uiSecArabaRenk(); uiOdak(uiEl('sec-ileri')); }
+  else if (ad === 'acilis') uiOdak(uiEl('oyna'));
+});
+OLAY.on('durum', d => { if (d === 'giris' || d === 'sayim') { try { localStorage.setItem(UI_SON_PIST, PIST_TEMA); } catch (_) { /* kayıt isteğe bağlı */ } } });
+try { const u = new URL(location.href); if (u.searchParams.has('adim')) { u.searchParams.delete('adim'); history.replaceState(null, '', u.href); } } catch (_) { /* adres aynı kalabilir */ }
+
+// ───────── Geri sayım bayrakları, yarışa geçiş perdesi, küçük sevinç parıltıları (yalnız olaylarda; kare başına iş yok) ─────────
+const uiGit = uiEl('ui-git'), uiGecis = uiEl('ui-gecis');
+let uiGitZ = 0, uiGecisZ = 0;
+function uiParla(el) { if (!el) return; el.classList.remove('ui-parla'); void el.offsetWidth; el.classList.add('ui-parla'); }
+OLAY.on('sayim', n => {
+  clearTimeout(uiGitZ);
+  if (n === 3) { uiGit.classList.remove('gizli'); uiGitZ = setTimeout(() => uiGit.classList.add('gizli'), 1500); }   // yeşil: iki yanda damalı bayrak sallanır
+  else uiGit.classList.add('gizli');
+});
+OLAY.on('durum', d => {
+  if (d !== 'sayim' && d !== 'yaris') { clearTimeout(uiGitZ); uiGit.classList.add('gizli'); }
+  if (d === 'bitis' || d === 'baslik') uiEl('isiklar').classList.add('gizli');
+  if (d === 'giris' || (d === 'sayim' && uiGecis.dataset.son !== 'giris')) {   // seçim ekranından yarışa: damalı perde yukarı kalkar
+    clearTimeout(uiGecisZ); uiGecis.classList.remove('gizli'); uiGecis.classList.remove('ui-kalk'); void uiGecis.offsetWidth; uiGecis.classList.add('ui-kalk');
+    uiGecisZ = setTimeout(() => uiGecis.classList.add('gizli'), 900);
+  }
+  uiGecis.dataset.son = d;
+});
+OLAY.on('yildiz', () => uiParla(uiEl('yildiz-kutu')));
+OLAY.on('tur', () => uiParla(uiEl('turlar')));
+OLAY.on('sira', n => { if (n === 1) uiParla(uiSira); });
+OLAY.on('seri', o => { if (o && o.odul) uiParla(uiSeri); });

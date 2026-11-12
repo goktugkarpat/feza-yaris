@@ -14,18 +14,41 @@ let tohum = 20261111; const R = () => { tohum = (tohum * 1664525 + 1013904223) >
 const canvas = $('c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.outputColorSpace = T.SRGBColorSpace;
-let oran = Math.min(window.devicePixelRatio || 1, 2);
+// Renk: sakin, temiz palet için çok hafif doygunluk + yumuşak omuz (0,8'e kadar renk aynı, üstü 1'e yavaşça yaklaşır: kar/beyazlar patlamaz, ton korunur).
+// Ek çizim geçişi yok; her malzemenin sonunda birkaç işlem. Sis ton eşlemeden SONRA karıştığı için ufuk/gök renkleri değişmez.
+T.ShaderChunk.tonemapping_pars_fragment = T.ShaderChunk.tonemapping_pars_fragment.replace('vec3 CustomToneMapping( vec3 color ) { return color; }',
+  'vec3 CustomToneMapping( vec3 color ) {\n\tcolor *= toneMappingExposure;\n\tfloat l = dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n\tcolor = max( vec3( l ) + ( color - vec3( l ) ) * 1.06, vec3( 0.0 ) );\n\tfloat p = max( color.r, max( color.g, color.b ) );\n\tif ( p > 0.8 ) color *= ( 1.0 - 0.04 / ( p - 0.6 ) ) / p;\n\treturn color;\n}');
+renderer.toneMapping = T.CustomToneMapping; renderer.toneMappingExposure = 1;
+// Hacim: dik yüzlerin kenarında çok hafif açık vurgu (rim) → kutu/karton yüzler yuvarlak ve hacimli okunur. Yer ve çatı gibi yatay yüzlere değmez (uzakta yol/çimen ağarmaz).
+// Lambert/Phong/Standard ortak parçası; ek ışık, doku ya da geçiş yok.
+T.ShaderChunk.lights_fragment_end += '\n{\n\tfloat rimK = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );\n\tfloat rimD = 1.0 - abs( dot( geometryNormal, normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz ) ) );\n\treflectedLight.indirectDiffuse += diffuseColor.rgb * ( rimK * rimK * rimK * rimD * 0.3 );\n}\n';
+// Çizim oranı: en çok 2 ve ekran başına ~4,6 milyon piksel (12,9" iPad'de ≈1,8; 11"de 2). Kare uzarsa oyun.js daha da düşürür.
+const oranTavan = () => clamp(Math.sqrt(4.6e6 / Math.max(1, innerWidth * innerHeight)), 1, 2);
+let oran = Math.min(window.devicePixelRatio || 1, oranTavan());
 let cizimSurumu = 0;
 const scene = new T.Scene();
 const camera = new T.PerspectiveCamera(62, 1, 0.3, 900);
 function boyut() {
   const w = innerWidth, h = innerHeight;
+  oran = Math.min(oran, Math.max(oranTavan(), 1));
   renderer.setPixelRatio(oran); renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.fov = w < h ? 78 : 62; camera.updateProjectionMatrix();
   cizimSurumu++;
 }
 addEventListener('resize', boyut); addEventListener('orientationchange', () => setTimeout(boyut, 250)); boyut();
 canvas.addEventListener('webglcontextrestored', () => { cizimSurumu++; });
+// Uzak katman: hafif hava derinliği (uzak süsler gökle soluklaşır, kalabalık sakinleşir) ve kamera sınırında (900 m) kırpışma görünmesin.
+// Pist dosyaları sis rengini ve uzaklığını kurar; burada yalnız yakın/uzak sınırlar daraltılır (renk aynı kalır), bir kez, yüklenince.
+addEventListener('load', () => {
+  const f = scene.fog; if (!f || f.isFogExp2) return;
+  if (PIST_TEMA === 'uzay') { f.near = Math.min(f.near, 260); f.far = Math.min(f.far, 880); }
+  else { f.near = Math.min(f.near, 90); f.far = Math.min(f.far, 820); }
+  // Işık: güneş biraz daha sıcak ve biraz daha yandan (yüzler ayrışır), gök dolgusu biraz az (renk tonu değişmez: pembeler gölgede leylağa kaymasın), alt yüzler biraz koyu → karton düzlüğü yerine hacim.
+  if (PIST_TEMA !== 'uzay' && typeof cvGokIsik !== 'undefined' && typeof gunes !== 'undefined') {
+    gunes.color.multiply(new T.Color(0xfff3e6)); gunes.intensity *= 1.2; gunes.position.y *= 0.7;
+    cvGokIsik.intensity *= 0.88; cvGokIsik.groundColor.multiplyScalar(0.8);
+  }
+});
 
 function tuvalDoku(w, h, ciz, tekrar) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; ciz(c.getContext('2d'), w, h);

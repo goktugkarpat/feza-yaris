@@ -5,10 +5,16 @@
 'use strict';
 
 let uzKubbe = null, uzYildiz = null, uzDunya = null, uzHalkali = null, uzUydu = null, uzUfo = null, uzUfoYer = null;
-const uzKayanAz = [0, 0], uzKayanN = [-1, -1];
+const uzKayanAz = [0, 0], uzKayanN = [-1, -1], uzGezgin = [];
+let uzBuyukKrater = null;
 const uzKayan = [], uzV1 = new T.Vector3(), uzV2 = new T.Vector3(), uzYukari = new T.Vector3(0, 1, 0);
 const uzBolge = i => { const f = i / N; return f < 0.07 || f > 0.95 ? 0 : f < 0.26 ? 1 : f < 0.44 ? 2 : f < 0.62 ? 3 : f < 0.80 ? 4 : 5; };
 
+const uzYK = (() => {   // yuvarlak köşeli, tombul kutu: köşeler yumuşak yuvarlanır, normaller yumuşak (karton gibi düz levha değil)
+  const g = new T.BoxGeometry(1, 1, 1, 3, 3, 3), p = g.attributes.position, n = g.attributes.normal, r = 0.17, v = new T.Vector3(), c = new T.Vector3(), u = a => Math.abs(a) < 0.3 ? Math.sign(a) * 0.4 : a;   // ara çizgiler köşeye yakın: az üçgenle yuvarlak kenar
+  for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); v.set(u(v.x), u(v.y), u(v.z)); c.set(clamp(v.x, -0.5 + r, 0.5 - r), clamp(v.y, -0.5 + r, 0.5 - r), clamp(v.z, -0.5 + r, 0.5 - r)); v.sub(c).normalize(); n.setXYZ(i, v.x, v.y, v.z); p.setXYZ(i, c.x + v.x * r, c.y + v.y * r, c.z + v.z * r); }
+  return g;
+})();
 function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y) ve el sallama (cvK.z); kopya rengi cvK.x = 1 olan parçaları boyar
   const m = new T.MeshLambertMaterial(Object.assign({ color: 0xffffff, vertexColors: true }, o || {}));
   m.onBeforeCompile = sh => {
@@ -45,7 +51,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
         g.fillStyle = rg; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill(); g.restore();
       }
     }
-    for (let k = 0; k < 520; k++) { g.fillStyle = 'rgba(255,255,255,' + (0.25 + R() * 0.5).toFixed(2) + ')'; g.fillRect(R() * w, R() * h * 0.47, 1, 1); }
+    for (let k = 0; k < 520; k++) { R(); R(); R(); }   // (eski bulanık yıldız lekeleri kaldırıldı; yıldızlar yalnız keskin, kırpışan noktalar. Rastgele sıra korunur.)
     g.globalCompositeOperation = 'source-over';
   });
   kubbeDoku.wrapS = T.RepeatWrapping;
@@ -78,6 +84,15 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   dunyaDoku.wrapS = T.RepeatWrapping;
   uzDunya = new T.Mesh(new T.SphereGeometry(1, 36, 22), new T.MeshLambertMaterial({ map: dunyaDoku, emissive: 0xffffff, emissiveMap: dunyaDoku, emissiveIntensity: 0.22, fog: false }));
   uzDunya.scale.setScalar(58); uzDunya.position.set(470, 150, 270); uzDunya.rotation.z = 0.35; scene.add(uzDunya);
+  { // Dünya'nın çevresinde yumuşak mavi hale (küçük, uzak tek sprite)
+    const hd = tuvalDoku(128, 128, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(150,215,255,.75)'); r.addColorStop(0.35, 'rgba(120,190,255,.32)'); r.addColorStop(1, 'rgba(120,190,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: hd, transparent: true, depthWrite: false, fog: false })); sp.scale.set(170, 170, 1); sp.position.copy(uzDunya.position); scene.add(sp);
+  }
+  { // en uzak katman: sivri ay sıradağları, puslu mor siluet (tek çizim)
+    const B = cvYapi(); B.yer(0, -65, 0);
+    for (let k = 0; k < 44; k++) { const a = k / 44 * 6.2832, rr = 600 + (k % 3) * 22, h = 46 + ((k * 7) % 5) * 15 + (k % 2) * 10, w = 50 + ((k * 3) % 4) * 14; B.ekle(cvG.koni, Math.cos(a) * rr, h / 2 - 2, Math.sin(a) * rr, w, h, w, k % 2 ? 0x8f79c6 : 0x7f69ba, 0, k * 1.7); }
+    const m = new T.Mesh(B.geo(), new T.MeshBasicMaterial({ vertexColors: true, fog: false })); m.frustumCulled = false; scene.add(m);
+  }
   {
     const H = cvYapi(); H.yer(0, 0, 0);
     H.ekle(buyukKure, 0, 0, 0, 1, 1, 1, 0xffc463);
@@ -133,7 +148,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   // ───────── süsler ─────────
   const S = cvYapi(), E = cvYapi(), golge = [], hale = [], astro = [], uzayli = [], krater = [];
   const GRI = 0x8d89ad, ACIK = 0xdfe3f2, BEYAZ = 0xf6f7ff, MAVI = 0x3b6fe0, CANLI = [0xff5a6e, 0xffb23c, 0xffe14d, 0x5fe38a, 0x4fd6ff, 0xb58cff, 0xff8fd0];
-  const KRISTAL = [0x5ff0ff, 0xff7ad9, 0xb58cff, 0x7dffb0, 0xffe066];
+  const KRISTAL = [0x5ff0ff, 0xff7ad9, 0xb58cff, 0x8fd8ff, 0xff9be6];   // uyumlu üç ton: camgöbeği, pembe, lila
   const yerVar = (x, z, r) => yakin(x, z) > YARI + 3 + r && cvBos(x, z, r);
   const koy = (f, yan, uz, r) => {   // pist kenarında boş yer arar; bulursa ayırır
     for (const q of [[0, yan, 0], [0, yan, 6], [0.012, yan, 3], [-0.012, yan, 3], [0, -yan, 0], [0, -yan, 6], [0.02, -yan, 10], [0.02, yan, 12]]) {
@@ -150,8 +165,8 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   const kubbeEv = (p, r, renk, kapi) => {
     yer2(p.x, p.z, p.ry);
     S.ekle(cvG.sil, 0, 0.3, 0, r * 1.05, 0.6, r * 1.05, GRI); S.ekle(cvG.yarim, 0, 0.55, 0, r, r * 0.9, r, renk);
-    S.ekle(cvG.sil, 0, 0.55 + r * 0.9, 0, r * 0.14, 0.4, r * 0.14, GRI); E.ekle(cvG.kureK, 0, 0.95 + r * 0.9, 0, r * 0.09, r * 0.09, r * 0.09, 0xff6a7c);
-    S.ekle(cvG.kutu, 0, 1.05, r * 0.92, 1.7, 2.0, 1.0, 0x7d79a3); E.ekle(cvG.kutu, 0, 0.95, r * 0.92 + 0.51, 1.1, 1.6, 0.05, kapi);
+    S.ekle(cvG.sil, 0, 0.55 + r * 0.9, 0, r * 0.14, 0.4, r * 0.14, GRI); E.ekle(cvG.kureK, 0, 0.95 + r * 0.9, 0, r * 0.11, r * 0.11, r * 0.11, 0xff6a7c, 0, 0, 0, 0, 0, 1);
+    S.ekle(uzYK, 0, 1.05, r * 0.92, 1.7, 2.0, 1.0, 0x7d79a3); E.ekle(uzYK, 0, 0.95, r * 0.92 + 0.51, 1.1, 1.6, 0.05, kapi);
     for (const a of [-2.3, -1.45, -0.75, 0.75, 1.45, 2.3]) { const e = 0.5, x = Math.sin(a) * Math.cos(e) * r, z = Math.cos(a) * Math.cos(e) * r, y = 0.55 + Math.sin(e) * r * 0.9; E.ekle(uzYuvar, x * 0.97, 0.55 + (y - 0.55) * 0.97, z * 0.97, r * 0.16, r * 0.16, r * 0.16, 0xffe27a); }
     iz(0, 0, r * 1.45, r * 1.25); isik(0, r + 1.6, 2.4, kapi);
   };
@@ -159,22 +174,22 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     yer2(p.x, p.z, p.ry, s);
     S.ekle(cvG.sil, 0, 0.2, 0, 0.9, 0.4, 0.9, GRI); S.ekle(cvG.sil, 0, 1.6, 0, 0.16, 2.8, 0.16, ACIK);
     S.ekle(cvG.yarim, 0, 4.0, 0.25, 1.8, 0.7, 1.8, BEYAZ, Math.PI + 0.75); S.ekle(cvG.sil, 0, 4.0, 0.25, 0.05, 1.5, 0.05, GRI, 0.75);
-    E.ekle(cvG.kureK, 0, 4.0 + Math.cos(0.75) * 0.8, 0.25 + Math.sin(0.75) * 0.8, 0.17, 0.17, 0.17, 0xff5a6e);
+    E.ekle(cvG.kureK, 0, 4.0 + Math.cos(0.75) * 0.8, 0.25 + Math.sin(0.75) * 0.8, 0.17, 0.17, 0.17, 0xff5a6e, 0, 0, 0, 0, 0, 1);
     iz(0, 0, 1.6 * (s || 1));
   };
   const inisAraci = p => {
     yer2(p.x, p.z, p.ry, 1.25);
     S.ekle(cvG.sil, 0, 1.75, 0, 1.5, 1.3, 1.5, 0xf2c14e); S.ekle(cvG.sil, 0, 2.85, 0, 1.0, 0.9, 1.0, ACIK); S.ekle(cvG.yarimK, 0, 3.3, 0, 1, 0.6, 1, ACIK); S.ekle(cvG.koni, 0, 0.8, 0, 0.7, 0.8, 0.7, 0x55516f);
-    E.ekle(cvG.kureK, 0, 2.85, 0.95, 0.33, 0.33, 0.15, 0x7fe9ff); E.ekle(cvG.kureK, 0, 3.95, 0, 0.13, 0.13, 0.13, 0xff5a6e);
+    E.ekle(cvG.kureK, 0, 2.85, 0.95, 0.33, 0.33, 0.15, 0x7fe9ff); E.ekle(cvG.kureK, 0, 3.95, 0, 0.13, 0.13, 0.13, 0xff5a6e, 0, 0, 0, 0, 0, 1);
     for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + k * Math.PI / 2, sx = Math.sin(a), cz = Math.cos(a); S.ekle(cvG.kutu, sx * 1.9, 0.95, cz * 1.9, 0.16, 2.2, 0.16, 0xb9bdd4, -0.5, a); S.ekle(cvG.sil, sx * 2.45, 0.08, cz * 2.45, 0.45, 0.16, 0.45, 0xb9bdd4); }
     S.ekle(cvG.kutu, 0, 0.9, 1.75, 0.6, 1.8, 0.08, 0xb9bdd4, -0.35);
     iz(0, 0, 4.2);
   };
   const ayArabasi = p => {
     yer2(p.x, p.z, p.ry + 0.9, 1.15);
-    S.ekle(cvG.kutu, 0, 1.0, 0, 1.8, 0.5, 3.0, BEYAZ); S.ekle(cvG.kutu, 0, 1.3, 0.2, 1.5, 0.12, 2.2, 0xffb23c);
+    S.ekle(uzYK, 0, 1.0, 0, 1.8, 0.5, 3.0, BEYAZ); S.ekle(uzYK, 0, 1.3, 0.2, 1.5, 0.12, 2.2, 0xffb23c);
     for (const x of [-1.1, 1.1]) for (const z of [-1.1, 0, 1.1]) S.ekle(cvG.sil, x, 0.45, z, 0.45, 0.35, 0.45, 0x4b4868, 0, 0, Math.PI / 2);
-    S.ekle(cvG.kutu, 0, 1.85, -0.6, 2.4, 0.08, 1.5, MAVI, 0.25); S.ekle(cvG.sil, 0.5, 1.95, 1.1, 0.07, 1.4, 0.07, ACIK); S.ekle(cvG.kutu, 0.5, 2.7, 1.1, 0.7, 0.36, 0.4, BEYAZ);
+    S.ekle(uzYK, 0, 1.85, -0.6, 2.4, 0.08, 1.5, MAVI, 0.25); S.ekle(cvG.sil, 0.5, 1.95, 1.1, 0.07, 1.4, 0.07, ACIK); S.ekle(uzYK, 0.5, 2.7, 1.1, 0.7, 0.36, 0.4, BEYAZ);
     E.ekle(cvG.kureK, 0.33, 2.7, 1.32, 0.12, 0.12, 0.06, 0x7fe9ff); E.ekle(cvG.kureK, 0.67, 2.7, 1.32, 0.12, 0.12, 0.06, 0x7fe9ff);
     S.ekle(cvG.yarimK, -0.55, 1.75, 1.0, 0.5, 0.25, 0.5, BEYAZ, Math.PI + 0.5);
     iz(0, 0, 2.6, 3.2);
@@ -189,12 +204,12 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     S.ekle(cvG.sil, 0, 0.25, 0, 5.2, 0.5, 5.2, GRI); S.ekle(cvG.sil, 0, 0.52, 0, 4.2, 0.06, 4.2, 0xa9a5c6);
     S.ekle(cvG.govdeK, 0, 5.6, 0, 1.5, 8, 1.5, BEYAZ); S.ekle(cvG.koni, 0, 11.1, 0, 1.22, 3, 1.22, renk);
     S.ekle(cvG.sil, 0, 7.6, 0, 1.36, 0.5, 1.36, renk); S.ekle(cvG.sil, 0, 3.2, 0, 1.5, 0.5, 1.5, 0x4aa3ff); S.ekle(cvG.koni, 0, 1.15, 0, 1.1, 1.3, 1.1, 0x55516f);
-    for (const a of [0.5, 2.6, 4.7]) { S.ekle(cvG.kutu, Math.sin(a) * 1.75, 2.3, Math.cos(a) * 1.75, 0.22, 1.9, 1.0, renk, 0.28, a); S.ekle(cvG.kutu, Math.sin(a) * 2.15, 1.75, Math.cos(a) * 2.15, 0.22, 1.1, 0.6, renk, 0.28, a); }
+    for (const a of [0.5, 2.6, 4.7]) { S.ekle(uzYK, Math.sin(a) * 1.75, 2.3, Math.cos(a) * 1.75, 0.22, 1.9, 1.0, renk, 0.28, a); S.ekle(uzYK, Math.sin(a) * 2.15, 1.75, Math.cos(a) * 2.15, 0.22, 1.1, 0.6, renk, 0.28, a); }
     E.ekle(cvG.kureK, 0, 6.1, 1.32, 0.48, 0.48, 0.2, 0x7fe9ff); E.ekle(cvG.kureK, 0, 4.6, 1.42, 0.3, 0.3, 0.14, 0x7fe9ff);
     if (kule) {
-      S.ekle(cvG.kutu, -3.7, 5.5, 0, 0.9, 10, 0.9, 0xff9a3c); for (const y of [2.5, 5, 7.5, 10]) S.ekle(cvG.kutu, -3.7, y, 0, 1.15, 0.25, 1.15, BEYAZ);
-      S.ekle(cvG.kutu, -2.4, 8.3, 0, 2.2, 0.3, 0.45, 0xff9a3c); S.ekle(cvG.kutu, -2.4, 4.2, 0, 2.2, 0.3, 0.45, 0xff9a3c); E.ekle(cvG.kureK, -3.7, 10.85, 0, 0.3, 0.3, 0.3, 0xff5a6e);
-      for (const a of [1.2, 2.2, 3.4, 4.4, 5.6]) E.ekle(cvG.kureK, Math.sin(a) * 4.7, 0.6, Math.cos(a) * 4.7, 0.2, 0.2, 0.2, 0xffe14d);
+      S.ekle(uzYK, -3.7, 5.5, 0, 0.9, 10, 0.9, 0xff9a3c); for (const y of [2.5, 5, 7.5, 10]) S.ekle(uzYK, -3.7, y, 0, 1.15, 0.25, 1.15, BEYAZ);
+      S.ekle(uzYK, -2.4, 8.3, 0, 2.2, 0.3, 0.45, 0xff9a3c); S.ekle(uzYK, -2.4, 4.2, 0, 2.2, 0.3, 0.45, 0xff9a3c); E.ekle(cvG.kureK, -3.7, 10.85, 0, 0.36, 0.36, 0.36, 0xff5a6e, 0, 0, 0, 0, 0, 1);
+      for (const a of [1.2, 2.2, 3.4, 4.4, 5.6]) E.ekle(cvG.kureK, Math.sin(a) * 4.7, 0.6, Math.cos(a) * 4.7, 0.22, 0.22, 0.22, 0xffe14d, 0, 0, 0, 0, 0, 1);
     }
     E.ekle(cvG.koni, 0, 0.62, 0, 0.62, 0.7, 0.62, 0xffb23c, Math.PI); E.ekle(cvG.kureK, 0, 0.72, 0, 0.42, 0.3, 0.42, 0xfff0a0);   // motor altında sıcak parıltı
     for (let k = 0; k < 7; k++) { const a = k * 0.9 + 0.3, d = 1.5 + (k % 3) * 0.55, b = 0.55 + (k % 3) * 0.2; S.ekle(cvG.kure, Math.sin(a) * d, 0.62 + b * 0.55, Math.cos(a) * d, b, b * 0.8, b, k % 2 ? 0xf6f7ff : 0xdfe3f2); }   // duman topları
@@ -208,7 +223,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   };
   const direk = (x, z, renk) => {
     yer2(x, z, 0);
-    S.ekle(cvG.sil5, 0, 2.1, 0, 0.1, 4.2, 0.1, ACIK); S.ekle(cvG.sil, 0, 0.15, 0, 0.35, 0.3, 0.35, GRI); E.ekle(cvG.tac, 0, 4.4, 0, 0.42, 0.42, 0.42, renk); S.ekle(cvG.sil, 0, 4.05, 0, 0.3, 0.12, 0.3, GRI);
+    S.ekle(cvG.sil5, 0, 2.1, 0, 0.1, 4.2, 0.1, ACIK); S.ekle(cvG.sil, 0, 0.15, 0, 0.35, 0.3, 0.35, GRI); E.ekle(cvG.tac, 0, 4.4, 0, 0.42, 0.42, 0.42, renk, 0, 0, 0, 0, 0, 0.5); S.ekle(cvG.sil, 0, 4.05, 0, 0.3, 0.12, 0.3, GRI);
     hale.push([x, 0.03, z, 2.6, 1, 2.6, 0, renk]);
   };
   const kristal = (x, z, s) => {
@@ -221,8 +236,8 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     yer2(p.x, p.z, p.ry);
     S.ekle(cvG.govdeK, 0, 1.1, 0, r * 0.42, 2.2, r * 0.42, 0xe9e4ff); S.ekle(cvG.tac, 0, 2.6 + r * 0.45, 0, r, r * 0.62, r, renk); S.ekle(cvG.sil, 0, 2.6 + r * 0.3, 0, r * 1.12, 0.22, r * 1.12, BEYAZ);
     E.ekle(cvG.kutu, 0, 0.8, r * 0.4, 0.8, 1.3, 0.12, 0xffe27a);
-    for (let k = 0; k < 6; k++) { const a = k * 1.047 + 0.5; E.ekle(cvG.kureK, Math.sin(a) * r * 0.86, 2.6 + r * 0.62, Math.cos(a) * r * 0.86, r * 0.14, r * 0.14, r * 0.14, 0xfff2a0); }
-    S.ekle(cvG.sil5, 0, 2.6 + r * 1.2, 0, 0.05, r * 0.5, 0.05, BEYAZ); E.ekle(cvG.kureK, 0, 2.6 + r * 1.5, 0, 0.2, 0.2, 0.2, 0xff8fd0);
+    for (let k = 0; k < 6; k++) { const a = k * 1.047 + 0.5; E.ekle(cvG.kureK, Math.sin(a) * r * 0.86, 2.6 + r * 0.62, Math.cos(a) * r * 0.86, r * 0.14, r * 0.14, r * 0.14, 0xfff2a0, 0, 0, 0, 0, 0, 1); }
+    S.ekle(cvG.sil5, 0, 2.6 + r * 1.2, 0, 0.05, r * 0.5, 0.05, BEYAZ); E.ekle(cvG.kureK, 0, 2.6 + r * 1.5, 0, 0.22, 0.22, 0.22, 0xff8fd0, 0, 0, 0, 0, 0, 1);
     iz(0, 0, r * 1.3); isik(0, r * 0.4 + 1.5, 2, renk);
   };
   const ufoGovde = (Y, y) => {
@@ -232,10 +247,10 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   const tribun = p => {
     yer2(p.x, p.z, p.ry);
     for (let k = 0; k < 3; k++) {
-      S.ekle(cvG.kutu, 0, 0.3 * (k + 1), -k * 1.5, 13, 0.6 * (k + 1), 1.5, k % 2 ? 0xa9a5c6 : 0x8d89ad); E.ekle(cvG.kutu, 0, 0.6 * (k + 1) - 0.1, -k * 1.5 + 0.76, 13, 0.14, 0.04, CANLI[k * 2 + 1]);
+      S.ekle(uzYK, 0, 0.3 * (k + 1), -k * 1.5, 13, 0.6 * (k + 1), 1.5, k % 2 ? 0xa9a5c6 : 0x8d89ad); E.ekle(uzYK, 0, 0.6 * (k + 1) - 0.1, -k * 1.5 + 0.76, 13, 0.14, 0.04, CANLI[k * 2 + 1]);
       for (let x = -5.6; x <= 5.7; x += 1.4) { const v = S.dunya(x + (R() - 0.5) * 0.3, -k * 1.5), s = 0.74 + R() * 0.12; astro.push([v.x, 0.6 * (k + 1), v.z, s, s, s, p.ry + (R() - 0.5) * 0.5, CANLI[(R() * 7) | 0]]); }
     }
-    S.ekle(cvG.kutu, 0, 2.6, -3.1, 13, 5.2, 0.3, 0x5b56a8); for (let k = 0; k < 7; k++) E.ekle(cvG.okt, -5.4 + k * 1.8, 4.3, -2.9, 0.5, 0.5, 0.1, CANLI[k]);
+    S.ekle(uzYK, 0, 2.6, -3.1, 13, 5.2, 0.3, 0x5b56a8); for (let k = 0; k < 7; k++) E.ekle(cvG.okt, -5.4 + k * 1.8, 4.3, -2.9, 0.5, 0.5, 0.1, CANLI[k], 0, 0, 0, 0, 0, 1);
     for (const x of [-6.6, 6.6]) { S.ekle(cvG.sil5, x, 3.2, -3.1, 0.12, 6.4, 0.12, BEYAZ); E.ekle(cvG.tac, x, 6.6, -3.1, 0.4, 0.4, 0.4, 0x4fd6ff); }
     iz(0, -1.5, 8, 4);
   };
@@ -246,7 +261,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
       if (!yerVar(x, z, 1.6)) continue;
       cvYasak.push([x, z, 2.2]); yer2(x, z, Math.atan2(-TX[j], -TZ[j]));
       for (const px of [-1.45, 1.45]) S.ekle(cvG.sil5, px, 1.0, 0, 0.1, 2.0, 0.1, ACIK);
-      S.ekle(cvG.kutu, 0, 2.75, 0, 3.9, 1.7, 0.16, 0x2b2f78); S.ekle(cvG.kutu, 0, 2.75, -0.03, 4.1, 1.9, 0.12, BEYAZ);
+      S.ekle(uzYK, 0, 2.75, 0, 3.9, 1.7, 0.16, 0x2b2f78); S.ekle(uzYK, 0, 2.75, -0.03, 4.1, 1.9, 0.12, BEYAZ);
       for (let c = -1; c <= 1; c++) for (const u of [-1, 1]) E.ekle(cvG.kutu, c * 1.15 + yon * 0.1, 2.75 + u * 0.3, 0.1, 0.92, 0.24, 0.06, c === 0 ? 0xffe14d : 0x7fe9ff, 0, 0, -u * yon * 0.785);
       iz(0, 0, 2.2, 0.7); return;
     }
@@ -271,7 +286,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     krater.push([p.x, 0.012, p.z, q[3], 1, q[3], R() * 6]); S.yer(p.x, p.z, R() * 6); S.ekle(halka, 0, 0.05, 0, q[3] * 0.8, q[3] * 0.8, 3.2, 0xcfcbe6, Math.PI / 2);
   }
   // ── 2: kristal vadisi ──
-  for (let k = 0; k < 30; k++) { const f = 0.265 + R() * 0.17, c = cvKenar(cvI(f), k % 2 ? 1 : -1, YARI + 5 + R() * R() * 30), x = c.x, z = c.z, s = 0.8 + R() * 1.0; if (yerVar(x, z, 1.6 * s)) { cvYasak.push([x, z, 1.5 * s]); kristal(x, z, s); } }
+  for (let k = 0; k < 18; k++) { const f = 0.265 + R() * 0.17, c = cvKenar(cvI(f), k % 2 ? 1 : -1, YARI + 5 + R() * R() * 30), x = c.x, z = c.z, s = 0.8 + R() * 1.0; if (yerVar(x, z, 1.6 * s)) { cvYasak.push([x, z, 1.5 * s]); kristal(x, z, s); } }
   for (const f of [0.07, 0.52, 0.71, 0.9, 0.99]) { const c = cvKenar(cvI(f), 1, YARI + 9 + R() * 8), x = c.x, z = c.z; if (yerVar(x, z, 2)) { cvYasak.push([x, z, 2]); kristal(x, z, 1.1); } }
   // ── 3: ay üssü ──
   { const ren = [BEYAZ, 0xe6ecff, BEYAZ, 0xffeede, BEYAZ], kap = [0x4fd6ff, 0xffb23c, 0x5fe38a, 0xff8fd0, 0xb58cff]; let k = 0;
@@ -292,13 +307,44 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     for (const q of [[0.815, 1, 10, 2.6], [0.835, -1, 9, 2.2], [0.855, 1, 12, 3.2], [0.875, -1, 11, 2.6], [0.895, 1, 9, 2.2], [0.915, -1, 12, 3], [0.935, 1, 11, 2.4]]) { if ((p = koy(q[0], q[1], q[2], q[3] + 1.2))) uzayliEvi(p, q[3], ren[k]); k++; } }
   if ((p = koy(0.885, 1, 21, 5))) { yer2(p.x, p.z, p.ry); ufoGovde(S, 1.6); for (const a of [0.5, 2.6, 4.7]) S.ekle(cvG.kutu, Math.sin(a) * 1.6, 0.6, Math.cos(a) * 1.6, 0.12, 1.3, 0.12, GRI, -0.4, a); iz(0, 0, 4); isik(0, 0, 4.5, 0x7dffb0); }
 
+  // ── manzara anları: ay üssü merkezi (büyük kubbe, tüneller, kule) ve içinde kristaller ışıldayan büyük krater ──
+  for (const q of [[0.53, -1], [0.56, -1], [0.5, 1], [0.58, 1], [0.47, -1], [0.6, -1]]) {
+    if (!(p = koy(q[0], q[1], 34, 15))) continue;
+    yer2(p.x, p.z, p.ry);
+    S.ekle(cvG.sil, 0, 0.4, 0, 9.4, 0.8, 9.4, GRI); S.ekle(cvG.yarim, 0, 0.75, 0, 8.6, 7.6, 8.6, BEYAZ); S.ekle(cvG.sil, 0, 2.2, 0, 8.45, 0.7, 8.45, 0x4aa3ff); S.ekle(cvG.sil, 0, 8.5, 0, 1.3, 0.8, 1.3, GRI);
+    S.ekle(cvG.sil5, 0, 12.4, 0, 0.16, 7.4, 0.16, ACIK); for (const y of [10.6, 12.6, 14.4]) S.ekle(cvG.sil, 0, y, 0, 0.6, 0.12, 0.6, ACIK); E.ekle(cvG.kureK, 0, 16.3, 0, 0.5, 0.5, 0.5, 0xff5a6e, 0, 0, 0, 0, 0, 1);
+    S.ekle(cvG.yarim, 1.6, 10.4, 0, 2.2, 0.85, 2.2, BEYAZ, Math.PI + 0.9, 0, 0);
+    for (let k = 0; k < 9; k++) { const a = -1.4 + k * 0.35, e = 0.42; E.ekle(uzYuvar, Math.sin(a) * Math.cos(e) * 8.45, 0.75 + Math.sin(e) * 7.5, Math.cos(a) * Math.cos(e) * 8.45, 0.95, 0.95, 0.95, 0xffe27a); }
+    S.ekle(uzYK, 0, 1.7, 8.6, 3.2, 3.4, 1.6, 0x7d79a3); E.ekle(uzYK, 0, 1.55, 9.42, 2.2, 2.8, 0.06, 0x4fd6ff);
+    for (const sx of [-1, 1]) { S.ekle(cvG.sil, sx * 10.6, 1.5, 0, 1.3, 5, 1.3, ACIK, 0, 0, Math.PI / 2); S.ekle(cvG.sil, sx * 14.4, 0.3, 0, 3.6, 0.6, 3.6, GRI); S.ekle(cvG.yarim, sx * 14.4, 0.55, 0, 3.3, 3.0, 3.3, sx > 0 ? 0xe6ecff : 0xffeede); S.ekle(cvG.sil, sx * 14.4, 1.5, 0, 3.25, 0.4, 3.25, sx > 0 ? 0xffb23c : 0x5fe38a); for (const a of [-0.7, 0, 0.7]) E.ekle(uzYuvar, sx * 14.4 + Math.sin(a) * 2.75, 2.35, Math.cos(a) * 2.75, 0.5, 0.5, 0.5, 0xffe27a); }
+    iz(0, 0, 13, 11); iz(-14.4, 0, 5); iz(14.4, 0, 5); isik(0, 11.5, 4.5, 0x4fd6ff);
+    break;
+  }
+  for (const q of [[0.2, 1], [0.16, 1], [0.12, -1], [0.23, -1], [0.3, 1], [0.35, -1], [0.4, 1]]) {
+    if (!(p = koy(q[0], q[1], 30, 13))) continue;
+    uzBuyukKrater = [p.x, 0, p.z, 13, 13, 13, 0, 0xd6d2ea]; krater.push([p.x, 0.012, p.z, 14.5, 1, 14.5, 0]);
+    yer2(p.x, p.z, 0.6);
+    // ortada iri kristal demeti (dışa doğru açılan, ışık yüzlü), çevresinde küçük kristaller; kenarda yuvarlak kaya sırtı
+    const KR = [0x5ff0ff, 0xff7ad9, 0xb58cff, 0x8fd8ff, 0xff9be6], ACK = [0xd4fdff, 0xffd6f3, 0xe6dcff, 0xdcf2ff, 0xffe0f6];
+    const tas = (x, z, h, w, rx, rz, c) => {
+      S.ekle(cvG.okt, x, h * 0.42, z, w, h * 0.6, w, KR[c], rx, 0.3, rz);
+      S.ekle(cvG.okt, x - w * 0.18, h * 0.47, z + w * 0.22, w * 0.55, h * 0.42, w * 0.55, ACK[c], rx, 0.3, rz);   // açık renk parlak yüz
+      if (!rx && !rz) E.ekle(cvG.okt, x, h * 0.42 + h * 0.6 * 0.86, z, w * 0.3, w * 0.42, w * 0.3, 0xffffff, 0, 0.3, 0, 0, 0, 0.5);   // tepede nabız gibi ışıltı
+    };
+    tas(0, 0, 8.2, 1.7, 0, 0, 0); tas(1.5, 0.6, 5.6, 1.2, 0.1, -0.32, 1); tas(-1.3, 0.9, 6.0, 1.25, 0.25, 0.3, 2); tas(0.2, -1.5, 5.0, 1.1, -0.35, 0.05, 3);
+    for (let k = 0; k < 6; k++) { const a = k / 6 * 6.2832 + 0.3, d = 4.2 + (k % 2) * 1.6, h = 2.2 + (k % 3) * 0.9; tas(Math.cos(a) * d, Math.sin(a) * d, h, 0.6 + (k % 3) * 0.12, Math.sin(a) * 0.35, -Math.cos(a) * 0.35, (k + 1) % 5); }
+    const uzTop = new T.SphereGeometry(1, 10, 6); for (let k = 0; k < 18; k++) { const a = k / 18 * 6.2832, r = 11.6 + (k % 3) * 0.5, b = 1.1 + ((k * 7) % 4) * 0.3; S.ekle(uzTop, Math.cos(a) * r, b * 0.35, Math.sin(a) * r, b * 1.3, b * 0.7, b, [0xbab6d4, 0xa9a5c6, 0xc8c4de][k % 3], 0, a); S.ekle(cvG.yarimK, Math.cos(a) * r, b * 0.68, Math.sin(a) * r, b * 0.9, b * 0.28, b * 0.7, 0xeceaf8, 0, a); }
+    hale.push([p.x, 0.03, p.z, 11, 1, 11, 0, 0x7ff4ff]); hale.push([p.x, 0.035, p.z, 5, 1, 5, 0, 0xff9be6]);
+    break;
+  }
+
   // ── renkli ışık direkleri ──
-  { let k = 0; for (let i = 14; i < N; i += 27) { const c = cvKenar(i, k % 2 ? 1 : -1, YARI + 3.9), x = c.x, z = c.z; if (yerVar(x, z, 0.7)) { cvYasak.push([x, z, 1]); direk(x, z, CANLI[k % 7]); } k++; } }
+  { let k = 0; for (let i = 14; i < N; i += 40) { const c = cvKenar(i, k % 2 ? 1 : -1, YARI + 3.9), x = c.x, z = c.z; if (yerVar(x, z, 0.7)) { cvYasak.push([x, z, 1]); direk(x, z, CANLI[k % 7]); } k++; } }
 
   // ── seyirciler: astronotlar ve küçük uzaylılar ──
   const UZR = [0x6fe36a, 0x58d8f0, 0x9af07a, 0x5aa8ff, 0x58e0b0, 0xb0f060];
   for (let i = 3; i < N; i += 5) for (const yan of [-1, 1]) {
-    const grup = ((i / 5) | 0) % 7; if (grup > 3) continue;
+    const grup = ((i / 5) | 0) % 7; if (grup > 2 || R() < 0.3) continue;
     const b = uzBolge(i), c = cvKenar(i + ((R() * 3) | 0), yan, YARI + 4.6 + R() * 3.4, 0.5), x = c.x, z = c.z, ry = c.ry;
     if (!yerVar(x, z, 0.8)) continue;
     const yabanci = b === 5 ? R() < 0.85 : b === 2 ? R() < 0.7 : b === 1 ? R() < 0.4 : R() < 0.15;
@@ -308,8 +354,8 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
 
   // ── yol boyu ön plan: ışıldayan kristal öbekleri, iri ay kayaları, arada bayrak (boş gri alan kalmasın) ──
   for (let i = 7; i < N; i += 8) for (const yan of [-1, 1]) {
-    if (R() < 0.3) continue;
-    const yakinSira = R() < 0.6, c = cvKenar(i + ((R() * 4) | 0), yan, YARI + (yakinSira ? 5.6 + R() * 4.5 : 12 + R() * 10)), x = c.x, z = c.z, ry = c.ry, r = R(), s = yakinSira ? 0.9 + R() * 0.5 : 1.3 + R() * 0.9;
+    if (R() < 0.6) continue;   // sade: daha seyrek, yola en yakın şeritte boşluk
+    const yakinSira = R() < 0.5, c = cvKenar(i + ((R() * 4) | 0), yan, YARI + (yakinSira ? 7.2 + R() * 4 : 13 + R() * 10)), x = c.x, z = c.z, ry = c.ry, r = R(), s = yakinSira ? 0.9 + R() * 0.5 : 1.3 + R() * 0.9;
     if (!yerVar(x, z, 1.5 * s)) continue; cvYasak.push([x, z, 1.5 * s]);
     if (r < 0.5) { kristal(x, z, s * 1.05); golge.push([x - 0.3, 0.02, z + 0.25, 1.5 * s, 1, 1.2 * s, 0]); }
     else if (r < 0.9) {
@@ -323,14 +369,28 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
 
   // ── ay kayaları, kraterler, ufuk tepeleri ──
   { const ren = [0x9a96b8, 0xaaa6c6, 0x8985aa, 0xb8b4d0];
-    for (let k = 0; k < 230; k++) { const x = -215 + R() * 430, z = -205 + R() * 265, s = 0.35 + R() * R() * 2.2; if (!yerVar(x, z, s)) continue; S.yer(x, z, R() * 6); S.ekle(cvG.ufak, 0, s * 0.3, 0, s, s * (0.55 + R() * 0.4), s * (0.7 + R() * 0.5), ren[k % 4], R() * 0.5, 0, R() * 0.5); if (s > 0.9) golge.push([x - 0.3, 0.02, z + 0.25, s * 1.5, 1, s * 1.2, 0]); }
-    for (let k = 0; k < 150; k++) { const x = -230 + R() * 460, z = -220 + R() * 295, r = 1.6 + R() * R() * 6; if (yerVar(x, z, r * 0.9)) krater.push([x, 0.012, z, r, 1, r, R() * 6]); }
-    S.yer(0, -65, 0);
-    for (let k = 0; k < 20; k++) { const a = k / 20 * 6.2832 + 0.15, r = 285 + (k % 3) * 38, x = Math.cos(a) * r, z = Math.sin(a) * r, w = 40 + (k % 4) * 12, h = 16 + (k % 5) * 6; S.ekle(cvG.tac, x, -1, z, w, h, w * (0.7 + (k % 3) * 0.14), [0xa7a2c8, 0x9893bd, 0xb4b0d2][k % 3], 0, k * 0.8); }
+    for (let k = 0; k < 140; k++) { const x = -215 + R() * 430, z = -205 + R() * 265, s = 0.35 + R() * R() * 2.2; if (!yerVar(x, z, s)) continue; S.yer(x, z, R() * 6); S.ekle(cvG.ufak, 0, s * 0.3, 0, s, s * (0.55 + R() * 0.4), s * (0.7 + R() * 0.5), ren[k % 4], R() * 0.5, 0, R() * 0.5); if (s > 0.9) golge.push([x - 0.3, 0.02, z + 0.25, s * 1.5, 1, s * 1.2, 0]); }
+    for (let k = 0; k < 95; k++) { const x = -230 + R() * 460, z = -220 + R() * 295, r = 1.6 + R() * R() * 6; if (yerVar(x, z, r * 0.9)) krater.push([x, 0.012, z, r, 1, r, R() * 6]); }
+    S.yer(0, -65, 0); const uzTepe = new T.SphereGeometry(1, 16, 6, 0, 6.2832, 0, Math.PI / 2);
+    for (let k = 0; k < 20; k++) { const a = k / 20 * 6.2832 + 0.15, r = 285 + (k % 3) * 38, x = Math.cos(a) * r, z = Math.sin(a) * r, w = 40 + (k % 4) * 12, h = 16 + (k % 5) * 6; S.ekle(uzTepe, x, -1, z, w, h * 0.92, w * (0.7 + (k % 3) * 0.14), [0xa7a2c8, 0x9893bd, 0xb4b0d2][k % 3], 0, k * 0.8); }
   }
 
-  const sm = new T.Mesh(S.geo(), cvMalz(0, { side: T.DoubleSide })); sm.frustumCulled = false; scene.add(sm);
-  const em = new T.Mesh(E.geo(), new T.MeshBasicMaterial({ vertexColors: true })); em.frustumCulled = false; scene.add(em);
+  { // büyük kraterlerin kabarık kenarları: ışık alan alçak halkalar (tek çizim)
+    const g = new T.TorusGeometry(0.82, 0.1, 5, 22); g.rotateX(Math.PI / 2); const l = [];
+    for (const k of krater) if (k[3] > 3.4 && k[3] < 14) l.push([k[0], 0, k[2], k[3], k[3] * 0.55, k[3], k[6], [0xd9d6ee, 0xcfcbe6, 0xe2dff4][l.length % 3]]);
+    if (uzBuyukKrater) l.push(uzBuyukKrater);
+    if (l.length) cok(g, mat(0xffffff), l);
+  }
+  { const g = S.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.8 + 0.2 * clamp(p.getY(i) / 5, 0, 1); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); }   // ton geçişi: dipte biraz koyu, yukarı doğru açık
+    const sm = new T.Mesh(g, cvMalz(0, { side: T.DoubleSide })); sm.frustumCulled = false; scene.add(sm); }
+  const emM = new T.MeshBasicMaterial({ vertexColors: true });   // ışıklar: cvK.z = 1 olan işaret lambaları sırayla yanıp söner, 0,5 olanlar yavaşça nabız atar
+  emM.onBeforeCompile = sh => {
+    sh.uniforms.cvT = cvZ;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float cvT;\nattribute vec3 cvK;')
+      .replace('#include <color_vertex>', 'vColor = color;\nfloat uzP = position.x * 0.37 + position.z * 0.29;\nfloat uzY = step(0.75, cvK.z) * (0.35 + 0.85 * smoothstep(0.2, 0.6, sin(cvT * 3.4 + uzP))) + step(0.25, cvK.z) * (1.0 - step(0.75, cvK.z)) * (0.78 + 0.28 * sin(cvT * 1.6 + uzP));\nvColor *= mix(1.0, uzY, step(0.25, cvK.z));');
+  };
+  emM.customProgramCacheKey = () => 'uzIsik';
+  const em = new T.Mesh(E.geo(), emM); em.frustumCulled = false; scene.add(em);
 
   { // yerdeki krater çıkartmaları, renkli ışık havuzları ve temas gölgeleri (her biri tek çizim)
     const g = new T.PlaneGeometry(2, 2); g.rotateX(-Math.PI / 2);
@@ -357,23 +417,39 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     U.ekle(cvG.kure, 0, 0.55, 0, 0.34, 0.46, 0.3, 0xffffff, 0, 0, 0, 1, 1); U.ekle(cvG.kureK, 0, 0.5, 0.2, 0.2, 0.26, 0.14, 0xf4fff0, 0, 0, 0, 0, 1);
     U.ekle(cvG.kure, 0, 1.25, 0, 0.52, 0.42, 0.44, 0xffffff, 0, 0, 0, 1, 1);
     for (const x of [-0.21, 0.21]) { U.ekle(cvG.kureK, x, 1.3, 0.33, 0.17, 0.19, 0.12, 0xffffff, 0, 0, 0, 0, 1); U.ekle(cvG.kureK, x, 1.29, 0.42, 0.085, 0.1, 0.05, 0x23264a, 0, 0, 0, 0, 1); U.ekle(cvG.kutu, x * 1.1, 1.82, 0, 0.04, 0.4, 0.04, 0xdddddd, 0, 0, -x * 1.5, 1, 1); U.ekle(cvG.kureK, x * 1.5, 2.02, 0, 0.09, 0.09, 0.09, 0xffe14d, 0, 0, 0, 0, 1); }
-    U.ekle(cvG.kutu, 0, 1.08, 0.4, 0.2, 0.04, 0.04, 0x23264a, 0, 0, 0, 0, 1);
+    for (const x of [-1, 1]) { U.ekle(cvG.kutu, x * 0.06, 1.07, 0.41, 0.13, 0.045, 0.04, 0x23264a, 0, 0, x * 0.42, 0, 1); U.ekle(cvG.ufak, x * 0.33, 1.13, 0.33, 0.08, 0.05, 0.03, 0xff9ec8, 0, 0, 0, 0, 1); }   // gülen ağız, pembe yanak
     U.ekle(cvG.kureK, -0.42, 0.6, 0, 0.1, 0.26, 0.1, 0xeeeeee, 0, 0, 0.5, 1, 1); U.ekle(cvG.kureK, 0.5, 0.95, 0, 0.1, 0.3, 0.1, 0xeeeeee, 0, 0, -0.7, 1, 1, 0.7); U.ekle(cvG.kureK, 0.7, 1.2, 0, 0.11, 0.11, 0.11, 0xffffff, 0, 0, 0, 1, 1, 1);
     cok(U.geo(), uzMalz(), uzayli);
+  }
+
+  { // boşlukta ağır ağır süzülen iki astronot (ipli, sırt çantalı); yolun yanında ve yüksekte, yolu örtmez
+    const A = cvYapi(); A.yer(0, 0, 0);
+    A.ekle(cvG.kure, 0, 0, 0, 0.5, 0.56, 0.42, 0xf6f7ff); A.ekle(cvG.kutu, 0, 0.08, -0.42, 0.68, 0.8, 0.34, 0xcfd3e6); A.ekle(cvG.kutu, 0, 0.06, 0.4, 0.4, 0.22, 0.1, 0xff8a3c);
+    A.ekle(cvG.tac, 0, 0.82, 0, 0.5, 0.48, 0.5, 0xffffff); A.ekle(cvG.tac, 0, 0.82, 0.22, 0.38, 0.31, 0.32, 0x34508f); A.ekle(cvG.kureK, 0.14, 0.94, 0.5, 0.09, 0.06, 0.04, 0xcfe6ff);
+    A.ekle(cvG.kureK, -0.66, 0.3, 0.05, 0.16, 0.42, 0.17, 0xf2f3fb, 0, 0, 0.9); A.ekle(cvG.kureK, -0.98, 0.52, 0.05, 0.17, 0.17, 0.17, 0xff8a3c);
+    A.ekle(cvG.kureK, 0.62, 0.36, 0.05, 0.16, 0.42, 0.17, 0xf2f3fb, 0, 0, -0.6); A.ekle(cvG.kureK, 0.84, 0.72, 0.05, 0.17, 0.17, 0.17, 0xff8a3c);
+    A.ekle(cvG.kureK, -0.26, -0.72, 0.1, 0.2, 0.44, 0.22, 0xf2f3fb, 0.35, 0, -0.2); A.ekle(cvG.kureK, -0.34, -1.12, 0.3, 0.2, 0.13, 0.28, 0xff8a3c);
+    A.ekle(cvG.kureK, 0.26, -0.74, -0.06, 0.2, 0.44, 0.22, 0xf2f3fb, -0.3, 0, 0.2); A.ekle(cvG.kureK, 0.34, -1.14, -0.24, 0.2, 0.13, 0.28, 0xff8a3c);
+    for (let k = 0; k < 6; k++) A.ekle(cvG.kutu, -0.5 - k * 0.5, -0.1 - Math.sin(k / 5 * Math.PI) * 0.5, -0.7 - k * 0.25, 0.56, 0.05, 0.05, 0xffe14d, 0, 0.45, (k - 2.5) * 0.18);
+    const g = A.geo(), m = cvMalz(0, { emissive: 0x2a2640 });
+    for (const q of [[0.105, 1, 13, 10.5, 2.3], [0.665, -1, 13, 11.5, 2.1]]) {
+      const c = cvKenar(cvI(q[0]), q[1], YARI + q[2]), o = new T.Mesh(g, m); o.position.set(c.x, q[3], c.z); o.scale.setScalar(q[4]); o.rotation.order = 'YXZ'; o.frustumCulled = false; scene.add(o);
+      uzGezgin.push({ o, x: c.x, y: q[3], z: c.z, ry: c.ry, f: uzGezgin.length * 2.4 });
+    }
   }
 
   { // süzülen uçan daire
     const Y = cvYapi(); Y.yer(0, 0, 0); ufoGovde(Y, 0);
     uzUfo = new T.Mesh(Y.geo(), cvMalz(0, { emissive: 0x252040 })); uzUfo.scale.setScalar(1.5); uzUfo.frustumCulled = false; scene.add(uzUfo);
-    // altından yere inen yumuşak ışık hüzmesi (üstü parlak, yere doğru söner) + yerde ışık halkası
-    const hg = new T.CylinderGeometry(0.9, 3.6, 11, 18, 1, true), hp = hg.attributes.position, hc = new Float32Array(hp.count * 3);
-    for (let i = 0; i < hp.count; i++) { const v = hp.getY(i) > 0 ? 0.11 : 0.02; hc[i * 3] = v * 0.6; hc[i * 3 + 1] = v; hc[i * 3 + 2] = v * 0.78; }
+    // altından yere inen ince, soluk ışık hüzmesi (üstü hafif, yere doğru söner) + yerde ışık halkası
+    const hg = new T.CylinderGeometry(0.7, 2.1, 11, 14, 1, true), hp = hg.attributes.position, hc = new Float32Array(hp.count * 3);
+    for (let i = 0; i < hp.count; i++) { const v = hp.getY(i) > 0 ? 0.035 : 0.0; hc[i * 3] = v * 0.6; hc[i * 3 + 1] = v; hc[i * 3 + 2] = v * 0.78; }
     hg.setAttribute('color', new T.BufferAttribute(hc, 3));
     const hm = new T.Mesh(hg, new T.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
     hm.position.y = -6.1; hm.frustumCulled = false; uzUfo.add(hm);
-    const yd = tuvalDoku(64, 64, (c, w, h) => { const r = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(150,255,200,.55)'); r.addColorStop(0.5, 'rgba(150,255,200,.3)'); r.addColorStop(1, 'rgba(150,255,200,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); });
+    const yd = tuvalDoku(64, 64, (c, w, h) => { const r = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(150,255,200,.25)'); r.addColorStop(0.5, 'rgba(150,255,200,.12)'); r.addColorStop(1, 'rgba(150,255,200,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); });
     const yg = new T.PlaneGeometry(2, 2); yg.rotateX(-Math.PI / 2);
-    uzUfoYer = new T.Mesh(yg, new T.MeshBasicMaterial({ map: yd, transparent: true, depthWrite: false })); uzUfoYer.scale.setScalar(6.5); uzUfoYer.renderOrder = 2; uzUfoYer.frustumCulled = false; scene.add(uzUfoYer);
+    uzUfoYer = new T.Mesh(yg, new T.MeshBasicMaterial({ map: yd, transparent: true, depthWrite: false })); uzUfoYer.scale.setScalar(3.8); uzUfoYer.renderOrder = 2; uzUfoYer.frustumCulled = false; scene.add(uzUfoYer);
   }
 }
 
@@ -383,6 +459,7 @@ function cevreEkGuncelle(dt, t) {
   uzDunya.rotation.y = t * 0.035; uzHalkali.rotation.y = t * 0.05; uzUydu.rotation.y = t * 0.018;
   const a = t * 0.11; uzUfo.position.set(8 + Math.cos(a) * 30, 17 + Math.sin(t * 0.9) * 1.3, -52 + Math.sin(a) * 22); uzUfo.rotation.set(Math.sin(t * 0.7) * 0.05, t * 0.6, Math.cos(t * 0.6) * 0.05);
   if (uzUfoYer) uzUfoYer.position.set(uzUfo.position.x, 0.05, uzUfo.position.z);
+  for (let k = 0; k < uzGezgin.length; k++) { const q = uzGezgin[k], u = t * 0.22 + q.f; q.o.position.set(q.x + Math.sin(u) * 2.2, q.y + Math.sin(u * 1.7) * 1.1, q.z + Math.cos(u * 0.8) * 2.2); q.o.rotation.set(Math.sin(u * 0.9) * 0.35, q.ry + Math.sin(u * 0.5) * 0.6, 0.25 + Math.sin(u * 0.7) * 0.3); }
   for (let k = 0; k < 2; k++) {
     const s = uzKayan[k], sure = 4.6 + k * 2.3, tt = t + k * 2.9, u = (tt % sure) / 1.5;
     if (u >= 1) { s.visible = false; continue; }

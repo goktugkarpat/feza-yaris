@@ -81,16 +81,108 @@ function izgarayaDiz() {
   OLAY.emit('seri', { adet: 0, hedef: 3, odul: false, toplam: 0 }); ilerlemeGoster(true);
 }
 function gec(d) { durum = d; durumT = 0; if (d === 'sayim') dongu.n = -1; OLAY.emit('durum', d); }
+// ───────── ekran akışı: açılış → seçim (pist adımı → araba adımı) → yarış. Durum hepsinde 'baslik'; hangi ekranın açık olduğu oyEkran'da. ─────────
+const OY_SECIM = $('secim');
+let oyEkran = 'acilis', oySec = null;   // oyEkran: 'acilis' | 'pist' | 'araba' | '' (yarış)
+function oyEkranAc(ad) {
+  if (durum !== 'baslik' || (ad !== 'acilis' && ad !== 'pist' && ad !== 'araba')) return;
+  oyEkran = ad;
+  $('baslik').classList.toggle('gizli', ad !== 'acilis');
+  OY_SECIM.classList.toggle('gizli', ad === 'acilis');
+  if (ad !== 'acilis') OY_SECIM.dataset.adim = ad;
+  if (ad !== 'araba') oySecBirak(); else if (oySec) oySec.w = 0;
+  if (ad === 'acilis') oyKamIlk = true;
+  P.bitti = ad === 'acilis';   // açılışta Feza kollarını kaldırıp sevinçle sallanır (yarışta bitiş sevinci ile aynı hareket); izgarayaDiz sıfırlar
+  OLAY.emit('ekran', ad);
+}
+// Araba adımı: seçili araba (gerçek model, Feza içinde) aynı çiziciyle, yumuşak renkli küçük bir sahnede döner tablada gösterilir.
+// Araba nesnesi yalnız ödünç alınır (P.g tablaya takılır); yarışa geçerken pist sahnesine geri konur ve bu sahne bırakılır.
+function oySecKur() {
+  if (oySec) return oySec;
+  const sahne = new T.Scene(), atik = [];
+  sahne.background = tuvalDoku(512, 512, (g, w, h) => {   // gökyüzü, arabanın arkasında yumuşak ışık, uzakta sakin tepeler ve birkaç bulut (tek resim)
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#8fd0ff'); gr.addColorStop(0.55, '#d8f0ff'); gr.addColorStop(1, '#fff2cf'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    const ic = g.createRadialGradient(w / 2, h * 0.5, 10, w / 2, h * 0.5, w * 0.42); ic.addColorStop(0, 'rgba(255,255,255,.9)'); ic.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = ic; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ffffff'; for (const [x, y, r] of [[70, 92, 22], [96, 82, 28], [124, 94, 20], [392, 70, 20], [418, 60, 27], [446, 72, 19]]) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+    g.fillStyle = '#bfe6a0'; g.beginPath(); g.moveTo(0, h * 0.74); g.quadraticCurveTo(w * 0.22, h * 0.6, w * 0.46, h * 0.72); g.quadraticCurveTo(w * 0.72, h * 0.62, w, h * 0.7); g.lineTo(w, h); g.lineTo(0, h); g.fill();
+    g.fillStyle = '#a5d987'; g.beginPath(); g.moveTo(0, h * 0.84); g.quadraticCurveTo(w * 0.3, h * 0.74, w * 0.6, h * 0.83); g.quadraticCurveTo(w * 0.82, h * 0.88, w, h * 0.8); g.lineTo(w, h); g.lineTo(0, h); g.fill();
+  });
+  sahne.fog = new T.Fog(0xffffff, 600, 2400);   // pist sahnesiyle aynı ışık/sis düzeni: araba malzemeleri yeniden derlenmez
+  sahne.add(new T.HemisphereLight(0xffffff, 0xcdbfae, 1.18));
+  const gun = new T.DirectionalLight(0xfff2d0, 1.5); gun.position.set(7, 13, 9); sahne.add(gun);
+  const ekle = (geo, malz, y) => { const m = new T.Mesh(geo, malz); m.position.y = y; sahne.add(m); atik.push(geo, malz); return m; };
+  // döner tabla: üstte beyaz-yeşil yarış diski ve damalı kenar şeridi (tek resim), yanda kırmızı-beyaz bant, altta altın taban
+  const tablaDk = tuvalDoku(512, 512, (g, w) => {
+    const m = w / 2; g.fillStyle = '#ffffff'; g.beginPath(); g.arc(m, m, m, 0, 7); g.fill();
+    for (let i = 0; i < 48; i++) { for (let j = 0; j < 2; j++) { g.fillStyle = (i + j) % 2 ? '#ffffff' : '#17335c'; g.beginPath(); g.arc(m, m, m - j * 13, i * Math.PI / 24, (i + 1) * Math.PI / 24); g.arc(m, m, m - (j + 1) * 13, (i + 1) * Math.PI / 24, i * Math.PI / 24, true); g.fill(); } }
+    g.fillStyle = '#ffd45e'; g.beginPath(); g.arc(m, m, m - 26, 0, 7); g.fill();
+    const gr = g.createRadialGradient(m, m, 0, m, m, m - 40); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.8, '#f4fbff'); gr.addColorStop(1, '#e2f1fb'); g.fillStyle = gr; g.beginPath(); g.arc(m, m, m - 40, 0, 7); g.fill();
+  });
+  const bantDk = tuvalDoku(256, 8, (g, w, h) => { for (let i = 0; i < 16; i++) { g.fillStyle = i % 2 ? '#ffffff' : '#f0503e'; g.fillRect(i * w / 16, 0, w / 16, h); } });
+  atik.push(tablaDk, bantDk);
+  ekle(new T.CylinderGeometry(2.65, 2.75, 0.3, 48, 1, true, Math.PI, Math.PI * 2)   /* dikiş arkada kalsın */, new T.MeshBasicMaterial({ map: bantDk }), -0.15);
+  ekle(new T.CircleGeometry(2.65, 48), new T.MeshBasicMaterial({ map: tablaDk }), 0).rotation.x = -Math.PI / 2;
+  ekle(new T.CylinderGeometry(3.0, 3.12, 0.24, 48, 1, true), new T.MeshBasicMaterial({ color: 0xf5b638 }), -0.42);
+  ekle(new T.RingGeometry(2.65, 3.0, 48), new T.MeshBasicMaterial({ color: 0xffd45e }), -0.3).rotation.x = -Math.PI / 2;
+  const golgeDk = tuvalDoku(64, 64, g => { const gr = g.createRadialGradient(32, 32, 3, 32, 32, 32); gr.addColorStop(0, 'rgba(40,60,100,.42)'); gr.addColorStop(1, 'rgba(40,60,100,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); });
+  const golge = ekle(new T.PlaneGeometry(4.4, 5.6), new T.MeshBasicMaterial({ map: golgeDk, transparent: true, depthWrite: false }), 0.012); golge.rotation.x = -Math.PI / 2;
+  atik.push(golgeDk, sahne.background);
+  const mil = new T.Group(); sahne.add(mil); mil.add(golge);
+  for (const m of [...sahne.children]) if (m.material && m.material.map === tablaDk) mil.add(m);   // damalı disk arabayla birlikte döner
+  oySec = { sahne, mil, kam: new T.PerspectiveCamera(30, 1, 0.5, 300), atik, w: 0, h: 0, aci: 0.6, hazir: false };
+  return oySec;
+}
+function oySecCiz(dt, gdt) {
+  const s = oySecKur(), w = innerWidth, h = innerHeight;
+  arabaYerlestir(P, dt);                                   // sürücü, tekerler ve "merhaba" zıplaması aynen çalışır
+  if (P.g.parent !== s.mil) s.mil.add(P.g);                // araba değiştiyse yeni model de tablaya alınır
+  P.g.position.x = 0; P.g.position.z = 0;
+  const yon = pist(P.yol, oyO2);
+  s.aci += gdt * 0.55; s.mil.rotation.y = s.aci - Math.atan2(yon.tx, yon.tz);
+  if (w !== s.w || h !== s.h) {                            // arabayı seçim ekranındaki boşluğun (#sec-sahne) ortasına sığdır
+    s.w = w; s.h = h;
+    const r = $('sec-sahne').getBoundingClientRect(), rw = Math.max(120, r.width), rh = Math.max(120, r.height);
+    const uz = Math.max(2.3 * h / rh, 3.9 * h / rw) / Math.tan(15 * Math.PI / 180), eg = 0.24;
+    s.kam.aspect = w / h; s.kam.setViewOffset(w, h, w / 2 - (r.left + rw / 2), h / 2 - (r.top + rh / 2), w, h);
+    s.kam.position.set(0, 1.05 + uz * Math.sin(eg), uz * Math.cos(eg)); s.kam.lookAt(0, 1.05, 0); s.kam.updateProjectionMatrix();
+  }
+  renderer.render(s.sahne, s.kam);
+  if (!s.hazir) { s.hazir = true; OY_SECIM.classList.add('sec-3b'); }
+}
+function oySecBirak(sok) {   // arabayı pist sahnesine geri koy; sok = sahneyi de bırak (yarışa geçiş)
+  OY_SECIM.classList.remove('sec-3b');
+  if (!oySec) return;
+  oySec.hazir = false;
+  if (P.g.parent === oySec.mil) { scene.add(P.g); arabaYerlestir(P, 0); }
+  if (sok) { for (const x of oySec.atik) if (x && x.dispose) x.dispose(); oySec = null; }
+}
+// Pist kartı için küçük resim: bu pist çizicinin kendisiyle bir kez (açılışta, ilk kareden önce) küçük boyda çizilir; arayuz.js saklar ve kartta gösterir.
+function oyKucukCek() {
+  const W = 400, H = 300, kp = camera.position.clone(), kq = camera.quaternion.clone(), gor = [];
+  try {
+    for (const a of A) { gor.push(a.g.visible, a.golge ? a.golge.visible : false); a.g.visible = false; if (a.golge) a.golge.visible = false; }
+    renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+    const p = pist(L - 46, oyO2); camera.position.set(p.x - p.tz * 2.2, 7.5, p.z + p.tx * 2.2);
+    const q = pist(L - 4, oyO2); camera.lookAt(q.x, 3.4, q.z);
+    camera.fov = 60; camera.aspect = W / H; camera.updateProjectionMatrix();
+    pistGuncelle(0.016, 0); cevreGuncelle(0.016, 0);
+    renderer.render(scene, camera);
+    const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(canvas, 0, 0, W, H);
+    OLAY.emit('kucuk', c.toDataURL('image/jpeg', 0.8));
+  } catch (e) { console.error(e); }
+  for (let i = 0; i < A.length; i++) { A[i].g.visible = gor.length > i * 2 ? gor[i * 2] : true; if (A[i].golge) A[i].golge.visible = gor.length > i * 2 ? gor[i * 2 + 1] : true; }
+  camera.position.copy(kp); camera.quaternion.copy(kq); boyut();
+}
 function basla() {
-  SES.hazirla(); izgarayaDiz(); molaAyar(false);
-  $('baslik').classList.add('gizli'); $('sonuc').classList.add('gizli'); HUD.hud.classList.remove('gizli');
+  SES.hazirla(); oySecBirak(true); oyEkran = ''; izgarayaDiz(); molaAyar(false);
+  $('baslik').classList.add('gizli'); OY_SECIM.classList.add('gizli'); $('sonuc').classList.add('gizli'); HUD.hud.classList.remove('gizli');
   if (ilkYaris) { gec('giris'); SES.soyle(SES.CUMLE && SES.CUMLE['giris_' + PIST_TEMA] ? 'giris_' + PIST_TEMA : 'giris'); } else gec('sayim');
 }
 function oyBaslikDiz() { A[1].yol = A[2].yol = 3; A[3].yol = A[4].yol = -18; }   // seçim ekranında arkadaşlar biraz açılır: Feza'nın arabası rahat görünür
 function basligaDon() {
   SES.sus(); izgarayaDiz(); oyBaslikDiz(); molaAyar(false);
-  HUD.hud.classList.add('gizli'); $('sonuc').classList.add('gizli'); $('baslik').classList.remove('gizli');
-  gec('baslik');
+  HUD.hud.classList.add('gizli'); $('sonuc').classList.add('gizli');
+  gec('baslik'); oyEkranAc('pist');   // sonuçtan ve ev düğmesinden doğrudan seçim ekranına
 }
 function roket(sure) { if (durum !== 'yaris') return; roketT = Math.max(roketT, sure); SES.efekt.roket(); OLAY.emit('roket', sure); }
 function roketDugme() { if (durum !== 'yaris' || roketBekle > 0 || mola) return; roket(1.7); roketBekle = 5; roketKullanildi = true; oyRoketSay++; HUD.hizlan.classList.remove('vurgu'); }
@@ -145,11 +237,11 @@ addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) birak();
   tus[e.code] = true;
-  if (e.code === 'Space' && !e.repeat) { if (durum === 'baslik') basla(); else roketDugme(); }
+  if (e.code === 'Space' && !e.repeat) { if (durum === 'baslik') (oyEkran === 'acilis' ? $('oyna') : $('sec-ileri')).click(); else roketDugme(); }
 });
 addEventListener('keyup', e => { tus[e.code] = false; });
 addEventListener('contextmenu', e => e.preventDefault());
-$('oyna').addEventListener('click', basla);
+$('oyna').addEventListener('click', () => oyEkranAc('pist'));
 $('tekrar').addEventListener('click', basla);
 HUD.hizlan.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); roketDugme(); });
 HUD.hizlan.addEventListener('click', e => { if (e.detail === 0) roketDugme(); });   // klavyeyle Enter/Space; parmak/fare pointerdown ile bir kez çalışır
@@ -383,9 +475,9 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   if (oyTurZum > 0) oyTurZum = Math.max(0, oyTurZum - gdt);
   oyRoketK += ((roketT > 0 && durum === 'yaris' ? 1 : 0) - oyRoketK) * oyUs(gdt, 3.5);
   if (durum === 'baslik') {
-    // Araba seçimi: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır; araba ekranın üst-ortasında (menü altta).
+    // Açılış: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır.
     const a = 1.25 + Math.sin(yT * 0.3) * 0.42, r = dik ? 9.2 : 7.6, ri = r * Math.cos(a), ry = Math.min(6.4, r * Math.sin(a));
-    kamH.set(P.x + P.tx * ri - P.tz * ry, dik ? 4 : 3.1, P.z + P.tz * ri + P.tx * ry); kamB.set(P.x, dik ? -2 : -1, P.z); k = 2.5;
+    kamH.set(P.x + P.tx * ri - P.tz * ry, dik ? 4 : 3.1, P.z + P.tz * ri + P.tx * ry); kamB.set(P.x, dik ? -0.6 : 0.1, P.z); k = 2.5;   // açılış: araba logonun altında, yeşil düğmenin üstünde
   } else if (durum === 'bitis') {   // bir kez öne kayan kutlama kamerası; sonra yüzleri gösteren açık kadrajda durur
     const u = clamp((durumT - 1.7) / 2.4, 0, 1), acil = u * u * (3 - 2 * u), r0 = dik ? 13 : 10.8, r1 = dik ? 11.2 : 8.7;
     // Doğrusal koridor, geniş bir yörüngeye çıkmadan sağ yandan geçer; enine uzaklık dar tutulur.
@@ -446,17 +538,25 @@ function dongu(simdi) {
     for (let i = 0; i < adim && durum === d0; i++) yarisAdim(d1);
   }
   SES.motorAyar(P.v, durum === 'yaris' || durum === 'bitis');
+  if (durum === 'baslik' && oyEkran === 'pist') return;                        // pist adımı tam ekranı kaplar: 3B çizilmez
+  if (durum === 'baslik' && oyEkran === 'araba') { oySecCiz(dt, ham); return; }  // araba adımı: yalnız döner tabladaki araba
   sahneGuncelle(dt, ham);
   renderer.render(scene, camera);
 }
 dongu.n = -1;
 izgarayaDiz(); oyBaslikDiz(); for (const a of A) arabaYerlestir(a, 0);
-if (Q.has('atla')) basla();
-requestAnimationFrame(dongu);
+// Pist kartlarının resimleri hazır dosyalardır (icons/pist_<ad>.jpg). Yalnız ?kucuk ile açılınca (geliştirici) bu pistin resmi bir kez çizilir; oyun döngüsü başlamaz.
+if (Q.has('kucuk')) oyKucukCek();
+else {
+  if (Q.has('atla')) basla(); else if (Q.get('adim') === 'araba') oyEkranAc('araba'); else P.bitti = true;
+  // açılışta araba arada bir küçük bir "merhaba" zıplaması yapar (seçim ekranındaki selamın aynısı)
+  setInterval(() => { if (durum === 'baslik' && oyEkran === 'acilis' && !document.hidden && P.ar) P.ar.mer = 0; }, 4200);
+  requestAnimationFrame(dongu);
+}
 
 window.YARIS = {
   get durum() { return durum; }, get zaman() { return zaman; }, get mola() { return mola; }, pist: PIST_TEMA, P, A, L, TUR, renderer, scene, camera,
-  get kareMs() { return kareOrt; }, get oran() { return oran; }, basla, basligaDon, roket: roketDugme, get araba() { return oyArabaId; }, arabaSec: oyArabaSec,
+  get kareMs() { return kareOrt; }, get oran() { return oran; }, basla, basligaDon, get ekran() { return oyEkran; }, ekranAc: oyEkranAc, roket: roketDugme, get araba() { return oyArabaId; }, arabaSec: oyArabaSec,
   surukle(d) { hedefD = d; },
   bilgi() { return { pist: PIST_TEMA, araba: oyArabaId, durum, tur: Math.floor(Math.max(0, P.yol) / L), sira: P.sira, yildiz: yildizSay, seri: oySeriSay, seriAdet: oySeriAdet, roket: oyRoketSay, ziplama: oyHopSay, roketKalan: +roketT.toFixed(2), roketBekle: +roketBekle.toFixed(2), v: +P.v.toFixed(1), d: +P.d.toFixed(2), sure: +(durum === 'bitis' ? oySure : zaman).toFixed(1), el: oyElAcik, mola, cizim: renderer.info.render.calls, ucgen: renderer.info.render.triangles, oran, kareMs: +kareOrt.toFixed(2) }; }
 };

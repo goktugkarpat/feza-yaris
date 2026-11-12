@@ -27,7 +27,8 @@ async def kaydet(anahtar, metin):
     ham = os.path.join(tempfile.gettempdir(), "feza_yaris_" + anahtar + ".mp3")   # Dropbox klasörü dışında (kilitlenmesin)
     son = os.path.join(KOK, "sesler", anahtar + ".mp3")
     await edge_tts.Communicate(metin, SES, rate="+4%").save(ham)
-    kirp = "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06,areverse"
+    # baştaki sessizlik kırpılır; cümle aralarındaki uzun duraklar (ör. "Hop! ... Uçtun!") kısa, doğal bir ara olur; sondaki sessizlik kırpılır
+    kirp = "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.03,silenceremove=stop_periods=-1:stop_duration=0.2:stop_threshold=-45dB:stop_silence=0.1,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.06,areverse"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", ham, "-af", kirp, "-ac", "1", "-b:a", "64k", son], check=True,
                    creationflags=0x08000000 if os.name == "nt" else 0)
     try:
