@@ -1,7 +1,7 @@
 # Feza'nın Yarışı 🏎️⭐
 
 5 yaşındaki Feza için yapılmış, çizgi film tarzında üç boyutlu bir araba yarışı. Feza; peluş ejderhası Pırıl, köpeği Bilbo, annesi ve babasıyla
-dokuz farklı pistte üçer tur yarışır. Kaybetmek yoktur: Feza her yarışı ilk üçte bitirir. Feza okuma bilmediği için her şey resimlerle,
+on iki farklı pistte üçer tur yarışır. Kaybetmek yoktur: Feza her yarışı ilk üçte bitirir. Feza okuma bilmediği için her şey resimlerle,
 simgelerle ve anlatıcının sesiyle anlatılır.
 
 **Oyna:** https://goktugkarpat.github.io/feza-yaris/
@@ -17,10 +17,14 @@ simgelerle ve anlatıcının sesiyle anlatılır.
 7. **Gökkuşağı Yolu** — Bulutların üstünde gökkuşağı renkli bir yol; yumuşak, yavaşça dalgalanan gökkuşakları.
 8. **Dinozor Vadisi** — Sevimli dinozorlar, yumurtadan çıkan yavrular, taş kemerler ve gülen bir yanardağ.
 9. **Neşeli Şehir** — Renkli oyuncak evler, tahta küpler ve dev bir oyuncak ayı.
+10. **Şato ve Ejderha Vadisi** — Yeşil tepelerde kuleli bir şato, bayraklar ve sevimli ejderhalar.
+11. **Gece Lunaparkı** — Yıldızlı bir gecede ışıl ışıl dönme dolap ve renkli lunapark ışıkları.
+12. **Korsan Adası** — Turkuaz deniz, palmiyeli ada, hazine sandıkları ve korsan gemileri.
 
 ## Arabalar
 
-Dokuz araba seçilebilir: kart, yarış arabası, cip, roket, dondurma arabası, tek boynuzlu at, itfaiye, ejderha ve uçak.
+On iki araba seçilebilir: kart, yarış arabası, cip, roket, dondurma arabası, tek boynuzlu at, itfaiye, ejderha, uçak, korsan gemisi,
+polis arabası ve kedi araba.
 Seçim ekranında araba bir platformun üstünde döner; Feza içinde oturur.
 
 ## Nasıl açılır
@@ -33,7 +37,7 @@ Seçim ekranında araba bir platformun üstünde döner; Feza içinde oturur.
 ## Nasıl oynanır
 
 1. Açılışta büyük yeşil ▶ düğmesine dokun.
-2. Bir **yarış yeri** seç (dokuz resimli kart), sonra bir **araba** seç ve ▶ ile yarışı başlat.
+2. Bir **yarış yeri** seç (on iki resimli kart), sonra bir **araba** seç ve ▶ ile yarışı başlat.
 3. Parmağını sağa sola sürükle; araba oraya gider. Gaz ve fren yoktur, araba kendisi ilerler.
 4. Turuncu **roket** düğmesi kısa süre hızlandırır.
 5. Yıldızları topla: her üç yıldızda kısa bir roket ödülü gelir. Kaçan yıldız seriyi bozmaz.

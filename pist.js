@@ -221,7 +221,94 @@ const psTEMALAR = {
         [4.7, 7.0].forEach((x, i) => psParca(tb, G.kutu, renk[(i * 3 + (yan > 0 ? 1 : 4)) % 6], yan * x, H + 0.62, 0, 0.95, 0.95, 0.95, 0, yan * 0.25, 0));
       }
     }
+  },
+  /*SATO*/
+  sato: {   // Şato ve Ejderha Vadisi: yuvarlak taşlı açık gri-bej parke, kırmızı-krem bantlar, mazgallı taş kemer
+    omuz: '#5aa83e', omuzAcik: '#86c75a', bantA: '#dc4a3f', bantB: '#f8f0dc', bantGolge: 'rgba(90,60,40,0.26)',
+    direkA: 0xe2d8c4, direkB: 0xcbbfa8, ayak: 0x9a8f7e, sus: 0x3f82dc, cerUst: 0xdc4a3f, cerAlt: 0x3f82dc,
+    rampaA: 0xf8f0dc, rampaB: 0xdc4a3f, rampaArka: 0xbd3b32, rampaYan: 0xa8342c, rampaDirek: 0x3f82dc,
+    okA: '#1280e8', okB: '#45d8ff', haleA: 0.24, golgeA: 0.4,
+    toz: [0xd9cfbd, 0xe6ddca, 0xc9bda8], tozA: 0.4, tozB0: 0.5, tozB1: 1.4, tozOmur: 0.4, puf: 0xe6ddca,
+    piril: [0xffffff, 0xffe066, 0xffb347, 0x8fe8ff, 0xd2b6f7],
+    yol(g, w, h) {
+      const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#9c9180'); gr.addColorStop(0.12, '#aa9f8d'); gr.addColorStop(0.5, '#b2a794'); gr.addColorStop(0.88, '#aa9f8d'); gr.addColorStop(1, '#9c9180'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      const sat = 12, sut = 7, sh = h / sat, sw = w / sut, ton = ['#cbbfaa', '#c3b7a1', '#d1c6b2', '#bfb39c', '#c8bca6'];
+      for (let r = 0; r < sat; r++) for (let c = 0; c <= sut; c++) {                                 // yuvarlak, kabarık parke taşları (dikeyde ek yeri yok: sat tam bölünür)
+        const x = (c - (r % 2 ? 0.5 : 0)) * sw, y = r * sh, e = Math.abs(x + sw / 2 - w / 2) / (w / 2), k = 1 - 0.1 * e;
+        g.fillStyle = ton[Math.floor(R() * 5)]; g.globalAlpha = k; g.beginPath(); g.roundRect(x + 3, y + 3, sw - 6, sh - 6, 16); g.fill(); g.globalAlpha = 1;
+        g.fillStyle = 'rgba(255,250,236,0.32)'; g.beginPath(); g.roundRect(x + 8, y + 6, sw - 22, 6, 3); g.fill();
+        g.fillStyle = 'rgba(90,76,60,0.16)'; g.beginPath(); g.roundRect(x + 6, y + sh - 12, sw - 14, 6, 3); g.fill();
+      }
+      psLeke(g, w, h, 420, ['#d8cdb9', '#9a8f7c', '#e2d9c6'], 0.22, 0.9, 2.0, 3);                        // ince taneler
+      psKenarGolge(g, w, h, '80,66,50');
+      psOrtaCizgi(g, w, h, 'rgba(90,70,50,0.55)', 23, '#fffaf0');
+    },
+    kemerEk(tb, X0, H) {                                                                            // üst kirişte taş mazgallar, direklerde taş halkalar
+      for (let i = 0; i < 9; i++) { const x = lerp(-X0 + 0.6, X0 - 0.6, i / 8); if (Math.abs(x) > X0 - 1.2) continue; psParca(tb, G.kutu, i % 2 ? 0xe2d8c4 : 0xf0e8d6, x, H + 0.55, 0, 0.75, 0.7, 0.62); }
+      for (const yan of [-1, 1]) for (const y of [2.4, 6.2]) psParca(tb, G.sil, 0xf0e8d6, yan * X0, y, 0, 0.5, 0.3, 0.5);
+    }
   }
+  /*/SATO*/,
+  /*LUNAPARK*/
+  lunapark: {   // Gece Lunaparkı: açık lila-krem taş yol, kenarda sıcak sarı ampul şeridi, pembe-krem bantlar, ampullü pembe kemer
+    isik: 0.2, parlat: 0.6, omuz: '#3f8f86', omuzAcik: '#58ab9c', bantA: '#ff6fae', bantB: '#fff3dc', bantGolge: 'rgba(40,20,80,0.3)',
+    direkA: 0xff6fae, direkB: 0xfff3dc, ayak: 0x3fd4d0, sus: 0xffd23f, cerUst: 0x3fd4d0, cerAlt: 0xff6fae,
+    rampaA: 0xffd23f, rampaB: 0xff6fae, rampaArka: 0xe0559a, rampaYan: 0xc8488a, rampaDirek: 0x3fd4d0,
+    okA: '#0fae9a', okB: '#7dffd8', okGolge: 'rgba(0,70,70,0.65)', hale: 0xffd24a, haleA: 0.32, golgeA: 0.45,
+    toz: [0xfff3dc, 0xffd8ec, 0xc8fff6], tozA: 0.6, tozB0: 0.36, tozB1: 0.9, tozOmur: 0.4, tozPiril: true, puf: 0xf2e8ff,
+    piril: [0xffffff, 0xffe066, 0xff9ad5, 0x8ff0e8, 0xffc0e0],
+    yol(g, w, h) {
+      const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#b8acd0'); gr.addColorStop(0.15, '#cbc0de'); gr.addColorStop(0.5, '#d8cfe6'); gr.addColorStop(0.85, '#cbc0de'); gr.addColorStop(1, '#b8acd0'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.fillStyle = 'rgba(120,100,160,0.13)'; for (let y = 0; y < h; y += h / 8) g.fillRect(36, y, w - 72, 2);                 // taş döşeme ekleri
+      psLeke(g, w, h, 60, ['#e2daee', '#b2a6ca'], 0.16, 14, 36);
+      psLeke(g, w, h, 700, ['#e8e2f2', '#a99cc4', '#f2d8e6'], 0.24, 0.9, 2.0, 3);
+      psKenarGolge(g, w, h, '70,50,120');
+      for (const x of [22, w - 22]) {                                                                // kenarda lacivert şerit + sıcak sarı ampul noktaları
+        g.fillStyle = '#3a3f8e'; g.fillRect(x - 9, 0, 18, h);
+        for (let y = h / 16; y < h; y += h / 8) { const p = g.createRadialGradient(x, y, 0, x, y, 9); p.addColorStop(0, '#fffbe0'); p.addColorStop(0.5, '#ffd23f'); p.addColorStop(1, 'rgba(255,210,63,0)'); g.fillStyle = p; g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill(); }
+      }
+      psOrtaCizgi(g, w, h, 'rgba(120,40,100,0.3)', 23, '#ff8cc0', '#ffffff');
+    },
+    kemerEk(tb, X0, H) {                                                                            // pembe yay kemer + ampul topları
+      psParca(tb, new T.TorusGeometry(X0, 0.4, 8, 28, Math.PI), 0xff6fae, 0, H + 0.15, 0, 1, 0.32, 1);
+      for (let k = 0; k <= 10; k++) { const a = k / 10 * Math.PI; psParca(tb, G.kure, [0xffe066, 0x8ff0e8, 0xffffff][k % 3], Math.cos(a) * X0, H + 0.15 + Math.sin(a) * X0 * 0.32 + 0.45, 0, 0.3, 0.3, 0.3); }
+      for (const yan of [-1, 1]) for (const y of [2.6, 5.2, 7.8]) psParca(tb, G.kure, 0xffe066, yan * X0, y, 0, 0.55, 0.3, 0.55);
+    }
+  }
+  /*/LUNAPARK*/,
+  /*KORSAN*/
+  korsan: {   // Korsan Adası: bal rengi ahşap iskele döşemesi (enine tahtalar), kırmızı-krem halat bantları, altın kum omzu, halatlı ve fıçılı kemer
+    omuz: '#f0cf88', omuzAcik: '#f9e3b0', bantA: '#d8473a', bantB: '#fff3dc', bantGolge: 'rgba(110,50,20,0.25)',
+    direkA: 0x8d5631, direkB: 0xc58a52, ayak: 0xd8473a, sus: 0xffcf3a, cerUst: 0xffcf3a, cerAlt: 0xd8473a,
+    rampaA: 0xffcf3a, rampaB: 0xd8473a, rampaArka: 0xb93a2f, rampaYan: 0xa83328, rampaDudak: 0xfff3dc, rampaDirek: 0x8d5631,
+    okA: '#0f8fd8', okB: '#3fe0ff', haleA: 0.24, golgeA: 0.4,
+    toz: [0xf3deb0, 0xe9c88e], tozA: 0.38, puf: 0xf8e8c6,
+    piril: [0xffffff, 0xffe066, 0xffcf3a, 0x5fe0e0, 0xff8a6a],
+    yol(g, w, h) {
+      const n = 10, th = h / n, ton = ['#d79c5e', '#cf9455', '#dda466', '#d39858', '#e0a96c'];
+      g.fillStyle = '#b97f47'; g.fillRect(0, 0, w, h);
+      for (let r = 0; r < n; r++) {                                                                 // enine tahtalar: yumuşak aralık, ton farkı
+        const y = r * th, kay = (r * 37) % 3;
+        g.fillStyle = ton[(r * 3 + kay) % 5]; g.beginPath(); g.roundRect(-8, y + 2.5, w + 16, th - 5, 6); g.fill();
+        const gr = g.createLinearGradient(0, y, 0, y + th); gr.addColorStop(0, 'rgba(255,236,200,0.22)'); gr.addColorStop(0.35, 'rgba(255,236,200,0)'); gr.addColorStop(1, 'rgba(110,64,28,0.16)'); g.fillStyle = gr; g.fillRect(0, y + 2.5, w, th - 5);
+        g.globalAlpha = 0.12; g.strokeStyle = '#8a5a30'; g.lineWidth = 1.5;                           // hafif damar
+        for (let k = 0; k < 3; k++) { const yy = y + 10 + R() * (th - 20); g.beginPath(); g.moveTo(R() * w * 0.3, yy); g.bezierCurveTo(w * 0.4, yy + 3, w * 0.6, yy - 3, w * (0.7 + R() * 0.3), yy); g.stroke(); }
+        g.globalAlpha = 1;
+        if (r % 2 === 0) { const x = 140 + (r * 53) % 230; g.fillStyle = 'rgba(120,72,34,0.35)'; g.fillRect(x, y + 2.5, 4, th - 5); }   // seyrek ek yeri
+      }
+      for (const x of [0, w]) { const k = g.createLinearGradient(x ? w - 52 : 0, 0, x ? w : 52, 0); k.addColorStop(x ? 1 : 0, 'rgba(96,56,24,0.55)'); k.addColorStop(x ? 0 : 1, 'rgba(96,56,24,0)'); g.fillStyle = k; g.fillRect(x ? w - 52 : 0, 0, 52, h); }   // kenar kirişi gölgesi
+      for (let r = 0; r < n; r++) for (const x of [26, w - 26]) { g.fillStyle = 'rgba(90,60,40,0.55)'; g.beginPath(); g.arc(x, r * th + th / 2, 3.2, 0, 7); g.fill(); }   // çiviler
+      psOrtaCizgi(g, w, h, 'rgba(110,64,28,0.35)', 21, '#fff3dc');
+    },
+    kemerEk(tb, X0, H) {                                                                            // direklerde halat sargıları, dipte fıçı, üstte altın para
+      for (const yan of [-1, 1]) {
+        for (const y of [2.3, 2.62, 2.94, 7.4, 7.72]) psParca(tb, G.sil, 0xf0dcae, yan * X0, y, 0, 0.45, 0.24, 0.45);
+        const bx = yan * (X0 + 1.4); psParca(tb, G.sil, 0xb57a45, bx, 0.6, -0.3, 0.62, 1.2, 0.62); for (const y of [0.25, 0.95]) psParca(tb, G.sil, 0xd8473a, bx, y, -0.3, 0.65, 0.12, 0.65);
+        psParca(tb, G.sil, 0xffcf3a, yan * X0, H + 1.2, 0, 0.7, 0.16, 0.7, Math.PI / 2);
+      }
+    }
+  }
+  /*/KORSAN*/
 };
 const psTema = Object.assign({}, psTEMA_ORTAK, psTEMALAR[cvTema] || psTEMALAR.orman);
 const psIsik = o => psTema.isik ? Object.assign(o, { emissive: 0xffffff, emissiveMap: o.map, emissiveIntensity: psTema.isik }) : o;   // karanlık pistte yol kendi ışığıyla seçilir

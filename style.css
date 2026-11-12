@@ -299,6 +299,9 @@ body[data-pist=dino] #rota-yol{stroke:#f8e6b6}
 body[data-pist=sehir] #rota{background:#eaf1f8}
 body[data-pist=sehir] #rota-kenar{fill:#cde9b6;stroke:#7f8aa3}
 body[data-pist=sehir] #rota-yol{stroke:#f7f9fc}
+/*SATO*/body[data-pist=sato] #rota{background:#e4f3d2}body[data-pist=sato] #rota-kenar{fill:#b5dd8e;stroke:#c9bda6}body[data-pist=sato] #rota-yol{stroke:#f8f0dc}/*/SATO*/
+/*LUNAPARK*/body[data-pist=lunapark] #rota{background:#232a6e}body[data-pist=lunapark] #rota-kenar{fill:#3f9c8e;stroke:#ffd23f}body[data-pist=lunapark] #rota-yol{stroke:#ffe2f0}/*/LUNAPARK*/
+/*KORSAN*/body[data-pist=korsan] #rota{background:#9fe3e6}body[data-pist=korsan] #rota-kenar{fill:#f3d48f;stroke:#2fb7c9}body[data-pist=korsan] #rota-yol{stroke:#d79c5e}/*/KORSAN*/
 /* logo: iki sözcük aynı taban çizgisinde, eğimsiz. Yatayda üst-ortada ince şerit (iki yanında damalı bayrak), dikeyde en üstte. */
 #baslik h1{display:flex;align-items:baseline;justify-content:center;gap:.2em;align-self:center;margin-left:0;transform:none}
 #baslik .ui-ust{font-size:.8em}
@@ -366,8 +369,8 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 @keyframes sec-gel{from{opacity:0;transform:translateY(18px)}}
 @keyframes sec-zipla{0%{transform:scale(1)}40%{transform:scale(1.13) translateY(-9px)}100%{transform:scale(1.045)}}
 
-/* pist kartları: 3×3, her kart o pistin gerçek görüntüsü (yoksa çizimi) */
-#pist-sec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:18px;width:100%;height:100%;max-width:1120px;max-height:880px;margin:auto;padding:4px 6px 10px;box-sizing:border-box}
+/* pist kartları: 4×3 yatay / 3×4 dikey (12 pist), her kart o pistin gerçek görüntüsü (yoksa çizimi) */
+#pist-sec{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:18px;width:100%;height:100%;max-width:1120px;max-height:880px;margin:auto;padding:4px 6px 10px;box-sizing:border-box}
 .pist-kart{position:relative;min-width:0;min-height:90px;background:#fff;border:6px solid #fff;border-radius:30px;box-sizing:border-box;
   box-shadow:0 7px 0 rgba(23,51,92,.2),0 12px 22px rgba(23,51,92,.2);transition:transform .16s,border-color .16s,box-shadow .16s}
 .pist-kart>svg,.pist-resim{position:absolute;inset:0;width:100%;height:100%;border-radius:24px;overflow:hidden}
@@ -390,7 +393,8 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 .sec-kay:active{transform:scale(.92)}
 @keyframes sec-kay-sol{50%{transform:translateX(-7px)}}
 @keyframes sec-kay-sag{50%{transform:translateX(7px)}}
-#araba-sec{grid-area:serit;display:grid;grid-template-columns:repeat(var(--an,9),minmax(0,1fr));gap:12px;width:100%;max-width:1180px;margin:0 auto;padding:6px 4px 8px;box-sizing:border-box;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
+/* 12 araba: iki sıra 6'lık (iPad'de kart ≥ 88 px; yalnız alçak yatay ekranda tek sıra) */
+#araba-sec{grid-area:serit;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;width:100%;max-width:1180px;margin:0 auto;padding:6px 4px 8px;box-sizing:border-box;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
 .araba-kart{position:relative;min-width:0;height:96px;background:linear-gradient(#f4fbff 64%,#d7ecfa 64%);border:5px solid #fff;border-radius:24px;box-sizing:border-box;
   box-shadow:0 6px 0 rgba(23,51,92,.2),0 10px 18px rgba(23,51,92,.16);transition:transform .16s,border-color .16s,box-shadow .16s}
 .araba-kart>svg:first-child{position:absolute;left:6%;top:5%;width:88%;height:90%}
@@ -408,7 +412,8 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 @media (orientation:portrait){
   #secim{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"ust" "sayfa" "serit" "ileri";gap:14px;--il:184px}
   #secim[data-adim=pist]{grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"ust" "sayfa" "ileri"}
-  #araba-sec{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+  #pist-sec{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr))}
+  #araba-sec{grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
   .araba-kart{height:104px}
   #sec-ileri{margin:4px 0 12px}
 }
@@ -416,7 +421,7 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
   #secim{--il:112px;gap:6px 14px;padding-top:calc(6px + env(safe-area-inset-top));padding-bottom:calc(6px + env(safe-area-inset-bottom))}
   .sec-ust{min-height:60px}.sec-yuvarlak{width:60px;height:60px;padding:13px}.sec-adim{width:44px;height:44px;padding:9px}
   #pist-sec{gap:9px}.pist-kart{min-height:0;border-width:4px;border-radius:20px}.pist-kart>svg,.pist-resim{border-radius:16px}
-  .araba-kart{height:62px;border-radius:16px;border-width:3px}#araba-sec{gap:6px}
+  .araba-kart{height:62px;border-radius:16px;border-width:3px}#araba-sec{gap:6px;grid-template-columns:repeat(var(--an,12),minmax(0,1fr))}
   .sec-kay{width:60px;height:60px;margin-top:-30px;padding:14px}
   #sec-ileri{border-width:6px}
   .pist-onay{width:32px;height:32px;border-width:3px}.ui-yrozet{height:30px;font-size:18px}.ui-yrozet svg{width:22px;height:22px}
@@ -641,3 +646,16 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 /* sonuç rozetleri (yıldız, rekor, anılar): aynı 3px lacivert çerçeve ve gölge */
 #sonuc.sirali #sonuc-yildiz,#sonuc.sirali #rekor,#sonuc.sirali .ani.kazanildi{border:3px solid var(--lac);box-shadow:0 4px 0 rgba(15,35,70,.3)}
 #sonuc.sirali .ani.kazanildi{color:var(--lac)}
+/*ARAYUZ-12*/ /* 12 pist + 12 araba cilası: dikeyde yanlarda daha geniş pay, iki sıralı arabada seçili kart komşusuna binmesin,
+   3B tabla kart şeridine değmesin, telefonda rozet/onay işaretleri küçük karta sığsın */
+@media (orientation:portrait){#secim{padding-left:max(3.6vw,calc(16px + env(safe-area-inset-left)));padding-right:max(3.6vw,calc(16px + env(safe-area-inset-right)))}}
+@media (min-height:561px),(orientation:portrait){.araba-kart[aria-pressed=true]{transform:scale(1.06) translateY(-3px)}}
+@media (orientation:landscape) and (min-height:561px){#sec-sahne{margin-bottom:28px}}
+@media (max-height:560px) and (orientation:landscape){
+  .ui-rozet{width:30px;height:30px;padding:3px;left:4px;top:4px;border-width:2px;box-shadow:0 0 0 2px var(--lac)}
+  .ui-yrozet{left:4px;bottom:4px;height:28px;padding:0 9px 0 3px;border-width:2px;font-size:17px;box-shadow:0 0 0 2px var(--lac),0 2px 0 1px rgba(23,51,92,.3)}
+  .ui-yrozet svg{width:20px;height:20px}
+  .pist-onay{width:30px;height:30px;right:4px;bottom:4px;border-width:3px;padding:2px}
+  .araba-kart .pist-onay{width:24px;height:24px;right:-6px;bottom:-6px;padding:1px;border-width:2px}
+}
+/*/ARAYUZ-12*/

@@ -236,6 +236,40 @@ function uiArabaCiz(id, c1, c2) {
       '<path d="M30 33h34l-11 13H40z" fill="' + c2 + '"/><path d="M11 33h12" fill="none" stroke="' + c2 + '" stroke-width="3.4"/>' +
       '<path d="M89 34q5-10 0-20-5 10 0 20zM89 36q5 10 0 20-5-10 0-20z" fill="#dfe6ee"/><circle cx="88" cy="35" r="3.400" fill="' + c2 + '"/></g>' +
       uiTeker(30, 52, 6, c2) + uiTeker(66, 52, 6, c2);
+  } else if (id === 'gemi') {   /*GEMI*/ // korsan gemisi: ahşap tekne, önde kıvrık pruva, direkte çizgili yelken ve gülen yüzlü bayrak, arkada fener
+    const ah = '#6b3f22', al = '#f2c14e';
+    g = '<g ' + UI_CIZGI + '><path d="M11 27V17" fill="none" stroke-width="2.2"/><rect x="7.5" y="12" width="7" height="8" rx="2.5" fill="#ffd36b" stroke-width="2"/>' +
+      '<path d="M64 41V3" fill="none" stroke="' + ah + '" stroke-width="3.2"/><path d="M63 3H50q2 3 0 6h13z" fill="#2b3a67" stroke-width="2"/></g>' +
+      '<circle cx="56.5" cy="6" r="2.1" fill="' + al + '"/>' + uiSurucu(40, 25) +
+      '<g ' + UI_CIZGI + '><path d="M54 14h21q5 8.5 0 17H54q4-8.5 0-17z" fill="' + c2 + '"/><path d="M59 14h5.5q2 8.5 0 17H59q2-8.5 0-17zM69.5 14H75q5 8.5 0 17h-5.5q3-8.5 0-17z" fill="#e8453c" stroke="none"/>' +
+      '<path d="M54 14h21q5 8.5 0 17H54q4-8.5 0-17z" fill="none"/><path d="M51 13h28" fill="none" stroke="' + ah + '" stroke-width="3"/>' +
+      '<path d="M6 26h9q2 8 11 8h43q9 0 15-8l6-4q1 10-5 17-6 7-14 7H20Q8 46 6 36z" fill="' + c1 + '"/><path d="M9 39h74" fill="none" stroke="' + c2 + '" stroke-width="3"/>' +
+      '<circle cx="40" cy="40" r="2.6" fill="#bfe9ff" stroke="' + al + '" stroke-width="1.8"/><circle cx="51" cy="40" r="2.6" fill="#bfe9ff" stroke="' + al + '" stroke-width="1.8"/>' +
+      '<circle cx="90" cy="19" r="3" fill="' + al + '" stroke-width="2"/></g>' + uiTeker(23, 48, 9, c2) + uiTeker(70, 48, 8.5, c2);
+    /*/GEMI*/
+  } else if (id === 'polis') {   /*POLIS*/ // tombul polis arabası: sürücünün arkasında direk üstünde kırmızı-mavi lamba, kapı beyaz, altın yıldız rozet, damalı şerit
+    g = '<path d="M34 31V19" fill="none" stroke="#17335c" stroke-width="7.5" stroke-linecap="round"/><path d="M34 31V19" fill="none" stroke="' + c2 + '" stroke-width="3.2" stroke-linecap="round"/>' +
+      '<g ' + UI_CIZGI + '><rect x="22" y="15" width="24" height="5.5" rx="2.7" fill="#2b3550"/><path d="M23.5 15.5q0-7 5.25-7t5.25 7z" fill="#ff4b4b"/><path d="M34 15.5q0-7 5.25-7t5.25 7z" fill="#3a8dff"/>' +
+      '<path d="M12 30 9.5 17" fill="none" stroke-width="2"/><circle cx="9.5" cy="16" r="2.4" fill="#ff4b4b" stroke-width="1.8"/></g>' + uiSurucu(54, 24) +
+      '<g ' + UI_CIZGI + '><path d="M7 46v-8q0-9 9-9h52q10 0 15 5l5 4q2 2 2 8z" fill="' + c1 + '"/><path d="M31 31.5h30v14.5H31z" fill="#fff"/>' +
+      '<path d="M31 41.5h4v3h-4zM39 41.5h4v3h-4zM47 41.5h4v3h-4zM55 41.5h4v3h-4z" fill="' + c1 + '" stroke="none"/>' +
+      '<circle cx="46" cy="36.4" r="4.3" fill="#1d3f8f" stroke-width="1.8"/><path d="M46 33.2l.95 1.95 2.15.3-1.55 1.5.37 2.15L46 38.1l-1.92 1 .37-2.15-1.55-1.5 2.15-.3z" fill="#ffc928" stroke="none"/>' +
+      '<circle cx="85" cy="37" r="3.3" fill="#fff3b0" stroke-width="2"/><path d="M84 46h7M5 46h6" fill="none" stroke-width="4"/><rect x="5.5" y="34.5" width="4" height="4.5" rx="1.5" fill="#ff4b4b" stroke-width="1.8"/></g>' +
+      uiTeker(22, 48, 9.5, c2) + uiTeker(72, 48, 9.5, c2);
+    /*/POLIS*/
+  } else if (id === 'kedi') {   /*KEDI*/ // tombul tekir kedi: arkada kıvrık kuyruk, önde kulaklı yuvarlak yüz, krem burun ve pati
+    const kz = 'stroke="#17335c" stroke-opacity=".38" stroke-width="2.6" fill="none" stroke-linecap="round"';
+    g = '<path d="M15 36Q4 35 5 23q1-9 8-9" fill="none" stroke="#17335c" stroke-width="8.6" stroke-linecap="round"/><path d="M15 36Q4 35 5 23q1-9 8-9" fill="none" stroke="' + c1 + '" stroke-width="3.6" stroke-linecap="round"/>' +
+      '<g ' + UI_CIZGI + '><path d="M10 38q0-10 10-10h40l9 18H16q-6 0-6-8z" fill="' + c1 + '"/><path d="M15 42.5q22 3.500 47 0" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' +
+      '<path d="M21 29q1.500 4-.500 7.500M29 29q1.500 4-.500 7.500M37 29q1.500 3.500 0 6.500" ' + kz + '/>' + uiSurucu(46, 23) +
+      '<g ' + UI_CIZGI + '><path d="M62 24 63 7l11 11zM76 17l9-10 2 16z" fill="' + c1 + '"/><path d="M65.500 18.500 66 11.500l4.500 5zM79 15.500l4.500-5 1 7z" fill="#ffa3bd" stroke="none"/>' +
+      '<circle cx="74" cy="31" r="14" fill="' + c1 + '"/><ellipse cx="83" cy="36.500" rx="6.500" ry="5" fill="' + c2 + '"/>' +
+      '<circle cx="79" cy="27" r="4.300" fill="#fff" stroke-width="2"/><circle cx="80" cy="27.300" r="2.700" fill="#17335c" stroke="none"/><circle cx="81" cy="26" r="1" fill="#fff" stroke="none"/>' +
+      '<circle cx="88.300" cy="33" r="2.300" fill="#ff7f9f" stroke-width="1.6"/><path d="M84 38.500q2 2 4 0" fill="none" stroke-width="1.8"/>' +
+      '<path d="M86 35.500l9.500-2.500M86 37.500l9.500 1" fill="none" stroke-width="1.3"/><ellipse cx="83.500" cy="47" rx="6.500" ry="3.600" fill="' + c2 + '"/></g>' +
+      '<circle cx="73.500" cy="35.500" r="2.600" fill="#ff8fb0" opacity=".7"/><path d="M71 19v4M76 18.500v4" ' + kz + '/>' +
+      uiTeker(26, 49, 8.5, c2) + uiTeker(62, 49, 8.5, c2);
+    /*/KEDI*/
   } else {
     g = '<g ' + UI_CIZGI + '><path d="M8 46V35q0-5 6-6l12-2 9-11h24l12 12 11 2q6 1 6 7v9z" fill="' + c1 + '"/><path d="M31 27l6-8h9v8zM50 19h8l8 8H50z" fill="' + cam + '"/>' +
       '<path d="M8 40h80" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(25, 48, 9, c2) + uiTeker(71, 48, 9, c2);

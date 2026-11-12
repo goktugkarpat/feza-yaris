@@ -23,7 +23,7 @@ function oyRakipTip(i) {   // rakip i (1…4): Feza'nın seçtiği dışındaki 
   const t = oyTipler(); if (!t) return undefined;
   let n = 0; for (const x of t) if (x && x.id !== oyArabaId) n++;
   if (!n) return t[0].id;
-  let k = ((i - 1) * Math.max(1, Math.floor(n / 4))) % n; for (const x of t) if (x && x.id !== oyArabaId && k-- === 0) return x.id;
+  let k = (Math.floor((i - 1) * n / 4) + Math.max(0, PIST_TEMALARI.indexOf(PIST_TEMA))) % n;   /* pist sırası kadar kaydır: her pistte başka rakip arabalar, on iki arabanın hepsi rakip olur */ for (const x of t) if (x && x.id !== oyArabaId && k-- === 0) return x.id;   // 8 rakip tipte eskisiyle aynı (0,2,4,6); 11'de 0,2,5,8 → yeni arabalar da rakip olur
   return t[0].id;
 }
 { const t = oyTipBul(oyArabaId); if (t && t.renk !== undefined) { SURUCU[0].renk = t.renk; if (t.renk2 !== undefined) SURUCU[0].renk2 = t.renk2; } }
