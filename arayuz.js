@@ -93,6 +93,22 @@ function uiRotaAyar(o) {
   for (const el of [uiRotaNokta, uiRotaGolge]) { el.setAttribute('cx', uiMapX[i].toFixed(1)); el.setAttribute('cy', uiMapY[i].toFixed(1)); }
   uiRotaIz.style.strokeDashoffset = (uiMapUz * (1 - u)).toFixed(1);
   uiEl('rota').classList.toggle('roketli', !!o.roket);
+  uiRakipNokta();
+}
+// Haritada arkadaşlar: her biri kendi renginde küçük, beyaz çerçeveli nokta (gerçek pist konumundan, aynı 8 Hz güncellemeyle). Feza üstte, büyük.
+const UI_KIM_RENK = { feza: '#f45744', piril: '#9a6ee6', bilbo: '#8b5a34' };
+const uiKimRenk = a => UI_KIM_RENK[a.tur] || uiRenk(a.renk, '#56bdf0');
+const uiRakipEl = [...uiEl('rota-rakipler').children];
+let uiRakipRenkli = false;
+function uiRakipNokta() {
+  const Y = window.YARIS; if (!Y || !Y.A || !Y.L) return;
+  for (let i = 1; i < Y.A.length && i <= uiRakipEl.length; i++) {
+    const a = Y.A[i], el = uiRakipEl[i - 1];
+    if (!uiRakipRenkli) el.setAttribute('fill', uiKimRenk(a));
+    const j = Math.min(N - 1, Math.floor((((a.yol % Y.L) + Y.L) % Y.L) / Y.L * N));
+    el.setAttribute('cx', uiMapX[j].toFixed(1)); el.setAttribute('cy', uiMapY[j].toFixed(1));
+  }
+  uiRakipRenkli = true;
 }
 
 // Küçük bir havuz: yıldızlar toplandığı yerden sayaca uçar; sürekli DOM oluşturulmaz.
@@ -165,7 +181,9 @@ function uiTeker(x, y, r, gobek) {
   return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#2b3550" stroke="#17335c" stroke-width="2.6"/><circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.42).toFixed(1) + '" fill="' + (gobek || '#dfe6ee') + '"/>';
 }
 // Sürücü (Feza): kahverengi kıvırcık saç, kırmızı saç bandı — 3B modeldeki gibi açık üstlü arabada başı görünür.
+let uiSurucuYok = false;   // sıralama ekranında arkadaşların arabaları sürücüsüz çizilir (yüz ayrı portrede)
 function uiSurucu(x, y) {
+  if (uiSurucuYok) return '';
   return '<g stroke="#17335c" stroke-width="2.2"><circle cx="' + x + '" cy="' + y + '" r="7.5" fill="#f2c39b"/><path d="M' + (x - 8) + ' ' + (y + 1) + 'q-1-10 8-10 9 0 8 10-3-4-8-4t-8 4z" fill="#6b3f22"/></g>' +
     '<path d="M' + (x - 7.6) + ' ' + (y - 2) + 'q7.6-4 15.2 0" fill="none" stroke="#e8433a" stroke-width="2.6" stroke-linecap="round"/><circle cx="' + (x + 3.6) + '" cy="' + (y + 1.5) + '" r="1.1" fill="#17335c"/>';
 }
@@ -276,7 +294,7 @@ OLAY.on('sonuc', () => {
       n = Math.min(hedef, n + adim); el.textContent = n;
       if (n >= hedef) { uiSayDur(hedef); uiZipla(uiEl('sonuc-yildiz'), 1.3, 460, -5); }
     }, 55);
-  }, 1150);
+  }, 1900);
 });
 OLAY.on('durum', d => { if (d !== 'bitis') uiSayDur(); });
 
@@ -385,3 +403,31 @@ OLAY.on('yildiz', () => uiParla(uiEl('yildiz-kutu')));
 OLAY.on('tur', () => uiParla(uiEl('turlar')));
 OLAY.on('sira', n => { if (n === 1) uiParla(uiSira); });
 OLAY.on('seri', o => { if (o && o.odul) uiParla(uiSeri); });
+
+// ───────── Yarış sonu sıralaması: 1–5 satır (madalya + gerçek modelden yüz + araba). Veri YARIS.siralama()'dan (bitişteki gerçek sıra). Yazı yok. ─────────
+const uiSiralama = uiEl('siralama');
+const UI_MADALYA = ['', 'altin', 'gumus', 'bronz'];
+function uiYuzYedek(kim, renk) {   // portre çekilemezse: renkli yuvarlak üstünde sade bir yüz
+  return '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="' + renk + '"/><circle cx="32" cy="34" r="19" fill="#f6ccb2" stroke="#17335c" stroke-width="2.6"/>' +
+    '<circle cx="25" cy="33" r="2.6" fill="#17335c"/><circle cx="39" cy="33" r="2.6" fill="#17335c"/><path d="M25 41q7 6 14 0" fill="none" stroke="#17335c" stroke-width="2.6" stroke-linecap="round"/></svg>';
+}
+function uiSiralamaKur() {
+  let liste = [];
+  try { liste = (window.YARIS && YARIS.siralama) ? YARIS.siralama() : []; } catch (_) { liste = []; }
+  uiSiralama.textContent = '';
+  uiSiralama.classList.toggle('gizli', !liste.length);
+  uiEl('sonuc').classList.toggle('sirali', liste.length > 0);
+  uiSurucuYok = true;
+  liste.forEach((x, i) => {
+    const li = document.createElement('li'), renk = uiRenk(x.renk, '#f2553f'), kimRenk = x.kim === 'feza' ? '#ffd23f' : uiKimRenk({ tur: x.kim, renk: x.renk });
+    li.className = 'sr-satir' + (x.oyuncu ? ' sr-feza' : '') + (x.sira <= 3 ? ' sr-' + UI_MADALYA[x.sira] : '');
+    li.style.setProperty('--i', i); li.style.setProperty('--kr', kimRenk); li.style.setProperty('--ar', renk);
+    li.setAttribute('aria-label', String(x.sira));
+    const yuz = x.portre ? '<img alt="" draggable="false" src="' + x.portre + '">' : uiYuzYedek(x.kim, kimRenk);
+    li.innerHTML = '<span class="sr-no"><b>' + x.sira + '</b></span><span class="sr-yuz">' + yuz + '</span><span class="sr-araba">' +
+      uiArabaCiz(String(x.tip || 'kart'), renk, uiRenk(x.renk2, '#ffd23f')) + '</span>';
+    uiSiralama.appendChild(li);
+  });
+  uiSurucuYok = false;
+}
+OLAY.on('sonuc', uiSiralamaKur);

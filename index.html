@@ -41,7 +41,7 @@
     <div id="yildiz-kutu" class="ui-kart"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><span id="yildiz-say">0</span></div>
     <div id="seri" aria-label="Üç yıldız topla, roket kazan"><span class="seri-yildiz"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg></span><span class="seri-yildiz"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg></span><span class="seri-yildiz"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg></span><svg class="seri-ok" viewBox="0 0 20 24"><path d="m5 5 8 7-8 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="seri-roket" viewBox="0 0 48 48"><use href="#ui-roket"/></svg></div>
   </div>
-  <div id="rota" aria-label="Pistteki yerin"><svg id="rota-cizim" viewBox="0 0 160 116" aria-hidden="true"><path id="rota-kenar"/><path id="rota-yol"/><path id="rota-ilerleme"/><circle id="rota-baslangic" r="4"/><circle id="rota-konum-golge" r="8"/><circle id="rota-konum" r="6"/></svg></div>
+  <div id="rota" aria-label="Pistteki yerin"><svg id="rota-cizim" viewBox="0 0 160 116" aria-hidden="true"><path id="rota-kenar"/><path id="rota-yol"/><path id="rota-ilerleme"/><circle id="rota-baslangic" r="4"/><g id="rota-rakipler"><circle r="5.2"/><circle r="5.2"/><circle r="5.2"/><circle r="5.2"/></g><circle id="rota-konum-golge" r="9.5"/><circle id="rota-konum" r="7.2"/></svg></div>
   <div id="sira" class="ui-kart s1"><svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg><span id="sira-say">1</span></div>
   <button id="dur" class="ui-kart" aria-label="Duraklat"><svg viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="5" height="15" rx="2.2"/><rect x="13.5" y="4.5" width="5" height="15" rx="2.2"/></svg></button>
   <button id="hizlan" aria-label="Hızlan"><span class="ui-roket-ic"><svg viewBox="0 0 48 48"><path class="ui-alev" d="M19 37c0 5 5 9.5 5 9.5s5-4.5 5-9.5z" fill="#ffe14d" stroke="#e8483a" stroke-width="2" stroke-linejoin="round"/><g stroke="#17335c" stroke-width="2.4" stroke-linejoin="round"><path d="M14 26l-7.5 9v5.5L14 37zM34 26l7.5 9v5.5L34 37z" fill="#e8483a"/><path d="M24 2.5c7 6 10 14 10 22.5v12H14V25c0-8.500 3-16.5 10-22.5z" fill="#fff"/><path d="M24 2.5c3 2.600 5.300 5.800 6.900 9.5H17.100c1.600-3.700 3.900-6.900 6.900-9.5z" fill="#e8483a"/><circle cx="24" cy="21.5" r="4.800" fill="#49b6ff"/></g></svg><i id="hizlan-dolum"></i></span></button>
@@ -110,9 +110,12 @@ if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList
     <div id="kupa"><svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg><b id="sonuc-sira">1</b></div>
     <i class="ui-piril p1"></i><i class="ui-piril p2"></i><i class="ui-piril p3"></i><i class="ui-piril p4"></i><i class="ui-piril p5"></i><i class="ui-piril p6"></i>
   </div>
+  <ol id="siralama" aria-label="Sıralama"></ol>
+  <div class="sonuc-satir">
   <div id="sonuc-yildiz" class="ui-kart"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><span id="sonuc-yildiz-say">0</span></div>
   <div id="sonuc-anilar" aria-label="Yarışta yaptıkların"><div class="ani" id="ani-seri" aria-label="Yıldız serileri"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><b>0</b></div><div class="ani" id="ani-roket" aria-label="Roketler"><svg viewBox="0 0 48 48"><use href="#ui-roket"/></svg><b>0</b></div><div class="ani" id="ani-hop" aria-label="Atlayışlar"><svg viewBox="0 0 48 48"><use href="#ui-hop"/></svg><b>0</b></div></div>
   <div id="rekor" class="gizli" aria-label="Yeni yıldız rekorun"><svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><b id="rekor-say">0</b></div>
+  </div>
   <div class="sonuc-dugmeler"><button id="tekrar" class="buyuk" aria-label="Bir daha"><svg viewBox="0 0 24 24"><path d="M19.5 12.5a7.5 7.5 0 1 1-3-6" fill="none" stroke="currentColor" stroke-width="3.400" stroke-linecap="round"/><path d="M19.5 2.5v6.500H13z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button><button id="sonuc-ev" class="ev-dugme" aria-label="Yarış yerini seç"><svg viewBox="0 0 48 48"><use href="#ui-ev"/></svg></button></div>
   </div>
 </div>

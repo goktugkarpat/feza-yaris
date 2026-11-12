@@ -11,8 +11,10 @@
 - Arabalar pist koordinatında tutulur (`yol` = ilerleme metre, `d` = yanal konum): pistten çıkılamaz, ters gidilemez.
 - Kontrol: parmağı sağa sola sürükle, araba o hizaya gider; turuncu roket düğmesi kısa süre hızlandırır. Gaz/fren yok.
   Kısa bir sürüklemede de son hedefe yumuşakça ulaşır. İptal/odak kaybı/mola girdiyi temizler; ok/A/D tuşları kontrolü devralır.
-- Kaybetmek yok: rakipler Feza'ya göre hızlanıp yavaşlar ve Feza her yarışı ilk üçte bitirir (`rakipAdim`); aynı anda en çok iki rakip
-  Feza'nın önüne geçebilir, geçmeyenler kameranın arkasında bekler.
+- Kaybetmek yok ama birincilik hak edilir: Feza her yarışı ilk üçte bitirir; aynı anda en çok iki rakip Feza'nın önüne geçebilir, geçmeyenler
+  kameranın arkasında bekler (`rakipAdim`). Yarış başında iki rakip rastgele "formunda" seçilir (`rkFormSec`: sakin/olağan/çetin yarış);
+  rakipler kendi hızında gider, yumuşak lastik bantla yakın kalır, son düzlükte de geçebilir. Ölçüm (`?oto=iyi|orta|zayif`): iyi sürüş ≈ %55 birinci,
+  %35 ikinci, %10 üçüncü; zayıf sürüş çoğunlukla ikinci-üçüncü.
 - Olaylar (`OLAY.on/emit`, cekirdek.js): durum(d) · sayim(n) · sira(n) · yildiz · tur(n) · roket · hop · tok · bitis(sira). Ses, arayüz, pist efektleri ve arabalar bunları dinler.
   Ek olaylar: `seri({adet,hedef,odul,toplam})`, `ilerleme({tur,oran,toplam,roket})` (en çok 8 Hz), `ozet({pist,yildiz,roket,ziplama,seri,sira,sure})`, `inis({i,v,d,tur})`, `mola(bool)`, `sonuc`.
   Her üç yıldızda 1,15 sn otomatik roket ve düğmenin hazır olması; kaybedilen yıldızda seri sıfırlanmaz. `roket` özeti yalnız düğmeyle kullanılanları sayar.
@@ -23,7 +25,7 @@
   Yeni cümle eklenirse `sw.js` içindeki `SESLER` listesine de ekle.
 - Performans hedefi: M1 iPad Pro'da 60 kare. Gölge haritası yok, süsler çoklu kopya (InstancedMesh), ışık 2 adet.
   Kare süresi uzarsa çizim oranı kendiliğinden düşer (`oran`).
-- Test: `?sessiz` (her zaman), `?atla` (başlığı geç), `?hiz=4` (hızlı zaman), `?oto` (araba kendi sürer), `YARIS.bilgi()`.
+- Test: `?sessiz` (her zaman), `?atla` (başlığı geç), `?hiz=4` (hızlı zaman), `?oto` (araba kendi sürer; `?oto=iyi|orta|zayif` beceri), `YARIS.bilgi()`.
 - Dosya eklenince `sw.js` `CORE` listesine ekle ve `CACHE` sürümünü artır. Önek `feza-yaris-`; başka oyunların önbelleğine dokunma.
 - GitHub'a yalnız ebeveyn "gönder" deyince gönder (depo: goktugkarpat/feza-yaris, `main`).
 - Dokuz pist: `?pist=orman|kiyi|kar|seker|uzay|col|gokkusagi|dino|sehir` (`PIST_TEMA`, liste `PIST_TEMALARI`; varsayılan orman). `PIST_NOKTALARI` yol biçimleri.

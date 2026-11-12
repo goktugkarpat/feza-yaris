@@ -173,6 +173,40 @@ function oyKucukCek() {
   for (let i = 0; i < A.length; i++) { A[i].g.visible = gor.length > i * 2 ? gor[i * 2] : true; if (A[i].golge) A[i].golge.visible = gor.length > i * 2 ? gor[i * 2 + 1] : true; }
   camera.position.copy(kp); camera.quaternion.copy(kq); boyut();
 }
+// Yarış sonu sıralaması (yalnız okuma): bitişte bir kez saklanır. Rakipler ilerlemeye göre dizilir, Feza kendi `sira` yerine konur.
+// Portre: her sürücünün yüzü gerçek 3B modelden aynı çiziciyle (ikinci bağlam yok) küçük bir köşeye bir kez çizilir, resim olarak saklanır.
+let oySonSiralama = null, oyPortreSahne = null;
+const oyPortre = {};
+function oyPortreCek() {
+  const boy = renderer.getSize(new T.Vector2()), pr = renderer.getPixelRatio(), S = 96, C = 128;
+  try {
+    if (!oyPortreSahne) {
+      const s = new T.Scene(); s.background = new T.Color(0xeaf6ff); s.fog = new T.Fog(0xffffff, 600, 2400);   // pist sahnesiyle aynı ışık/sis: yeniden derleme yok
+      s.add(new T.HemisphereLight(0xffffff, 0xcdbfae, 1.25)); const gun = new T.DirectionalLight(0xfff2d0, 1.5); gun.position.set(4, 9, 12); s.add(gun);
+      oyPortreSahne = { s, kam: new T.PerspectiveCamera(24, 1, 0.05, 60), kutu: new T.Box3(), m: new T.Vector3(), b: new T.Vector3() };
+    }
+    const { s, kam, kutu, m, b } = oyPortreSahne;
+    renderer.setScissorTest(true); renderer.setViewport(0, 0, S, S); renderer.setScissor(0, 0, S, S);
+    for (const a of A) {
+      const k = a.tur + '|' + a.tip; if (oyPortre[k] || !a.arKafa) continue;
+      const ana = a.g.parent, pos = a.g.position.clone(), q = a.g.quaternion.clone(), gor = a.g.visible;
+      s.add(a.g); a.g.position.set(0, 0, 0); a.g.quaternion.identity(); a.g.visible = true; a.g.updateMatrixWorld(true);
+      kutu.setFromObject(a.arKafa); kutu.getCenter(m); const r = Math.max(0.2, kutu.getSize(b).length() * 0.5);
+      kam.position.set(m.x + r * 0.55, m.y + r * 0.45, m.z + r * 2.75); kam.lookAt(m.x, m.y - r * 0.08, m.z); kam.near = r * 1.7; kam.updateProjectionMatrix();   // yüzün önündeki araba süsü (ör. tek boynuzlu at başı) kesilir
+      renderer.render(s, kam);
+      const c = document.createElement('canvas'); c.width = c.height = C;
+      c.getContext('2d').drawImage(canvas, 0, canvas.height - S * pr, S * pr, S * pr, 0, 0, C, C);
+      oyPortre[k] = c.toDataURL('image/png');
+      if (ana) ana.add(a.g); else s.remove(a.g);
+      a.g.position.copy(pos); a.g.quaternion.copy(q); a.g.visible = gor;
+    }
+  } catch (e) { console.warn('portre', e); }
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, boy.x, boy.y);
+}
+function oySiralamaVer() {
+  if (!oySonSiralama) return [];
+  return oySonSiralama.map((a, i) => ({ kim: a.tur, sira: i + 1, renk: a.renk, renk2: a.renk2, tip: a.tip, oyuncu: a === P, portre: oyPortre[a.tur + '|' + a.tip] || null }));
+}
 function basla() {
   SES.hazirla(); oySecBirak(true); oyEkran = ''; izgarayaDiz(); molaAyar(false);
   $('baslik').classList.add('gizli'); OY_SECIM.classList.add('gizli'); $('sonuc').classList.add('gizli'); HUD.hud.classList.remove('gizli');
@@ -256,13 +290,24 @@ function siralama() {   // yerinde sıralama (5 araba), yeni dizi oluşturmaz
   for (let i = 0; i < oySira.length; i++) oySira[i].sira = i + 1;
   return oySira;
 }
+// Yalnız test: ?oto=iyi|orta|zayif kendi süren Feza'nın becerisi (rakip ayarını ölçmek için). Boş ?oto = eski salınım.
+const OY_OTO = OTO ? (Q.get('oto') || '') : '';
+function oyOtoHedef() {
+  if (OY_OTO !== 'iyi' && OY_OTO !== 'orta') return Math.sin(zaman * 0.6) * (OY_OTO === 'zayif' ? 2.6 : 3.4);
+  const s = ((P.yol % L) + L) % L, tur = Math.max(0, Math.floor(P.yol / L)), iyi = OY_OTO === 'iyi';
+  if (durum === 'yaris' && roketBekle <= 0 && (iyi || zaman % 14 < 0.5)) roketDugme();
+  let h = null, hu = iyi ? 45 : 26;
+  for (const y of YILDIZ) { const u = (((y.s - s) % L) + L) % L; if (y.var && u < hu && (iyi || (y.grup + tur) % 3)) { hu = u; h = y.d; } }
+  if (h === null && iyi) for (const o of OKLAR) { const u = (((o.s - s) % L) + L) % L; if (o.tur !== tur && u < 60) h = o.d; }
+  return h === null ? Math.sin(zaman * 0.6) * 2 : h;
+}
 function oyuncuAdim(dt) {
   const p = pist(P.yol, o1), kenar = clamp((Math.abs(P.d) - (DMAX - 0.9)) / 0.9, 0, 1);
   const hedefV = durum === 'bitis' ? 9 : OYV * (1 - 0.09 * kenar * kenar) + (roketT > 0 ? 8.5 : 0);   // kenar bandı: hafif, yumuşak yavaşlama
   P.v += (hedefV - P.v) * oyUs(dt, hedefV > P.v ? 1.6 : 1.0);
   let dv = 0, surdu = false;
   if (durum === 'bitis') dv = clamp((0 - P.d) * 1.2, -4, 4);
-  else if (OTO) dv = clamp((Math.sin(zaman * 0.6) * 3.4 - P.d) * 3, -9, 9);
+  else if (OTO) dv = clamp((oyOtoHedef() - P.d) * 3, -9, 9);
   else if (hedefD !== null) { const f = hedefD - P.d; dv = Math.abs(f) < 0.04 ? 0 : clamp(f * 8, -13, 13); surdu = Math.abs(f) > 0.3; }
   else if (tus.ArrowLeft || tus.KeyA) { dv = -9; surdu = true; } else if (tus.ArrowRight || tus.KeyD) { dv = 9; surdu = true; }
   if (surdu && durum === 'yaris') ilkSurus = true;
@@ -300,10 +345,32 @@ function oyKoridor(a, dt) {
     } else a.d += clamp(it, -16 * dt, 16 * dt);
   }
 }
+// Rakip formu: her yarışın başında iki rakip rastgele "formunda" seçilir, diğer ikisi sakin (23,4–25 m/sn). Yarış türü de rastgele:
+// sakin (%15: en hızlısı 25,4–27,4) · olağan (%65: en hızlısı 27,8–31,4, ikincisi 25,2–29,8) · çetin (%20: ikisi de hızlı ve yakın).
+// Birincilik böylece hak edilir: iyi sürüşte (yıldız + roket) çoğu kez birinci, ortalama sürüşte çoğu kez ikinci-üçüncü.
+const RK_SAKIN = 0.15, RK_CETIN = 0.2;
+function rkFormSec() {
+  const r = A.slice(1), u = Math.random(), z = Math.random;
+  for (const x of r) { x.gecis = false; x.gecBekle = 0; }
+  for (let i = r.length - 1; i > 0; i--) { const j = (z() * (i + 1)) | 0, t = r[i]; r[i] = r[j]; r[j] = t; }
+  let p1, p2;
+  if (u < RK_SAKIN) { p1 = 25.4 + z() * 2; p2 = 24.6 + z() * (p1 - 25); }
+  else if (u < RK_SAKIN + RK_CETIN) { p1 = 29.4 + z() * 2.2; p2 = p1 - 0.3 - z(); }
+  else { p1 = 27.8 + z() * 3.6; p2 = Math.min(p1 - 0.4, 25.2 + z() * 4.6); }
+  r[0].hiz = p1; r[0].form = 1; r[1].hiz = p2; r[1].form = 2;
+  for (let i = 2; i < r.length; i++) { r[i].hiz = 23.4 + z() * 1.6; r[i].form = 0; }
+}
+OLAY.on('durum', d => { if (d === 'yaris') rkFormSec(); });
 function rakipAdim(a, dt, onde, gecebilir) {
   const fark = P.yol - a.yol;   // + = rakip geride
   if (a.okT > 0) a.okT -= dt;
-  let hv = a.taban + (fark > 0 ? clamp(fark * 0.1, 0, 3.2) : clamp(fark * 0.08, -4.5, 0)) + (a.okT > 0 ? 4 : 0);   // gerideyse yetişir, öndeyse bekler; ok kısa süre hızlandırır
+  if (a.hiz === undefined) rkFormSec();
+  const izinli = a === gecebilir || a.onde;   // geçebilecek olan ya da bu adımın başında zaten önde olan (sıralama sırası haksız fren yaptırmasın)
+  // Yumuşak lastik bant: rakip kendi hızında gider; gerideyse biraz hızlanıp yakın kalır, öndeyse biraz bekler (son turda daha sıkı: yakın kalırlar).
+  // Çok geride kalan yetişir (aynada görünsün) ama 25 m'den yakına bu ekle gelmez.
+  const sonTur = P.yol > (TUR - 1) * L;
+  let hv = a.hiz + (fark > 0 ? clamp(fark * (sonTur ? 0.15 : 0.12), 0, sonTur ? 4 : 3.5) : clamp(fark * (sonTur ? 0.1 : 0.06), sonTur ? -3.5 : -2.5, 0))
+    + clamp((fark - 25) * 0.15, 0, 6) + (a.okT > 0 ? 4 : 0);
   // sıradaki ok/rampa: rakipler de üstünden geçer (her rakip her turda başka olanları seçer)
   let oz = null, ozU = 34;
   if (durum === 'yaris') {
@@ -320,13 +387,18 @@ function rakipAdim(a, dt, onde, gecebilir) {
     const kutlamaYol = bitisOnde ? P.yol + 60 : P.yol - lerp(17, 9.5, clamp((durumT - 2.2) / 2.5, 0, 1)) - Math.floor((a.i - 1) / 2) * 5.5;
     hv = clamp(9 + (kutlamaYol - a.yol) * 0.65, 1.5, bitisOnde ? 26 : 22);
   }
-  else if (fark >= 0) {
-    if (a !== gecebilir) hv = Math.min(hv, P.v + clamp((fark - 17) * 0.6, -3.5, 6));   // geçmeyecek olanlar kameranın arkasında bekler, görüşü kapatmaz          // Feza hep ilk üçte: en çok iki rakip öne geçebilir
-    else if (P.yol > TUR * L - 170 && fark < 12) hv = Math.min(hv, P.v - 0.3);              // son düzlükte Feza'nın yeri alınmaz
+  else if (fark >= 0 && !izinli) { hv = Math.min(hv, P.v + clamp((fark - 17) * 0.6, -3.5, 6)); a.gecis = false; }   // geçmeyecek olanlar kameranın arkasında bekler, görüşü kapatmaz (Feza hep ilk üçte: en çok iki rakip öne geçebilir; son düzlükte de geçiş olabilir)
+  else {
+    // Geçiş hamlesi: yetişen formdaki rakip Feza'nın yanında oyalanmaz, biraz hızlanıp (en çok +2,5 m/sn) 5 m öne geçer. Feza roket yakarsa vazgeçer.
+    if (a.onde && fark >= 0) { a.gecBekle = 3; a.gecis = false; }   // Feza az önce geçti: 3 sn hemen karşılık vermez
+    if (a.gecBekle > 0) a.gecBekle -= dt;
+    else if (a === gecebilir && a.form && fark >= 0 && fark < 6) a.gecis = true;
+    if (fark < -5 || fark > 10 || roketT > 0 || durum !== 'yaris') a.gecis = false;
+    if (a.gecis) hv = Math.max(hv, Math.min(P.v + 2.5, a.hiz + 4));
   }
   if (durum === 'yaris' && !P.bitti && fark > -6 && fark < OY_KOR_GERI + 2) {   // Feza kenara doğru geliyor ve rakibe yer kalmıyor: sıkışmadan önce öne ya da arkaya açılır
     const yan = a.d >= P.d ? 1 : -1, pd = P.d + P.dv * 0.5;
-    if (pd * yan + OY_KOR_YAN > DMAX - 0.9 && (a.d - pd) * yan < OY_KOR_YAN + 1.6) { if (fark < 1.2 && (fark < 0 || a === gecebilir)) hv = Math.max(hv, P.v + 5); else hv = Math.min(hv, P.v - 5.5); }
+    if (pd * yan + OY_KOR_YAN > DMAX - 0.9 && (a.d - pd) * yan < OY_KOR_YAN + 1.6) { if (fark < 1.2 && (fark < 0 || izinli)) hv = Math.max(hv, P.v + 5); else hv = Math.min(hv, P.v - 5.5); }
   }
   if (zaman < a.tepki) hv = 0;
   // öndeki arabanın içinden geçme: tam arkasındaysa hızını ona uydur; yandakilerden yumuşakça uzaklaş (Feza'ya yol ver)
@@ -366,7 +438,7 @@ function rakipAdim(a, dt, onde, gecebilir) {
   a.dv += (clamp((serit - a.d) * 2, -3.4, 3.4) - a.dv) * oyUs(dt, 4);   // şerit değiştirme yumuşak
   a.d = clamp(a.d + a.dv * dt, -DMAX, DMAX);
   a.yol += a.v * dt;
-  if (!P.bitti && durum === 'yaris' && fark >= 0 && a !== gecebilir && a.yol > P.yol - 4.3) {
+  if (!P.bitti && durum === 'yaris' && fark >= 0 && !izinli && a.yol > P.yol - 4.3) {
     if (fark >= 4.2) { a.yol = P.yol - 4.3; if (a.v > P.v) a.v = P.v; }   // arkadan yaklaşan: 4,3 m geride tutulur
     else { if (a.v > P.v - 2) a.v = P.v - 2; if (a.yol > P.yol - 0.05) a.yol = P.yol - 0.05; }   // Feza'nın az önce geçtiği: ışınlanmadan, yavaşça geride kalır
   }
@@ -414,7 +486,8 @@ function yarisAdim(dt) {
   zaman += dt;
   for (const a of A) a.rampaYolOnce = a.yol;
   let onde = 0, gecebilir = null;
-  for (const a of A) { if (a === P) continue; if (a.yol > P.yol) onde++; else if (!gecebilir || a.yol > gecebilir.yol) gecebilir = a; }
+  for (const a of A) { if (a === P) continue; a.onde = a.yol > P.yol; if (a.onde) onde++; else if (!gecebilir || a.yol > gecebilir.yol) gecebilir = a; }
+  for (const a of A) if (a !== P && a.yol <= P.yol && P.yol - a.yol < 60 && (a.hiz || 0) > (gecebilir.hiz || 0)) gecebilir = a;   // geçme hakkı yakındaki en formda rakibin
   if (onde >= 2) gecebilir = null;   // önde iki rakip varsa başka kimse Feza'yı geçemez
   oyuncuAdim(dt); for (const a of A) if (a !== P) rakipAdim(a, dt, onde, gecebilir);
   carpisma(dt);
@@ -448,6 +521,7 @@ function yarisAdim(dt) {
 function bitir() {
   let biten = 0; for (const a of A) if (a !== P && a.bitti) biten++;
   P.bitti = true; const s = Math.min(3, biten + 1); P.sira = s; oyBitisSira = s; oySure = zaman;
+  oySonSiralama = A.filter(a => a !== P).sort((x, y) => y.yol - x.yol); oySonSiralama.splice(s - 1, 0, P);   // sıralama ekranı için (bir kez)
   OLAY.emit('ozet', { pist: PIST_TEMA, yildiz: yildizSay, roket: oyRoketSay, ziplama: oyHopSay, seri: oySeriSay, sira: s, sure: +oySure.toFixed(1) });
   gec('bitis'); OLAY.emit('bitis', s); HUD.hud.classList.add('gizli'); elGoster(false); ilkYaris = false; oyBitisAsama = 0; oyBekleyen = null; birak();
   const p = pist(P.yol + 6); konfetiAt(p.x, p.z); SES.efekt.bitis();
@@ -531,7 +605,7 @@ function dongu(simdi) {
     else {
       dt *= durumT < 1.1 ? 0.35 : Math.min(1, 0.35 + (durumT - 1.1) * 1.2);   // çizgiyi geçince kısa ağır çekim
       if (oyBitisAsama === 0 && durumT > 0.9) { oyBitisAsama = 1; SES.soyle(['bir', 'iki', 'uc'][oyBitisSira - 1]); }
-      if (oyBitisAsama === 1 && durumT > 3) { oyBitisAsama = 2; $('sonuc').classList.remove('gizli'); OLAY.emit('sonuc'); }
+      if (oyBitisAsama === 1 && durumT > 3) { oyBitisAsama = 2; oyPortreCek(); $('sonuc').classList.remove('gizli'); OLAY.emit('sonuc'); }
       if (oyBitisAsama === 2 && durumT > 7.5 && !SES.konusuyor()) { oyBitisAsama = 3; SES.soyle('tekrar'); }
     }
     const adim = Math.max(1, Math.ceil(dt / 0.034)), d1 = dt / adim, d0 = durum;   // hızlı zamanda da küçük adımlar
@@ -557,6 +631,6 @@ else {
 window.YARIS = {
   get durum() { return durum; }, get zaman() { return zaman; }, get mola() { return mola; }, pist: PIST_TEMA, P, A, L, TUR, renderer, scene, camera,
   get kareMs() { return kareOrt; }, get oran() { return oran; }, basla, basligaDon, get ekran() { return oyEkran; }, ekranAc: oyEkranAc, roket: roketDugme, get araba() { return oyArabaId; }, arabaSec: oyArabaSec,
-  surukle(d) { hedefD = d; },
+  surukle(d) { hedefD = d; }, siralama: oySiralamaVer,
   bilgi() { return { pist: PIST_TEMA, araba: oyArabaId, durum, tur: Math.floor(Math.max(0, P.yol) / L), sira: P.sira, yildiz: yildizSay, seri: oySeriSay, seriAdet: oySeriAdet, roket: oyRoketSay, ziplama: oyHopSay, roketKalan: +roketT.toFixed(2), roketBekle: +roketBekle.toFixed(2), v: +P.v.toFixed(1), d: +P.d.toFixed(2), sure: +(durum === 'bitis' ? oySure : zaman).toFixed(1), el: oyElAcik, mola, cizim: renderer.info.render.calls, ucgen: renderer.info.render.triangles, oran, kareMs: +kareOrt.toFixed(2) }; }
 };
