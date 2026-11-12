@@ -592,7 +592,7 @@ function toplananlar(dt) {
   for (const b of SURPRIZ) {   // sürpriz balon: içinden geçince patlar (geniş, bağışlayıcı alan)
     if (!b.var) continue;
     let ds = s - b.s; if (ds > L / 2) ds -= L; else if (ds < -L / 2) ds += L;
-    if (ds > -2.6 && ds < 3.6 && Math.abs(b.d - P.d) < 2.8) { b.var = false; oyGucVer(b.tur, b.x, b.z); }
+    if (ds > -2.6 && ds < 3.6 && Math.abs(b.d - P.d) < 2.1) { b.var = false; oyGucVer(b.tur, b.x, b.z); }
     else if (!oySurprizAnlat && ds < 0 && ds > -50 && zaman > 1.5) {   // ilk balona yaklaşırken bir kez (kayıtlı) anlatılır
       if (GARAJ.anlatildi()) oySurprizAnlat = true;
       else if (SES.CUMLE && SES.CUMLE.surpriz) { oySurprizAnlat = true; GARAJ.anlatildi(true); anlat('surpriz'); }

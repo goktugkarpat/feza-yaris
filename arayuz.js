@@ -748,3 +748,16 @@ OLAY.on('durum', d => {
   // oyun.js bu dosyadan sonra yüklenir: düğmenin görünürlüğü bütün betikler hazır olunca belirlenir
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiGarajBaslikAyar); else uiGarajBaslikAyar();
 })();
+
+// Etkin sürprizin kalan süresi: üst ortada azalan renkli halka (yazısız). Olaylar oyun.js'ten: surpriz {tur,sure}, surprizBitti.
+(() => {
+  const hud = document.getElementById('hud'); if (!hud || typeof OLAY === 'undefined') return;
+  const el = document.createElement('div'); el.id = 'ui-guc'; el.className = 'gizli'; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = '<svg viewBox="0 0 44 44"><circle class="ui-guc-zemin" cx="22" cy="22" r="20"/><circle class="ui-guc-halka" cx="22" cy="22" r="16"/><circle class="ui-guc-ic" cx="22" cy="22" r="8"/></svg>';
+  hud.appendChild(el);
+  const halka = el.querySelector('.ui-guc-halka'), RENK = { dev: '#ff8a2a', baloncuk: '#2fc4d6', gokkusagi: '#9a6bff', miknatis: '#3bbf5c' };
+  OLAY.on('surpriz', o => { el.style.setProperty('--gr', RENK[o.tur] || '#ffb02e'); el.style.setProperty('--gs', (o.sure || 4.5) + 's'); el.classList.remove('gizli'); halka.style.animation = 'none'; void halka.getBoundingClientRect(); halka.style.animation = ''; });
+  OLAY.on('surprizBitti', () => el.classList.add('gizli'));
+  OLAY.on('durum', d => { if (d !== 'yaris') el.classList.add('gizli'); });
+  OLAY.on('mola', m => document.body.classList.toggle('ui-mola', !!m));
+})();
