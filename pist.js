@@ -471,7 +471,7 @@ OLAY.on('tur', n => { if (n < TUR) psCizgiPirilti(18, P.v * 0.75); });
 OLAY.on('bitis', () => {   // bitiş: çizgi boyunca pırıltı + iki direğin dibinden fıskiye + kısa süre arabayla giden yan pırıltılar
   psCizgiPirilti(44, P.v * 0.3); psBitisT = 1.0; psBitisSay = 0;
   const p = pist(0, psO);
-  for (let i = 0; i < 36; i++) { const yan = i % 2 ? 1 : -1, d = yan * (YARI + 1.4), a = Math.random() * 6.283, r = Math.random() * 1.6; psSac(psPiril, p.x - p.tz * d, 0.8, p.z + p.tx * d, p.tx * P.v * 0.35 + Math.cos(a) * r + p.tz * yan * 1.2, 8 + Math.random() * 7, p.tz * P.v * 0.35 + Math.sin(a) * r - p.tx * yan * 1.2, psPIRIL_RENK[i % 5], 0.95, 1.05, 0.2, 0.9 + Math.random() * 0.5, 9, 0.6); }
+  for (let i = 0; i < 36; i++) { const yan = i % 2 ? 1 : -1, d = yan * (YARI + 1.4), a = Math.random() * 6.283, r = Math.random() * 1.6; psSac(psPiril, p.x - p.tz * d + Math.cos(a) * 0.5, 0.5 + Math.random() * 2.6, p.z + p.tx * d + Math.sin(a) * 0.5, p.tx * P.v * 0.35 + Math.cos(a) * r * 1.6 + p.tz * yan * 1.2, 4 + Math.random() * 12, p.tz * P.v * 0.35 + Math.sin(a) * r * 1.6 - p.tx * yan * 1.2, psPIRIL_RENK[i % 5], 0.85, 0.72, 0.16, 0.9 + Math.random() * 0.5, 9, 0.6); }
 });
 OLAY.on('seri', v => {
   if(!v || !v.odul)return;

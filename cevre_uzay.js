@@ -367,7 +367,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     uzUfo = new T.Mesh(Y.geo(), cvMalz(0, { emissive: 0x252040 })); uzUfo.scale.setScalar(1.5); uzUfo.frustumCulled = false; scene.add(uzUfo);
     // altından yere inen yumuşak ışık hüzmesi (üstü parlak, yere doğru söner) + yerde ışık halkası
     const hg = new T.CylinderGeometry(0.9, 3.6, 11, 18, 1, true), hp = hg.attributes.position, hc = new Float32Array(hp.count * 3);
-    for (let i = 0; i < hp.count; i++) { const v = hp.getY(i) > 0 ? 0.42 : 0.1; hc[i * 3] = v * 0.6; hc[i * 3 + 1] = v; hc[i * 3 + 2] = v * 0.78; }
+    for (let i = 0; i < hp.count; i++) { const v = hp.getY(i) > 0 ? 0.11 : 0.02; hc[i * 3] = v * 0.6; hc[i * 3 + 1] = v; hc[i * 3 + 2] = v * 0.78; }
     hg.setAttribute('color', new T.BufferAttribute(hc, 3));
     const hm = new T.Mesh(hg, new T.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
     hm.position.y = -6.1; hm.frustumCulled = false; uzUfo.add(hm);

@@ -19,11 +19,11 @@ let oyArabaId = (() => {
   if (!oyTipBul(s)) { try { s = localStorage.getItem('feza-yaris-araba'); } catch (e) { s = null; } }
   return oyTipBul(s) ? s : t[0].id;
 })();
-function oyRakipTip(i) {   // rakip i (1…4): Feza'nın seçtiği dışındaki tipler, her açılışta aynı sırayla
+function oyRakipTip(i) {   // rakip i (1…4): Feza'nın seçtiği dışındaki tipler listeye eşit aralıkla dağılır (yeni arabalar da görünür), her açılışta aynı düzen
   const t = oyTipler(); if (!t) return undefined;
   let n = 0; for (const x of t) if (x && x.id !== oyArabaId) n++;
   if (!n) return t[0].id;
-  let k = (i - 1) % n; for (const x of t) if (x && x.id !== oyArabaId && k-- === 0) return x.id;
+  let k = ((i - 1) * Math.max(1, Math.floor(n / 4))) % n; for (const x of t) if (x && x.id !== oyArabaId && k-- === 0) return x.id;
   return t[0].id;
 }
 { const t = oyTipBul(oyArabaId); if (t && t.renk !== undefined) { SURUCU[0].renk = t.renk; if (t.renk2 !== undefined) SURUCU[0].renk2 = t.renk2; } }

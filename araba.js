@@ -314,9 +314,12 @@ function arTipGovde(y, ek, tip, renk, renk2, alt, tkr) {   // kart dışındaki 
     // tek boynuzlu at: önde baş ve altın boynuz, savrulan gökkuşağı yele, arkada kuyruk
     const yele = [0xff8fb1, 0xffc06a, 0xfff07a, 0x9fe89a, 0x8fd0ff, 0xc7a5ff], altin = 0xffd23e;
     arKat(y, arYuzey(24, 12, arTipF.unicorn, i => i > 12 ? alt : renk), null, 0, 0.6, -0.05, 1, 1, 1);
+    // Boyun yana eğik: at başını sürücünün yanından uzatır, arkadan boynuz, yele ve kulaklar görünür.
+    const arUM = new T.Matrix4().makeTranslation(0.15, 1.0, 1.2).multiply(new T.Matrix4().makeRotationZ(-0.45)).multiply(new T.Matrix4().makeTranslation(0, -1.0, -1.2));
+    y.taban = arUM;
     arKat(y, arHap(0.27, 0.72), renk, 0, 1.5, 1.2, 1, 1, 1, 0.16);                                   // uzun boyun: baş sürücünün üstünden görünür
     for (let i = 0; i < 6; i++) { const yh = 2.46 - i * 0.2; arKat(y, arK, yele[i], (i % 2 ? 0.045 : -0.045), yh, 0.97 + (yh - 1) * 0.13 + (i === 0 ? 0.12 : 0), 0.21, 0.17, 0.2, 0.3); }   // gökkuşağı yele ensede (arkadan görünür)
-    arTaban(y, 0, 0.5, -0.22, 0, 0, 0);
+    y.taban = arUM.clone().multiply(new T.Matrix4().makeTranslation(0, 0.5, -0.22));
     arKat(y, arK, renk, 0, 1.62, 1.6, 0.31, 0.31, 0.4, 0.5);                                       // baş
     arKat(y, arK, 0xffd3e6, 0, 1.47, 1.88, 0.21, 0.18, 0.21, 0.4);
     arKat(y, G.koni, altin, 0, 2.12, 1.62, 0.08, 0.52, 0.08, 0.3);                                 // boynuz
@@ -373,7 +376,7 @@ function arTipGovde(y, ek, tip, renk, renk2, alt, tkr) {   // kart dışındaki 
       arKat(y, arM, 0xe9a3d8, x * 0.34, 0.98, 1.66, 0.08, 0.05, 0.05);
       // kanatçıklar: yanlarda, yukarı ve geriye açık
       arKat(y, arK, renk, x * 1.0, 1.12, -0.72, 0.1, 0.34, 0.12, 0, 0, -x * 0.5);
-      for (let i = 0; i < 3; i++) arKat(y, G.koni, i === 1 ? 0x8fd87a : renk2, x * (1.2 + i * 0.1), 1.52 - i * 0.12, -0.75 - i * 0.24, 0.27, 0.66 - i * 0.1, 0.05, -0.5 - i * 0.35, 0, -x * (0.75 + i * 0.12));
+      for (let i = 0; i < 3; i++) arKat(y, arK, i === 1 ? 0x9be38a : renk2, x * (1.3 + i * 0.07), 1.5 - i * 0.13, -0.78 - i * 0.25, 0.2, 0.4 - i * 0.05, 0.05, -0.5 - i * 0.35, 0, -x * (0.75 + i * 0.12));   // yuvarlak yaprak kanatlar
       stop(x * 0.56, 0.74, -1.62, 0.085);
     }
     camurluk(renk2, 1.5);

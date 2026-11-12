@@ -184,7 +184,7 @@ const SES = (() => {
       if (s === 0 || s === 8) ton(g, g.muzik, t, mf(ak[0] + (s ? 7 : 0) + tr), 6 * sd, { tip: 'triangle', guc: 0.13, tut: 0.5, at: 0.015 });
       if (s === 4 || s === 12) zil(g, t, 0.022);
       const tm = m.tema;                                                    // sakin kiplerde de pistin küçük imzası
-      if (tm === 'gokkusagi') { const ar = [0, 1, 2, 3, 4, 5, 4, 3, 2, 3, 4, 5, 4, 3, 2, 1][s]; ton(g, g.muzik, t, mf(ak[1][ar % 3] + 12 * (ar / 3 | 0) + 12 + tr), .2, { tip: 'triangle', guc: .03, at: .003 }); }
+      if (tm === 'gokkusagi') { const ar = [0, 1, 2, 3, 4, 5, 4, 3, 2, 3, 4, 5, 4, 3, 2, 1][s]; ton(g, g.muzik, t, mf(ak[1][ar % 3] + 12 * (ar / 3 | 0) + 12 + tr), .2, { tip: 'triangle', guc: .05, at: .003 }); }
       else if (tm === 'kar') { if (!(s & 3)) his(g, g.muzik, t, .06, { tip: 'bandpass', f: 7400, q: 4, guc: .022 }); }
       else if (tm === 'kiyi') { if (s === 3 || s === 6 || s === 11 || s === 14) { const f = (s === 6 || s === 14) ? 392 : 294; ton(g, g.muzik, t, f, .08, { f2: f * .82, kay: .06, guc: .05, at: .003 }); } }
       else if (tm === 'dino') { if (s === 0 || s === 8) ton(g, g.muzik, t, 105, .2, { f2: 44, kay: .11, guc: .17 }); if (s === 6 || s === 14) ton(g, g.muzik, t, 940, .028, { guc: .04, at: .0015 }); }
@@ -270,7 +270,7 @@ const SES = (() => {
       else { ton(g, g.muzik, t, mf(a + tr), 1.6 * sd, { tip: 'triangle', guc: 0.05 }); if (m.tema === 'orman') ton(g, g.muzik, t, mf(a - 12 + tr), .14, { tip: 'sawtooth', guc: .016, at: .003 }); }
     }
     const ritimGuc = m.tema === 'kar' ? .58 : m.tema === 'kiyi' ? .7 : 1;
-    if (s === 0 || s === 8 || (m.son && (s === 4 || s === 12)) || (s === 10 && (olcu & 1) && m.tema !== 'kar')) davul(g, t, 0.3 * ritimGuc);
+    if (s === 0 || s === 8 || (m.son && (s === 4 || s === 12)) || (s === 10 && (olcu & 1) && m.tema !== 'kar')) { if (m.tema === 'kiyi') ton(g, g.muzik, t, 205, .12, { f2: 140, kay: .08, guc: .2 }); else davul(g, t, 0.3 * ritimGuc); }   // sahilde kalın davul yerine konga
     if (s === 4 || s === 12) { if (m.tema === 'kar') his(g, g.muzik, t, 0.12, { tip: 'bandpass', f: 4600, q: 0.5, guc: 0.03, at: 0.02 }); else trampet(g, t, 0.1 * ritimGuc); }   // karda fırça
     if ((olcu & 7) === 7 && s > 12) trampet(g, t, 0.05 + (s - 12) * 0.015);   // bölüm sonu küçük geçiş
     if (m.tema !== 'kar') { if (!(s & 1)) zil(g, t, ((s & 3) === 2 ? 0.045 : 0.025) * (m.tema === 'orman' ? .55 : ritimGuc)); else if (m.son) zil(g, t, 0.018 * ritimGuc); }   // karda zil yok: yalnız kızak çıngırağı
@@ -343,7 +343,7 @@ const SES = (() => {
     araba(g, t, id) {                                                       // her arabanın kısa, yumuşak kendi sesi (< 0,8 sn)
       const korna = (an, fa, fb, sure, guc) => [fa, fb].forEach(f => { ton(g, g.efekt, an, f, sure, { tip: 'triangle', guc, tut: .9, at: .012 }); ton(g, g.efekt, an, f, sure, { tip: 'square', guc: guc * .16, tut: .9, at: .015 }); });
       if (id === 'itfaiye') [0, 1, 2, 3].forEach(i => ton(g, g.efekt, t + i * .16, i & 1 ? 880 : 660, .13, { guc: .1, tut: .9, at: .03 }));   // iki notalı yumuşak siren
-      else if (id === 'dondurma') [88, 84, 91, 88, 96].forEach((a, i) => { ton(g, g.can, t + i * .095, mf(a), .2, { guc: .09, at: .003 }); ton(g, g.can, t + i * .095, mf(a + 12), .09, { guc: .03, at: .003 }); });   // müzik kutusu
+      else if (id === 'dondurma') [88, 84, 91, 88, 96].forEach((a, i) => { ton(g, g.can, t + i * .075, mf(a), .16, { guc: .09, at: .003 }); ton(g, g.can, t + i * .075, mf(a + 12), .08, { guc: .03, at: .003 }); });   // müzik kutusu
       else if (id === 'roket') { his(g, g.efekt, t, .5, { tip: 'bandpass', f: 380, f2: 3000, q: 1.4, guc: .16, at: .16 }); ton(g, g.efekt, t, 220, .42, { f2: 900, kay: .42, guc: .05, at: .12, tut: .8 }); }   // vuuş
       else if (id === 'unicorn') { [96, 103, 100, 108, 105, 112].forEach((a, i) => ton(g, g.can, t + i * .06, mf(a), .22, { guc: .06, at: .002 })); cingirak(g, g.can, t + .1, .022); cingirak(g, g.can, t + .3, .016); }   // pırıltı
       else if (id === 'cip') { korna(t, 196, 247, .13, .11); korna(t + .2, 196, 247, .2, .11); }   // tok korna
