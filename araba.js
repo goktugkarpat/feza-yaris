@@ -806,7 +806,8 @@ function arSerpinti(a, x, z, yaw, havada, dt) {   // teker arkasında toz; roket
   if (!oyuncu && P0 && P0.x !== undefined && Math.abs(x - P0.x) + Math.abs(z - P0.z) > 45) return;
   const sn = Math.sin(yaw), cs = Math.cos(yaw), hiz = Math.min(1, a.v / 26);
   const yer = (lx, ly, lz, o) => { o[0] = x + lx * cs + lz * sn; o[1] = ly; o[2] = z - lx * sn + lz * cs; return o; }, q = arSerpQ;
-  if (!havada && a.v > 9 && oyuncu) {
+  // Teker tozu kapalı: yoldaki yumuşak, piste uygun açık renkli toz izini pist.js bırakıyor; buradaki küreler gri top gibi duruyordu.
+  if (false && !havada && a.v > 9 && oyuncu) {
     s.serp = (s.serp || 0) + dt * (oyuncu ? 3 + 7 * hiz : 0);
     while (s.serp >= 1) {
       s.serp -= 1; s.serpY = -(s.serpY || 1); const r1 = Math.random(), r2 = Math.random();
