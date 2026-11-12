@@ -1,6 +1,6 @@
 # Feza'nın Yarışı
 
-5 yaşındaki Feza için 3B araba yarışı. Orman, sahil ve kar pistlerinde Pırıl, Bilbo, anne ve babayla üç tur. Yarış yeri büyük resimlerle seçilir; okumak gerekmez.
+5 yaşındaki Feza için 3B araba yarışı. Dokuz pistte (Orman, Sahil, Karlı Dağ, Şeker Diyarı, Ay Pisti, Çöl Vadisi, Gökkuşağı Yolu, Dinozor Vadisi, Oyuncak Şehir) Pırıl, Bilbo, anne ve babayla üç tur. Yarış yeri ve dokuz arabadan biri büyük resimlerle seçilir; okumak gerekmez.
 
 - Parmağını sağa sola sürükle, araba oraya gider. Turuncu roket düğmesi kısa süre hızlandırır.
 - Kaybetmek yok: Feza her yarışı ilk üçte bitirir.
