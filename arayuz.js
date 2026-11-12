@@ -51,11 +51,24 @@ if (typeof OLAY !== 'undefined') {
 // Üç yıldız → roket: okumadan anlaşılan, kaçırınca sıfırlanmayan küçük bir ödül yolu.
 const uiSeri = uiEl('seri'), uiSeriYildiz = [...uiSeri.querySelectorAll('.seri-yildiz')];
 const uiRotaNokta = uiEl('rota-konum'), uiRotaGolge = uiEl('rota-konum-golge'), uiRotaIz = uiEl('rota-ilerleme');
-let uiSeriTimer = 0, uiKayit = { yildiz: 0 }, uiSonOzet = null;
+let uiSeriTimer = 0, uiKayit = { yildiz: 0, sira: 0 }, uiSonOzet = null;
 const uiKayitAnahtar = 'feza-yaris-anilar-v1:' + PIST_TEMA;
-try { const k = JSON.parse(localStorage.getItem(uiKayitAnahtar) || '{}'); if (Number.isFinite(k.yildiz)) uiKayit.yildiz = clamp(Math.floor(k.yildiz), 0, YILDIZ.length * TUR); } catch (_) { /* Özel gezinmede kayıt isteğe bağlı. */ }
+try { const k = JSON.parse(localStorage.getItem(uiKayitAnahtar) || '{}'); if (Number.isFinite(k.yildiz)) uiKayit.yildiz = clamp(Math.floor(k.yildiz), 0, YILDIZ.length * TUR); if (k.sira >= 1 && k.sira <= 3) uiKayit.sira = Math.floor(k.sira); } catch (_) { /* Özel gezinmede kayıt isteğe bağlı. */ }
+// Pist kartındaki küçük kupa rozeti: o pistte kazanılmış en iyi sıra (1 altın, 2 gümüş, 3 bronz). Yazı yok.
+function uiRozetAyar(kart, sira) {
+  if (!kart) return;
+  let r = kart.querySelector('.ui-rozet');
+  if (!(sira >= 1 && sira <= 3)) { if (r) r.remove(); return; }
+  if (!r) { r = document.createElement('i'); r.setAttribute('aria-hidden', 'true'); r.innerHTML = '<svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg>'; kart.appendChild(r); }
+  r.className = 'ui-rozet r' + Math.floor(sira);
+}
+function uiRozetOku(pist) {
+  if (pist === PIST_TEMA) return uiKayit.sira;
+  try { const k = JSON.parse(localStorage.getItem('feza-yaris-anilar-v1:' + pist) || '{}'); return k.sira >= 1 && k.sira <= 3 ? Math.floor(k.sira) : 0; } catch (_) { return 0; }
+}
 document.querySelectorAll('.pist-kart').forEach(b => {
   const secili = b.dataset.pist === PIST_TEMA; b.setAttribute('aria-pressed', secili ? 'true' : 'false');
+  uiRozetAyar(b, uiRozetOku(b.dataset.pist));
   b.addEventListener('click', () => { if (b.dataset.pist === PIST_TEMA) return; const u = new URL(location.href); u.searchParams.set('pist', b.dataset.pist); location.href = u.href; });
 });
 for (const id of ['sonuc-ev', 'mola-ev']) uiEl(id).addEventListener('click', () => YARIS.basligaDon());
@@ -105,7 +118,10 @@ function uiAnilar(o) {
   }
   const yeni = o.yildiz > uiKayit.yildiz;
   uiEl('rekor').classList.toggle('gizli', !yeni); uiEl('rekor-say').textContent = o.yildiz;
-  if (yeni) { uiKayit.yildiz = o.yildiz; try { localStorage.setItem(uiKayitAnahtar, JSON.stringify(uiKayit)); } catch (_) {} }
+  const iyiSira = o.sira >= 1 && o.sira <= 3 && (!uiKayit.sira || o.sira < uiKayit.sira);
+  if (yeni) uiKayit.yildiz = o.yildiz;
+  if (iyiSira) { uiKayit.sira = Math.floor(o.sira); uiRozetAyar(document.querySelector('.pist-kart[data-pist="' + PIST_TEMA + '"]'), uiKayit.sira); }
+  if (yeni || iyiSira) { try { localStorage.setItem(uiKayitAnahtar, JSON.stringify(uiKayit)); } catch (_) {} }
 }
 OLAY.on('yildiz', uiYildizUcur);
 OLAY.on('ilerleme', uiRotaAyar);
@@ -178,6 +194,23 @@ function uiArabaCiz(id, c1, c2) {
       '<circle cx="80" cy="24" r="2" fill="#17335c" stroke="none"/><path d="M84 33q2 1 4 0" fill="none" stroke-width="2"/></g>' +
       '<g stroke="#17335c" stroke-width="2.2"><circle cx="65" cy="16" r="5.5" fill="#ff7fb5"/><circle cx="60" cy="23" r="5.500" fill="#ffd23f"/><circle cx="57" cy="31" r="5.500" fill="#6fd27a"/><circle cx="56" cy="39" r="5" fill="#56bdf0"/></g>' +
       uiTeker(26, 49, 8.5, c2) + uiTeker(62, 49, 8.5, c2);
+  } else if (id === 'itfaiye') {
+    g = '<g ' + UI_CIZGI + '><path d="M10 11h49M10 17h49M17 11v6M27 11v6M37 11v6M47 11v6M14 17v5M54 17v5" fill="none" stroke-width="2.4"/>' +
+      '<path d="M7 46V25q0-3 3-3h50v24z" fill="' + c1 + '"/><path d="M60 46V18q0-3 3-3h13q5 0 8 6l6 11v14z" fill="' + c1 + '"/><path d="M66 20h10q3 0 5 4l4 8H66z" fill="' + cam + '"/>' +
+      '<rect x="65" y="7" width="9" height="8" rx="3.5" fill="#49b6ff"/><path d="M7 39h83" fill="none" stroke="' + c2 + '" stroke-width="3.4"/><circle cx="33" cy="30" r="5.5" fill="' + c2 + '"/>' +
+      '<path d="M44 26h10v9H44z" fill="#fff"/></g>' + uiTeker(23, 48, 9.5, c2) + uiTeker(73, 48, 9.5, c2);
+  } else if (id === 'ejderha') {
+    g = '<g ' + UI_CIZGI + '><path d="M15 37Q3 37 3 22l6 5 3-8q6 5 8 11z" fill="' + c1 + '"/><path d="M10 36q0-9 9-9h43l6 19H16q-6 0-6-6z" fill="' + c1 + '"/>' +
+      '<path d="M30 29 22 7l13 9 7-10 4 23z" fill="' + c2 + '"/><path d="M48 27l3.500-7 3.500 7zM55 27l3.500-7 3.500 6z" fill="' + c2 + '"/>' +
+      '<path d="M66 17 62 5l9 7zM76 16l1-11 5 10z" fill="' + c2 + '"/><path d="M58 46V30q0-14 13-15l17 4q5 2 4 8l-1 6q-1 5-6 5H72l-2 8z" fill="' + c1 + '"/>' +
+      '<circle cx="78" cy="24" r="3.6" fill="#fff" stroke-width="2"/><circle cx="79" cy="24" r="1.600" fill="#17335c" stroke="none"/><circle cx="88.500" cy="25" r="1.100" fill="#17335c" stroke="none"/>' +
+      '<path d="M79 33q4.500 1.500 9-1" fill="none" stroke-width="2"/><path d="M20 40h36" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(26, 49, 8.5, c2) + uiTeker(62, 49, 8.5, c2);
+  } else if (id === 'ucak') {
+    g = '<g ' + UI_CIZGI + '><path d="M14 28 6 8h11l13 18z" fill="' + c2 + '"/><path d="M30 44v6M66 44v6" fill="none" stroke-width="3"/>' +
+      '<path d="M7 33q0-8 11-8h44q19 0 24 10 0 9-18 9H19q-12 0-12-11z" fill="' + c1 + '"/><path d="M45 25q4-10 13-10 9 0 12 10z" fill="' + cam + '"/>' +
+      '<path d="M30 33h34l-11 13H40z" fill="' + c2 + '"/><path d="M11 33h12" fill="none" stroke="' + c2 + '" stroke-width="3.4"/>' +
+      '<path d="M89 34q5-10 0-20-5 10 0 20zM89 36q5 10 0 20-5-10 0-20z" fill="#dfe6ee"/><circle cx="88" cy="35" r="3.400" fill="' + c2 + '"/></g>' +
+      uiTeker(30, 52, 6, c2) + uiTeker(66, 52, 6, c2);
   } else {
     g = '<g ' + UI_CIZGI + '><path d="M8 46V35q0-5 6-6l12-2 9-11h24l12 12 11 2q6 1 6 7v9z" fill="' + c1 + '"/><path d="M31 27l6-8h9v8zM50 19h8l8 8H50z" fill="' + cam + '"/>' +
       '<path d="M8 40h80" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(25, 48, 9, c2) + uiTeker(71, 48, 9, c2);
@@ -195,7 +228,7 @@ function uiArabaKur() {
   if (!hazir || uiArabaSec.firstChild) return;
   const onay = '<i class="pist-onay"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></i>';
   const n = ARABA_TIPLERI.length;
-  uiArabaSec.style.setProperty('--an', n); uiArabaSec.style.setProperty('--ak', Math.max(3, Math.ceil(n / 2)));
+  uiArabaSec.style.setProperty('--an', n); uiArabaSec.style.setProperty('--ak', Math.max(3, Math.ceil(Math.sqrt(n))));
   for (const t of ARABA_TIPLERI) {
     if (!t || !t.id) continue;
     const b = document.createElement('button');

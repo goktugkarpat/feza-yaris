@@ -21,7 +21,10 @@ let oyArabaId = (() => {
 })();
 function oyRakipTip(i) {   // rakip i (1…4): Feza'nın seçtiği dışındaki tipler, her açılışta aynı sırayla
   const t = oyTipler(); if (!t) return undefined;
-  const d = t.filter(x => x.id !== oyArabaId); return d.length ? d[(i - 1) % d.length].id : t[0].id;
+  let n = 0; for (const x of t) if (x && x.id !== oyArabaId) n++;
+  if (!n) return t[0].id;
+  let k = (i - 1) % n; for (const x of t) if (x && x.id !== oyArabaId && k-- === 0) return x.id;
+  return t[0].id;
 }
 { const t = oyTipBul(oyArabaId); if (t && t.renk !== undefined) { SURUCU[0].renk = t.renk; if (t.renk2 !== undefined) SURUCU[0].renk2 = t.renk2; } }
 const oyIlkTip = i => (i ? oyRakipTip(i) : (oyTipler() ? oyArabaId : undefined));
@@ -54,7 +57,9 @@ let durum = 'baslik', zaman = 0, durumT = 0, mola = false, yildizSay = 0, roketT
 let hedefD = null, parmak = false, sonOvgu = -99, turSesi = -1, ipucu = 0, sonTok = -9, ilkYaris = true;
 let oyPid = null, oyBekleyen = null, oyAra = 0, oyElAcik = false, oySonSira = 0, oyBitisAsama = 0, oySure = 0, oySars = 0, oyRoketK = 0, oyBitisSira = 0;
 let oySeriAdet = 0, oySeriSay = 0, oyRoketSay = 0, oyHopSay = 0, oyGosterT = 0, oyTutucu = null;
-let oyMolaCizim = -1;
+let oyMolaCizim = -1, oyTurZum = 0, oyLiderT = -99;
+const oyIlerleme = { tur: 1, oran: 0, toplam: 0, roket: false };   // 'ilerleme' olayı hep aynı nesneyi taşır (yeni nesne yok)
+let oyDolumSon = -1;
 let son = performance.now(), kareOrt = 16.7, yavas = 0, kare = 0;
 const tus = {};
 const HUD = { hud: $('hud'), turlar: [...document.querySelectorAll('.bayrak')], yildiz: $('yildiz-say'), sira: $('sira-say'), hizlan: $('hizlan'), dolum: $('hizlan-dolum'), el: $('el'), isik: $('isiklar'), isiklar: [...$('isiklar').children] };
@@ -68,7 +73,7 @@ function izgarayaDiz() {
   girdiTemizle();
   yildizSay = 0; roketT = 0; roketBekle = 0; roketKullanildi = false; turSesi = -1; ipucu = 0; konfeti.visible = false;
   zaman = 0; oyBekleyen = null; oyAra = 0; oyBitisAsama = 0; oyBitisSira = 0; oySure = 0; oySonSira = 0; oySars = 0; oyRoketK = 0; sonTok = -9; sonOvgu = -99; ilkSurus = false;
-  oySeriAdet = 0; oySeriSay = 0; oyRoketSay = 0; oyHopSay = 0; oyGosterT = 0;
+  oySeriAdet = 0; oySeriSay = 0; oyRoketSay = 0; oyHopSay = 0; oyGosterT = 0; oyTurZum = 0; oyLiderT = -99; oyDolumSon = -1;
   oyKamIlk = true; oyGeriEk = 1; const yon = pist(P.yol); kamF.set(yon.tx, 0, yon.tz);
   HUD.yildiz.textContent = '0'; HUD.sira.textContent = '3'; HUD.dolum.style.height = '0%';
   HUD.isik.classList.add('gizli'); HUD.isiklar.forEach(el => { el.className = ''; });
@@ -96,8 +101,10 @@ function ilerlemeGoster(zorla) {
   if (!zorla && simdi < oyGosterT) return;
   oyGosterT = simdi + 125;   // testte hızlandırılmış oyun zamanında da en çok saniyede 8 gösterge güncellemesi
   const toplam = clamp(P.yol / (L * TUR), 0, 1), tur = Math.min(TUR, Math.floor(Math.max(0, P.yol) / L) + 1);
-  HUD.dolum.style.height = (clamp(roketBekle / 5, 0, 1) * 100).toFixed(1) + '%';
-  OLAY.emit('ilerleme', { tur, oran: toplam >= 1 ? 1 : ((Math.max(0, P.yol) % L) / L), toplam, roket: roketT > 0 });
+  const dolum = Math.round(clamp(roketBekle / 5, 0, 1) * 200);
+  if (dolum !== oyDolumSon) { oyDolumSon = dolum; HUD.dolum.style.height = (dolum / 2) + '%'; }
+  oyIlerleme.tur = tur; oyIlerleme.oran = toplam >= 1 ? 1 : ((Math.max(0, P.yol) % L) / L); oyIlerleme.toplam = toplam; oyIlerleme.roket = roketT > 0;
+  OLAY.emit('ilerleme', oyIlerleme);
 }
 function seriYildiz() {
   oySeriAdet++;
@@ -225,6 +232,10 @@ function rakipAdim(a, dt, onde, gecebilir) {
     if (a !== gecebilir) hv = Math.min(hv, P.v + clamp((fark - 17) * 0.6, -3.5, 6));   // geçmeyecek olanlar kameranın arkasında bekler, görüşü kapatmaz          // Feza hep ilk üçte: en çok iki rakip öne geçebilir
     else if (P.yol > TUR * L - 170 && fark < 12) hv = Math.min(hv, P.v - 0.3);              // son düzlükte Feza'nın yeri alınmaz
   }
+  if (durum === 'yaris' && !P.bitti && fark > -6 && fark < OY_KOR_GERI + 2) {   // Feza kenara doğru geliyor ve rakibe yer kalmıyor: sıkışmadan önce öne ya da arkaya açılır
+    const yan = a.d >= P.d ? 1 : -1, pd = P.d + P.dv * 0.5;
+    if (pd * yan + OY_KOR_YAN > DMAX - 0.9 && (a.d - pd) * yan < OY_KOR_YAN + 1.6) { if (fark < 1.2 && (fark < 0 || a === gecebilir)) hv = Math.max(hv, P.v + 5); else hv = Math.min(hv, P.v - 5.5); }
+  }
   if (zaman < a.tepki) hv = 0;
   // öndeki arabanın içinden geçme: tam arkasındaysa hızını ona uydur; yandakilerden yumuşakça uzaklaş (Feza'ya yol ver)
   let it = 0;
@@ -323,7 +334,7 @@ function yarisAdim(dt) {
       if (turSesi >= 0 && tur > turSesi) {
         HUD.turlar[turSesi] && HUD.turlar[turSesi].classList.add('tamam');
         if (tur < TUR) { yildizDuzenle(tur); SES.efekt.tur(); }
-        OLAY.emit('tur', tur); if (tur === TUR - 1) anlat('sontur');
+        oyTurZum = 0.7; OLAY.emit('tur', tur); if (tur === TUR - 1) anlat('sontur');
       }
       turSesi = tur;
     }
@@ -334,7 +345,11 @@ function yarisAdim(dt) {
     if (ipucu === 0 && zaman > 4 && oyAra <= 0 && !SES.konusuyor()) { ipucu = 1; SES.soyle('yildiz'); oyAra = 0.9; }
     if (ipucu === 1 && zaman > 14 && oyAra <= 0 && !SES.konusuyor()) { ipucu = 2; if (!roketKullanildi) { SES.soyle('roket'); oyAra = 0.9; HUD.hizlan.classList.add('vurgu'); } }
     elGoster(!ilkSurus && !OTO && zaman > (ilkYaris ? 0.5 : 7) && zaman < 22);
-    siralama(); if (P.sira !== oySonSira) { oySonSira = P.sira; HUD.sira.textContent = P.sira; OLAY.emit('sira', P.sira); }
+    siralama(); if (P.sira !== oySonSira) {
+      const lider = P.sira === 1 && oySonSira > 1 && zaman > 3 && zaman - oyLiderT > 8;   // öne geçiş: kısa pırıltı (en çok 8 sn'de bir)
+      oySonSira = P.sira; HUD.sira.textContent = P.sira; OLAY.emit('sira', P.sira);
+      if (lider) { oyLiderT = zaman; OLAY.emit('lider'); }
+    }
     ilerlemeGoster(false);
   }
 }
@@ -360,9 +375,12 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   alev.visible = roketT > 0 && durum === 'yaris'; if (alev.visible) alev.scale.set(0.4, 1.1 + Math.sin(yT * 50) * 0.35, 0.4);
   pistGuncelle(dt, yT); cevreGuncelle(dt, yT);
   // kamera
-  const dik = innerWidth < innerHeight, ba = Math.atan2(P.tx, P.tz);
+  const dik = innerWidth < innerHeight;
   let k = 9, fov = dik ? 78 : 62;
+  // Kamera oyun zamanıyla yumuşar (hızlı zamanda da aynı kadraj); ağır çekimde gerçek süreyle akar.
+  if (dt > gdt && durum !== 'baslik') gdt = Math.min(0.25, dt);
   if (oySars > 0) oySars -= gdt;
+  if (oyTurZum > 0) oyTurZum = Math.max(0, oyTurZum - gdt);
   oyRoketK += ((roketT > 0 && durum === 'yaris' ? 1 : 0) - oyRoketK) * oyUs(gdt, 3.5);
   if (durum === 'baslik') {
     // Araba seçimi: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır; araba ekranın üst-ortasında (menü altta).
@@ -374,9 +392,10 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
     const ri = lerp(-r0 * 0.905, r1 * 0.62, acil), ry = lerp(-r0 * 0.13, dik ? -6.6 : -r1 * 0.785, acil), yatay = Math.hypot(ri, ry), cerceve = dik ? 0 : 1.6 * acil;
     kamH.set(P.x + P.tx * ri + P.tz * ry, lerp(dik ? 6.8 : 5.6, dik ? 5.8 : 4.4, acil), P.z + P.tz * ri - P.tx * ry);
     kamB.set(P.x + (P.tz * ri - P.tx * ry) / yatay * cerceve, 1.45, P.z + (-P.tx * ri - P.tz * ry) / yatay * cerceve);
+    if (dik) { const c = 3.4 * acil / yatay; kamB.x += (P.tx * ri + P.tz * ry) * c; kamB.z += (P.tz * ri - P.tx * ry) * c; kamB.y = lerp(1.45, 0.2, acil); }   // dikeyde araba ekranın üst-ortasında (kupa altta)
     fov = lerp(dik ? 78 : 62, dik ? 66 : 55, acil); k = 3.5;
     // Yumuşak takibin geride kalmasını telafi et; hareket eden araba son kadrajın ortasından kaçmasın.
-    const tahmin = P.v * acil;
+    const tahmin = P.v * acil * (gdt > 0 ? Math.min(1, dt / gdt) : 1);
     kamH.x += P.tx * tahmin / k; kamH.z += P.tz * tahmin / k;
     kamB.x += P.tx * tahmin / (k * 1.4); kamB.z += P.tz * tahmin / (k * 1.4);
   } else {
@@ -388,6 +407,7 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
     const il = pist(P.yol + 15, oyO2), ib = dik ? 10 : 9;   // virajda hafif öne bakış: yolun ilerisine doğru
     kamB.set(lerp(mx + kamF.x * ib, il.x, 0.4), 1.3, lerp(mz + kamF.z * ib, il.z, 0.4));
     k = durum === 'giris' ? 1.5 : durum === 'sayim' ? 3 : 9; fov += oyRoketK * 7;
+    if (oyTurZum > 0) fov -= Math.sin((1 - oyTurZum / 0.7) * Math.PI) * 4.5;   // tur atıldı: minik zum
   }
   if (oyKamIlk) { oyKamIlk = false; camera.position.copy(kamH); oyBak.copy(kamB); }
   camera.position.lerp(kamH, oyUs(gdt, k)); oyBak.lerp(kamB, oyUs(gdt, k * 1.4)); camera.lookAt(oyBak);

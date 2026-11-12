@@ -4,7 +4,8 @@
    Yeni üst düzey adlar `uz` ile başlar. Bölgeler (pist boyunca): 0 başlangıç tribünü · 1 krater ovası · 2 kristal vadisi · 3 ay üssü · 4 roket rampası · 5 uzaylı köyü. */
 'use strict';
 
-let uzKubbe = null, uzYildiz = null, uzDunya = null, uzHalkali = null, uzUydu = null, uzUfo = null;
+let uzKubbe = null, uzYildiz = null, uzDunya = null, uzHalkali = null, uzUydu = null, uzUfo = null, uzUfoYer = null;
+const uzKayanAz = [0, 0], uzKayanN = [-1, -1];
 const uzKayan = [], uzV1 = new T.Vector3(), uzV2 = new T.Vector3(), uzYukari = new T.Vector3(0, 1, 0);
 const uzBolge = i => { const f = i / N; return f < 0.07 || f > 0.95 ? 0 : f < 0.26 ? 1 : f < 0.44 ? 2 : f < 0.62 ? 3 : f < 0.80 ? 4 : 5; };
 
@@ -111,7 +112,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     for (let i = 0; i < p.count; i++) { const v = p.getY(i) < 0 ? 1 : 0; c[i * 3] = v; c[i * 3 + 1] = v; c[i * 3 + 2] = v * 0.92; }
     g.setAttribute('color', new T.BufferAttribute(c, 3));
     const m = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false, fog: false, side: T.DoubleSide });
-    for (let k = 0; k < 2; k++) { const s = new T.Mesh(g, m); s.scale.set(2.2, 75, 2.2); s.visible = false; s.frustumCulled = false; scene.add(s); uzKayan.push(s); }
+    for (let k = 0; k < 2; k++) { const s = new T.Mesh(g, m); s.scale.set(3.2, 95, 3.2); s.visible = false; s.frustumCulled = false; scene.add(s); uzKayan.push(s); }
   }
 
   // ───────── ay toprağı ─────────
@@ -145,12 +146,13 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   const iz = (lx, lz, rx, rz) => { const v = S.dunya(lx, lz); golge.push([v.x - 0.4, 0.02, v.z + 0.35, rx, 1, rz || rx, 0]); };
   const isik = (lx, lz, r, renk) => { const v = S.dunya(lx, lz); hale.push([v.x, 0.03, v.z, r, 1, r, 0, renk]); };
 
+  const uzYuvar = new T.SphereGeometry(1, 14, 8);   // düzgün yuvarlak pencereler için
   const kubbeEv = (p, r, renk, kapi) => {
     yer2(p.x, p.z, p.ry);
     S.ekle(cvG.sil, 0, 0.3, 0, r * 1.05, 0.6, r * 1.05, GRI); S.ekle(cvG.yarim, 0, 0.55, 0, r, r * 0.9, r, renk);
     S.ekle(cvG.sil, 0, 0.55 + r * 0.9, 0, r * 0.14, 0.4, r * 0.14, GRI); E.ekle(cvG.kureK, 0, 0.95 + r * 0.9, 0, r * 0.09, r * 0.09, r * 0.09, 0xff6a7c);
     S.ekle(cvG.kutu, 0, 1.05, r * 0.92, 1.7, 2.0, 1.0, 0x7d79a3); E.ekle(cvG.kutu, 0, 0.95, r * 0.92 + 0.51, 1.1, 1.6, 0.05, kapi);
-    for (const a of [-2.3, -1.45, -0.75, 0.75, 1.45, 2.3]) { const e = 0.5, x = Math.sin(a) * Math.cos(e) * r, z = Math.cos(a) * Math.cos(e) * r, y = 0.55 + Math.sin(e) * r * 0.9; E.ekle(cvG.kureK, x * 0.97, y * 0.97, z * 0.97, r * 0.15, r * 0.15, r * 0.15, 0xffe27a); }
+    for (const a of [-2.3, -1.45, -0.75, 0.75, 1.45, 2.3]) { const e = 0.5, x = Math.sin(a) * Math.cos(e) * r, z = Math.cos(a) * Math.cos(e) * r, y = 0.55 + Math.sin(e) * r * 0.9; E.ekle(uzYuvar, x * 0.97, 0.55 + (y - 0.55) * 0.97, z * 0.97, r * 0.16, r * 0.16, r * 0.16, 0xffe27a); }
     iz(0, 0, r * 1.45, r * 1.25); isik(0, r + 1.6, 2.4, kapi);
   };
   const anten = (p, s) => {
@@ -194,7 +196,9 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
       S.ekle(cvG.kutu, -2.4, 8.3, 0, 2.2, 0.3, 0.45, 0xff9a3c); S.ekle(cvG.kutu, -2.4, 4.2, 0, 2.2, 0.3, 0.45, 0xff9a3c); E.ekle(cvG.kureK, -3.7, 10.85, 0, 0.3, 0.3, 0.3, 0xff5a6e);
       for (const a of [1.2, 2.2, 3.4, 4.4, 5.6]) E.ekle(cvG.kureK, Math.sin(a) * 4.7, 0.6, Math.cos(a) * 4.7, 0.2, 0.2, 0.2, 0xffe14d);
     }
-    iz(0, 0, 6.5 * s);
+    E.ekle(cvG.koni, 0, 0.62, 0, 0.62, 0.7, 0.62, 0xffb23c, Math.PI); E.ekle(cvG.kureK, 0, 0.72, 0, 0.42, 0.3, 0.42, 0xfff0a0);   // motor altında sıcak parıltı
+    for (let k = 0; k < 7; k++) { const a = k * 0.9 + 0.3, d = 1.5 + (k % 3) * 0.55, b = 0.55 + (k % 3) * 0.2; S.ekle(cvG.kure, Math.sin(a) * d, 0.62 + b * 0.55, Math.cos(a) * d, b, b * 0.8, b, k % 2 ? 0xf6f7ff : 0xdfe3f2); }   // duman topları
+    iz(0, 0, 6.5 * s); isik(0, 0, 5.4, 0xffc070);
   };
   const tank = p => { yer2(p.x, p.z, p.ry); S.ekle(cvG.tac, 0, 1.9, 0, 1.7, 1.7, 1.7, BEYAZ); S.ekle(cvG.sil, 0, 1.9, 0, 1.73, 0.4, 1.73, 0x4aa3ff); for (const a of [0.4, 2.5, 4.6]) S.ekle(cvG.kutu, Math.sin(a) * 1.2, 0.5, Math.cos(a) * 1.2, 0.18, 1.0, 0.18, GRI); iz(0, 0, 2.3); };
   const panel = p => {
@@ -302,6 +306,21 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     else { const s = 0.78 + R() * 0.16; astro.push([x, 0, z, s, s, s, ry + (R() - 0.5) * 0.5, CANLI[(R() * 7) | 0]]); golge.push([x - 0.2, 0.02, z + 0.15, 0.85 * s, 1, 0.7 * s, 0]); }
   }
 
+  // ── yol boyu ön plan: ışıldayan kristal öbekleri, iri ay kayaları, arada bayrak (boş gri alan kalmasın) ──
+  for (let i = 7; i < N; i += 8) for (const yan of [-1, 1]) {
+    if (R() < 0.3) continue;
+    const yakinSira = R() < 0.6, c = cvKenar(i + ((R() * 4) | 0), yan, YARI + (yakinSira ? 5.6 + R() * 4.5 : 12 + R() * 10)), x = c.x, z = c.z, ry = c.ry, r = R(), s = yakinSira ? 0.9 + R() * 0.5 : 1.3 + R() * 0.9;
+    if (!yerVar(x, z, 1.5 * s)) continue; cvYasak.push([x, z, 1.5 * s]);
+    if (r < 0.5) { kristal(x, z, s * 1.05); golge.push([x - 0.3, 0.02, z + 0.25, 1.5 * s, 1, 1.2 * s, 0]); }
+    else if (r < 0.9) {
+      S.yer(x, z, R() * 6, s); const rk = [0x9a96b8, 0xaaa6c6, 0x8985aa, 0xb8b4d0];
+      S.ekle(cvG.ico, 0, 0.55, 0, 1.15, 0.85, 1.0, rk[(r * 40) & 3], 0.2, 0, 0.15); S.ekle(cvG.ufak, 0.95, 0.3, 0.5, 0.6, 0.45, 0.55, rk[(r * 70) & 3], 0.3, 1); S.ekle(cvG.ufak, -0.8, 0.22, -0.6, 0.42, 0.32, 0.4, rk[(r * 90) & 3], 0, 2, 0.3);
+      S.ekle(cvG.yarimK, 0.1, 1.05, 0.1, 0.7, 0.16, 0.6, 0xe9e7f6, 0.15);   // tepesinde ay tozu
+      golge.push([x - 0.4, 0.02, z + 0.3, 2.0 * s, 1, 1.6 * s, 0]);
+    }
+    else bayrak({ x, z, ry });
+  }
+
   // ── ay kayaları, kraterler, ufuk tepeleri ──
   { const ren = [0x9a96b8, 0xaaa6c6, 0x8985aa, 0xb8b4d0];
     for (let k = 0; k < 230; k++) { const x = -215 + R() * 430, z = -205 + R() * 265, s = 0.35 + R() * R() * 2.2; if (!yerVar(x, z, s)) continue; S.yer(x, z, R() * 6); S.ekle(cvG.ufak, 0, s * 0.3, 0, s, s * (0.55 + R() * 0.4), s * (0.7 + R() * 0.5), ren[k % 4], R() * 0.5, 0, R() * 0.5); if (s > 0.9) golge.push([x - 0.3, 0.02, z + 0.25, s * 1.5, 1, s * 1.2, 0]); }
@@ -346,6 +365,15 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   { // süzülen uçan daire
     const Y = cvYapi(); Y.yer(0, 0, 0); ufoGovde(Y, 0);
     uzUfo = new T.Mesh(Y.geo(), cvMalz(0, { emissive: 0x252040 })); uzUfo.scale.setScalar(1.5); uzUfo.frustumCulled = false; scene.add(uzUfo);
+    // altından yere inen yumuşak ışık hüzmesi (üstü parlak, yere doğru söner) + yerde ışık halkası
+    const hg = new T.CylinderGeometry(0.9, 3.6, 11, 18, 1, true), hp = hg.attributes.position, hc = new Float32Array(hp.count * 3);
+    for (let i = 0; i < hp.count; i++) { const v = hp.getY(i) > 0 ? 0.42 : 0.1; hc[i * 3] = v * 0.6; hc[i * 3 + 1] = v; hc[i * 3 + 2] = v * 0.78; }
+    hg.setAttribute('color', new T.BufferAttribute(hc, 3));
+    const hm = new T.Mesh(hg, new T.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false }));
+    hm.position.y = -6.1; hm.frustumCulled = false; uzUfo.add(hm);
+    const yd = tuvalDoku(64, 64, (c, w, h) => { const r = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(150,255,200,.55)'); r.addColorStop(0.5, 'rgba(150,255,200,.3)'); r.addColorStop(1, 'rgba(150,255,200,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); });
+    const yg = new T.PlaneGeometry(2, 2); yg.rotateX(-Math.PI / 2);
+    uzUfoYer = new T.Mesh(yg, new T.MeshBasicMaterial({ map: yd, transparent: true, depthWrite: false })); uzUfoYer.scale.setScalar(6.5); uzUfoYer.renderOrder = 2; uzUfoYer.frustumCulled = false; scene.add(uzUfoYer);
   }
 }
 
@@ -353,13 +381,19 @@ function cevreEkGuncelle(dt, t) {
   const c = camera.position;
   uzKubbe.position.set(c.x, 0, c.z); uzYildiz.position.set(c.x, 0, c.z);
   uzDunya.rotation.y = t * 0.035; uzHalkali.rotation.y = t * 0.05; uzUydu.rotation.y = t * 0.018;
-  const a = t * 0.11; uzUfo.position.set(8 + Math.cos(a) * 30, 17 + Math.sin(t * 0.9) * 1.3, -52 + Math.sin(a) * 22); uzUfo.rotation.set(Math.sin(t * 0.7) * 0.07, t * 0.6, Math.cos(t * 0.6) * 0.07);
+  const a = t * 0.11; uzUfo.position.set(8 + Math.cos(a) * 30, 17 + Math.sin(t * 0.9) * 1.3, -52 + Math.sin(a) * 22); uzUfo.rotation.set(Math.sin(t * 0.7) * 0.05, t * 0.6, Math.cos(t * 0.6) * 0.05);
+  if (uzUfoYer) uzUfoYer.position.set(uzUfo.position.x, 0.05, uzUfo.position.z);
   for (let k = 0; k < 2; k++) {
-    const s = uzKayan[k], sure = 6.5 + k * 3.7, tt = t + k * 2.9, u = (tt % sure) / 1.5;
+    const s = uzKayan[k], sure = 4.6 + k * 2.3, tt = t + k * 2.9, u = (tt % sure) / 1.5;
     if (u >= 1) { s.visible = false; continue; }
-    const n = Math.floor(tt / sure), az = n * 2.4 + k * 1.7;
-    uzV1.set(-Math.sin(az) * 0.85 - Math.cos(az) * 0.3, -0.38, Math.cos(az) * 0.85 - Math.sin(az) * 0.3).normalize();
-    s.position.set(c.x + Math.cos(az) * 520 + uzV1.x * u * 330, 380 + uzV1.y * u * 330, c.z + Math.sin(az) * 520 + uzV1.z * u * 330);
+    const n = Math.floor(tt / sure);
+    if (uzKayanN[k] !== n) {   // her kayan yıldız, başladığı anda bakılan yönün biraz sağında ya da solunda doğar (hep ekranda görünür)
+      uzKayanN[k] = n; camera.getWorldDirection(uzV2);
+      uzKayanAz[k] = Math.atan2(uzV2.z, uzV2.x) + (((n * 0.618 + k * 0.37) % 1) - 0.5) * 1.1;
+    }
+    const az = uzKayanAz[k], yon = (n + k) % 2 ? 1 : -1;
+    uzV1.set((-Math.sin(az) * 0.85 - Math.cos(az) * 0.3) * yon, -0.34, (Math.cos(az) * 0.85 - Math.sin(az) * 0.3) * yon).normalize();
+    s.position.set(c.x + Math.cos(az) * 560 + uzV1.x * (u - 0.5) * 300, 300 + uzV1.y * u * 300, c.z + Math.sin(az) * 560 + uzV1.z * (u - 0.5) * 300);
     uzV2.copy(uzV1).negate(); s.quaternion.setFromUnitVectors(uzYukari, uzV2); s.visible = true;
   }
 }

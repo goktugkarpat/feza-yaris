@@ -320,3 +320,69 @@ body[data-pist] #rota.roketli{background:#fff4c5}
   #baslik h1{display:flex;align-items:baseline;justify-content:center;gap:.2em;font-size:min(12.4vw,132px)}
   .ui-serit{margin-top:min(3vh,34px);width:min(52vw,470px);height:18px;background-size:18px 18px}
 }
+
+/* ═════════ İkinci tur: 9 pist + 9 araba (iki 3×3 ızgara), ortada tek satır logo, pist rozetleri, dikeyde ortalanmış büyük kupa ═════════ */
+/* yatay: pistler | OYNA | arabalar · dikey: pistler ve arabalar yan yana, altta OYNA. Araba (üst-orta) hep açıkta kalır. */
+#ui-secim{--kg:10px;--oy:196px;--ara:clamp(14px,2vw,30px);--kw:min(160px,calc((100vw - 28px - var(--oy) - var(--ara)*2 - var(--kg)*4)/6));gap:0 var(--ara);margin-bottom:calc(3vh + env(safe-area-inset-bottom))}
+#pist-sec,#araba-sec{grid-template-columns:repeat(3,var(--kw));gap:13px var(--kg);--aw:var(--kw)}
+#oyna{width:var(--oy);height:var(--oy);margin-top:0}
+@media (max-height:800px) and (orientation:landscape){#ui-secim{--oy:160px}}
+@media (orientation:portrait){
+  #ui-secim{--oy:184px;--ara:clamp(14px,2.4vw,26px);grid-template-columns:auto auto;grid-template-areas:"pist araba" "oyna oyna";justify-items:center;gap:18px var(--ara);
+    --kw:min(150px,calc((100vw - 24px - var(--ara) - var(--kg)*4)/6))}
+}
+@media (max-height:500px) and (orientation:landscape){
+  #ui-secim{--oy:104px;--kg:6px;--ara:10px;--kw:min(86px,calc((100vw - 20px - var(--oy) - var(--ara)*2 - var(--kg)*4)/6));margin-bottom:8px}
+  #pist-sec,#araba-sec{gap:6px var(--kg)}
+  #oyna{border-width:6px}
+}
+/* pist kartında en iyi sonuç: küçük kupa (altın / gümüş / bronz) */
+.ui-rozet{position:absolute;left:-10px;top:-11px;width:36px;height:36px;padding:4px;box-sizing:border-box;background:#fff6c9;border:3px solid var(--lac);border-radius:50%;
+  box-shadow:0 3px 0 rgba(15,35,70,.35);z-index:2;pointer-events:none}
+.ui-rozet.r2{background:#f4f7fb;--k1:#eef2f7;--k2:#b9c4d2;--k3:#66758a}
+.ui-rozet.r3{background:#fff0e2;--k1:#f3b07a;--k2:#cf7d44;--k3:#874818}
+/* küçük harita: yeni üç pist */
+body[data-pist=gokkusagi] #rota{background:#e4f1ff}
+body[data-pist=gokkusagi] #rota-kenar{fill:#fff;stroke:#b9a3f0}
+body[data-pist=gokkusagi] #rota-yol{stroke:#ffd3ea}
+body[data-pist=dino] #rota{background:#e2f4cf}
+body[data-pist=dino] #rota-kenar{fill:#b7df8c;stroke:#6a9c45}
+body[data-pist=dino] #rota-yol{stroke:#f8e6b6}
+body[data-pist=sehir] #rota{background:#eaf1f8}
+body[data-pist=sehir] #rota-kenar{fill:#cde9b6;stroke:#7f8aa3}
+body[data-pist=sehir] #rota-yol{stroke:#f7f9fc}
+/* logo: iki sözcük aynı taban çizgisinde, eğimsiz. Yatayda üst-ortada ince şerit (iki yanında damalı bayrak), dikeyde en üstte. */
+#baslik h1{display:flex;align-items:baseline;justify-content:center;gap:.2em;align-self:center;margin-left:0;transform:none}
+#baslik .ui-ust{font-size:.8em}
+@media (orientation:landscape) and (min-height:501px){
+  #baslik{padding-top:calc(.9vh + env(safe-area-inset-top))}
+  #baslik h1{font-size:min(5vw,7.4vh,68px)}
+  #baslik h1::before,#baslik h1::after{content:"";flex:none;align-self:center;width:1.9em;height:.5em;margin:0 .12em;border-radius:.14em;border:.06em solid #fff;box-sizing:content-box;
+    box-shadow:0 0 0 .045em var(--lac),0 .1em 0 .045em rgba(15,35,70,.35);background:conic-gradient(#fff 25%,#17335c 0 50%,#fff 0 75%,#17335c 0) 0 0/.25em .25em}
+  #baslik h1::before{transform:rotate(-5deg)}
+  #baslik h1::after{transform:rotate(5deg)}
+  #baslik .ui-serit{display:none}
+}
+@media (orientation:portrait){
+  #baslik{padding-top:calc(1.5vh + env(safe-area-inset-top))}
+  #baslik h1{font-size:min(10.4vw,118px)}
+  #baslik .ui-serit{transform:none;margin-top:min(1.5vh,18px);width:min(62vw,580px);height:14px;border-width:3px;background-size:14px 14px}
+}
+/* sonuç (dikey tablet): ortada büyük kupa, solunda yıldızlar, sağında düğmeler; hepsi en altta, araba üstte açıkta. */
+@media (orientation:portrait) and (min-width:700px){
+  #sonuc{--ks:clamp(190px,30vw,290px);justify-content:flex-end;padding-bottom:calc(26px + env(safe-area-inset-bottom))}
+  #sonuc .sonuc-icerik{display:grid;grid-template-columns:minmax(0,1fr) var(--ks) minmax(0,1fr);grid-template-rows:1fr 1fr auto;justify-items:center;align-items:center;gap:12px 14px;width:min(96vw,900px)}
+  #sonuc .ui-odul{grid-column:2;grid-row:1/3}
+  #sonuc-yildiz{grid-column:1;grid-row:1;align-self:end;font-size:42px;padding:4px 22px 4px 9px}
+  #sonuc-yildiz svg{width:50px;height:50px}
+  #sonuc-anilar{grid-column:1;grid-row:2;align-self:start;gap:6px}
+  .ani{height:48px;padding:4px 7px}
+  .sonuc-dugmeler{grid-column:3;grid-row:1/3;gap:12px}
+  #tekrar{width:clamp(124px,16.5vw,160px);height:clamp(124px,16.5vw,160px);margin:0}
+  .sonuc-dugmeler .ev-dugme{width:82px;height:82px;padding:13px}
+  #rekor{grid-column:1/4;grid-row:3;margin-top:8px}
+  #sonuc .ui-isin{width:calc(var(--ks)*1.7);height:calc(var(--ks)*1.7);margin:calc(var(--ks)*-.85) 0 0 calc(var(--ks)*-.85)}
+  /* yarış: roket düğmesi başparmağa biraz daha yakın ve büyük */
+  #hizlan{width:146px;height:146px;right:calc(26px + env(safe-area-inset-right));bottom:calc(40px + env(safe-area-inset-bottom))}
+  #rota{bottom:calc(26px + env(safe-area-inset-bottom))}
+}
