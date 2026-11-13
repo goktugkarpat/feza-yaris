@@ -16,15 +16,18 @@ function cevreEkGuncelle(dt, t) {
   if (cfBulut) cfBulut.rotation.y = t * 0.004;
   for (let i = 0; i < cfOrdekler.length; i++) {
     const q = cfOrdekler[i], m = q[0], a = q[4] + t * q[5];
-    m.position.x = q[1] + Math.cos(a) * q[3];
-    m.position.z = q[2] + Math.sin(a) * q[3] * 0.76;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    m.position.x = q[1] + ca * q[3];
+    m.position.z = q[2] + sa * q[3] * 0.76;
     m.position.y = 0.09 + Math.sin(t * 2.6 + q[6]) * 0.055;
-    m.rotation.y = -a;
+    m.rotation.y = Math.atan2(-sa, ca * 0.76);
+    m.rotation.z = Math.sin(t * 3.2 + q[6]) * 0.055;
+    m.rotation.x = Math.cos(t * 2.6 + q[6]) * 0.035;
   }
 }
 
 if (cvTema === 'ciftlik') {
-  scene.fog.color.setHex(0xdef4ff); scene.fog.near = 280; scene.fog.far = 920;
+  scene.fog.color.setHex(0xdef4ff); scene.fog.near = 260; scene.fog.far = 820;
   gunes.color.setHex(0xfff3d1);
   { // gök: sıcak yaz mavisi, ufukta yumuşak krem-altın pus
     const c = scene.background.image, g = c.getContext('2d'), h = c.height, gr = g.createLinearGradient(0, 0, 0, h);
@@ -48,7 +51,7 @@ if (cvTema === 'ciftlik') {
 
   // buğday başakları için özel rüzgâr salınım gölgelendiricisi
   const cfBugdayHar = cvHAREKET.length;
-  cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 0.45 + instanceMatrix[3].z * 0.37;\nfloat cvW = transformed.y * transformed.y * 0.085;\ntransformed.x += sin(cvT * 2.1 + cvF) * cvW;\ntransformed.z += cos(cvT * 1.6 + cvF * 1.2) * cvW * 0.6;\n#endif');
+  cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 0.22 + instanceMatrix[3].z * 0.18;\nfloat cvW = transformed.y * transformed.y * 0.085;\ntransformed.x += sin(cvT * 2.1 + cvF) * cvW;\ntransformed.z += cos(cvT * 1.6 + cvF * 1.2) * cvW * 0.6;\ntransformed.y -= abs(sin(cvT * 2.1 + cvF)) * cvW * 0.08;\n#endif');
 
   const S = cvYapi(), golge = [], tarlalar = [];
   let cfGol = null, cfCamur = null;
@@ -215,7 +218,7 @@ if (cvTema === 'ciftlik') {
     const p = yer(0.66, 1, YARI + 20, 11, YARI + 15);
     if (p) {
       cfGol = [p.x, p.z, 8.2];
-      S.yer(p.x, p.z, p.ry);
+      S.yer(p.x, p.z, 0);
       // gölet kıyısında yuvarlak taşlar ve sazlıklar
       for (let k = 0; k < 10; k++) {
         const a = k * 0.63 + 0.2, rx = Math.cos(a) * 8.4, rz = Math.sin(a) * 6.4;
@@ -245,6 +248,7 @@ if (cvTema === 'ciftlik') {
       const og = O.geo(), om = cvMalz(0);
       for (let k = 0; k < 6; k++) {
         const m = new T.Mesh(og, om);
+        m.rotation.order = 'YXZ';
         m.scale.setScalar(1.38 + (k % 2) * 0.2);
         scene.add(m);
         cfOrdekler.push([m, p.x, p.z, 1.9 + k * 0.78, k * 1.05, 0.36 + (k % 3) * 0.08, k * 1.4]);

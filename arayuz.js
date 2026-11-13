@@ -329,6 +329,14 @@ function uiArabaKur() {
   try { if (typeof oyAraba === 'function') simdi = oyAraba(); } catch (_) { /* seçim isteğe bağlı */ }
   if (!uiArabaIsaretle(simdi)) uiArabaIsaretle(ARABA_TIPLERI[0].id);
 }
+// Masaüstünde fare tekerleği ile yatay araba şeridini rahatça kaydır.
+uiArabaSec.addEventListener('wheel', e => {
+  if (uiArabaSec.scrollWidth <= uiArabaSec.clientWidth) return;
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+    uiArabaSec.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }
+}, { passive: false });
 // oyun.js bu dosyadan sonra yüklenir: kartlar bütün betikler hazır olunca kurulur.
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiArabaKur); else uiArabaKur();
 OLAY.on('araba', id => { uiArabaIsaretle(id && id.id ? id.id : id); uiSecArabaRenk(); });
@@ -424,8 +432,22 @@ uiEl('sec-geri').addEventListener('click', uiSecGeri);
   };
   uiSecSahne.addEventListener('pointerup', bitti); uiSecSahne.addEventListener('pointercancel', bitti);
 }
+const UI_PIST_AD = {
+  orman: 'Orman', kiyi: 'Sahil', kar: 'Kar', seker: 'Şeker Diyarı', uzay: 'Ay',
+  col: 'Çöl', gokkusagi: 'Gökkuşağı', dino: 'Dinozor Vadisi', sehir: 'Oyuncak Şehir',
+  sato: 'Şato', lunapark: 'Lunapark', korsan: 'Korsan Adası', denizalti: 'Mercan Sualtı',
+  ciftlik: 'Neşeli Çiftlik', muzik: 'Müzik Diyarı'
+};
 document.querySelectorAll('.pist-kart').forEach(b => {
   const sv = b.querySelector('svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  if (!b.querySelector('.pist-ad')) {
+    const ad = UI_PIST_AD[b.dataset.pist];
+    if (ad) {
+      const sp = document.createElement('span');
+      sp.className = 'pist-ad'; sp.setAttribute('aria-hidden', 'true'); sp.textContent = ad;
+      b.appendChild(sp);
+    }
+  }
   uiYildizRozet(b, uiYildizOku(b.dataset.pist)); uiPistResim(b);
 });
 // ?kucuk (yalnız geliştirici): oyun.js bu pistin resmini çizer; resim dosyası üretmek için sayfada bırakılır.
@@ -434,7 +456,12 @@ OLAY.on('kucuk', veri => { window.uiKucukVeri = veri; });
 try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.indexOf('feza-yaris-kucuk-') === 0) localStorage.removeItem(k); } } catch (_) { /* kayıt isteğe bağlı */ }
 OLAY.on('ekran', ad => {
   if (ad === 'pist') { uiPistIsaretle(uiPistSecili, false); uiOdak(document.querySelector('.pist-kart[aria-pressed=true]')); }
-  else if (ad === 'araba') { uiArabaKur(); uiSecArabaRenk(); uiOdak(uiEl('sec-ileri')); }
+  else if (ad === 'araba') {
+    uiArabaKur(); uiSecArabaRenk();
+    const sec = uiArabaSec.querySelector('.araba-kart[aria-pressed=true]');
+    if (sec && sec.scrollIntoView) try { sec.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' }); } catch (_) {}
+    uiOdak(uiEl('sec-ileri'));
+  }
   else if (ad === 'acilis') uiOdak(uiEl('oyna'));
 });
 OLAY.on('durum', d => { if (d === 'giris' || d === 'sayim') { try { localStorage.setItem(UI_SON_PIST, PIST_TEMA); } catch (_) { /* kayıt isteğe bağlı */ } } });

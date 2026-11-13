@@ -525,8 +525,8 @@ if(cvTema==='orman') {
   }
   // çiçek, çalı, mantar, kaya
   for (let i = 0; i < 1100; i++) {   // sade: çiçek/çalı yarıya yakın azaltıldı
-    const cayir = i < 330, k = cayir ? cvI(0.1 + R() * 0.18) : (R() * N) | 0, b = cvBolge(k), yan = R() < 0.5 ? -1 : 1, uz = YARI + 3.2 + (cayir ? R() * 26 : R() * R() * 20), x = PX[k] - TZ[k] * uz * yan + (R() - 0.5) * 2, z = PZ[k] + TX[k] * uz * yan + (R() - 0.5) * 2;
-    if (yakin(x, z) < YARI + 3.1 || !cvBos(x, z, cayir ? 0.2 : 0.9)) continue;
+    const cayir = i < 330, k = cayir ? cvI(0.1 + R() * 0.18) : (R() * N) | 0, b = cvBolge(k), yan = R() < 0.5 ? -1 : 1, uz = YARI + 4.2 + (cayir ? R() * 26 : R() * R() * 20), x = PX[k] - TZ[k] * uz * yan + (R() - 0.5) * 2, z = PZ[k] + TX[k] * uz * yan + (R() - 0.5) * 2;
+    if (yakin(x, z) < YARI + 4.15 || !cvBos(x, z, cayir ? 0.2 : 0.9)) continue;
     const t = R(), s = 0.7 + R() * 0.6;
     if (cayir || t < 0.6) cicek.push([x, 0, z, s, s * (0.8 + R() * 0.5), s, R() * 6, CICEK[(R() * 6) | 0]]);
     else if (t < 0.76) cali.push([x, 0.4, z, 0.9 + R() * 0.9, 0.65 + R() * 0.5, 0.9 + R() * 0.9, R() * 6, R() < 0.45 ? ACIK[(R() * 6) | 0] : YESIL[(R() * 4) | 0]]);
@@ -768,7 +768,7 @@ if(cvTema==='orman') {
       for(const x of [-.4,.4]){S.ekle(cvG.kutu,x,.1,0,.08,.1,1.9,0xcfd8e0);S.ekle(cvG.kutu,x,.28,-.5,.07,.3,.07,0x9a6a40);S.ekle(cvG.kutu,x,.28,.5,.07,.3,.07,0x9a6a40);S.ekle(cvG.kutu,x,.3,1.05,.08,.1,.5,0xcfd8e0,-.8);}
       S.ekle(cvG.kutu,0,.46,0,1.0,.1,1.5,r);S.ekle(cvG.kutu,0,.52,0,.3,.1,1.52,0xffffff);}
     { // teleferik: iki direk, tel ve gidip gelen iki kabin (tek grup hareketi)
-      const a=koy(.66,1,YARI+17,2.5),b=koy(.79,1,YARI+17,2.5);
+      const a=koy(.68,1,YARI+22,2.5),b=koy(.75,1,YARI+22,2.5);
       if(a&&b){const dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz),ry=Math.atan2(dx,dz);
         for(const q of [a,b]){S.yer(q.x,q.z,ry);S.ekle(cvG.kutu,0,6,0,.6,12,.6,0x8fa3b5);S.ekle(cvG.kutu,0,12,0,3.2,.3,.5,0x8fa3b5);S.ekle(cvG.kureK,0,12.2,0,1.7,.22,.4,0xffffff);S.ekle(cvG.tac,0,-.2,0,2,.8,2,0xf4faff);}
         S.yer((a.x+b.x)/2,(a.z+b.z)/2,ry);S.ekle(cvG.kutu,0,11.8,0,.08,.08,l,0x4c5a68);
@@ -950,7 +950,7 @@ function cevreGuncelle(dt, t) {
   cvZ.value = t;
   cvOyuncu.value.set(P.x,P.z);
   if(cvTema==='kiyi'){cimDoku.offset.x=t*.0018;cimDoku.offset.y=t*.0008;if(cvSahilDoku)cvSahilDoku.offset.y=t*.012;}
-  if(cvTel)cvTel.mesh.position.z=Math.sin(t*.2)*cvTel.g;if(cvKayan)cvKayan.rotation.y=t*.55;
+  if(cvTel)cvTel.mesh.position.z=Math.sin(t*.2)*cvTel.g;if(cvKayan){cvKayan.rotation.y=t*.55;cvKayan.position.y=0.05+Math.abs(Math.sin(t*2.2))*0.05;}
   for(let i=0;i<cvDegirmen.length;i++)cvDegirmen[i].mesh.rotation.z=t*cvDegirmen[i].hiz;
   if(cvBulut)cvBulut.rotation.y = t * 0.004;if(cvKus)cvKus.rotation.y = t * 0.1;
   cvGunes.position.set(camera.position.x + cvGY.x * 640, cvGY.y * 640, camera.position.z + cvGY.z * 640);

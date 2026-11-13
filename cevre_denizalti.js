@@ -26,8 +26,8 @@ function cevreEkGuncelle(dt, t) {
     const dx = -Math.sin(a) * rx, dz = Math.cos(a) * rz;
     daBalina.position.set(x, 20.5 + Math.sin(t * 0.65) * 1.8, z);
     daBalina.rotation.y = Math.atan2(dx, dz);
-    daBalina.rotation.x = Math.sin(t * 0.65) * 0.055;
-    daBalina.rotation.z = -0.07 + Math.sin(t * 0.45) * 0.04;
+    daBalina.rotation.x = -Math.cos(t * 0.65) * 0.085;
+    daBalina.rotation.z = -0.07 + Math.sin(t * 0.45) * 0.035;
     if (daBalinaKuyruk) daBalinaKuyruk.rotation.x = Math.sin(t * 2.2) * 0.28;
     const f = Math.sin(t * 1.6) * 0.18;
     if (daBalinaSolYuzgec) daBalinaSolYuzgec.rotation.z = 0.24 + f;
@@ -40,10 +40,10 @@ function cevreEkGuncelle(dt, t) {
     const bdx = -Math.sin(ab) * rxb, bdz = Math.cos(ab) * rzb;
     daYavruBalina.position.set(bx, 18.0 + Math.sin(t * 1.15 + 0.9) * 1.3, bz);
     daYavruBalina.rotation.y = Math.atan2(bdx, bdz);
-    daYavruBalina.rotation.x = Math.sin(t * 1.15 + 0.9) * 0.07;
-    daYavruBalina.rotation.z = -0.05 + Math.sin(t * 0.8 + 0.5) * 0.05;
-    if (daYavruKuyruk) daYavruKuyruk.rotation.x = Math.sin(t * 3.1) * 0.34;
-    const fb = Math.sin(t * 2.4) * 0.22;
+    daYavruBalina.rotation.x = -Math.cos(t * 1.15 + 0.9) * 0.095;
+    daYavruBalina.rotation.z = -0.05 + Math.sin(t * 0.8 + 0.5) * 0.04;
+    if (daYavruKuyruk) daYavruKuyruk.rotation.x = Math.sin(t * 2.9 + 0.7) * 0.34;
+    const fb = Math.sin(t * 2.3 + 0.5) * 0.22;
     if (daYavruSol) daYavruSol.rotation.z = 0.26 + fb;
     if (daYavruSag) daYavruSag.rotation.z = -0.26 - fb;
   }
@@ -53,7 +53,8 @@ function cevreEkGuncelle(dt, t) {
     const ca = Math.cos(a), sa = Math.sin(a);
     k.mesh.position.set(k.cx + ca * k.rx, k.y0 + Math.sin(t * 1.4 + k.faz) * 0.45, k.cz + sa * k.rz);
     k.mesh.rotation.y = Math.atan2(-sa * k.rx * k.hiz, ca * k.rz * k.hiz);
-    k.mesh.rotation.z = Math.sin(t * 1.8 + k.faz) * 0.07;
+    k.mesh.rotation.x = -Math.cos(t * 1.4 + k.faz) * 0.055;
+    k.mesh.rotation.z = Math.sin(t * 1.8 + k.faz) * 0.065;
   }
   if (daBalikIM && daBalikObj) {
     for (let i = 0; i < daBalikVeri.length; i++) {
@@ -77,7 +78,7 @@ function cevreEkGuncelle(dt, t) {
       }
       const y = ok.y0 + b.yOfs + Math.sin(t * 2.2 + b.faz * 2.0) * 0.42;
       daBalikObj.position.set(x, y, z);
-      daBalikObj.rotation.set(Math.sin(t * 2.2 + b.faz) * 0.06, Math.atan2(dx, dz), Math.sin(a) * 0.12);
+      daBalikObj.rotation.set(-Math.cos(t * 2.2 + b.faz * 2.0) * 0.09, Math.atan2(dx, dz), Math.sin(a * (ok.sekil ? 2 : 1)) * 0.14);
       daBalikObj.scale.setScalar(b.s);
       daBalikObj.updateMatrix();
       daBalikIM.setMatrixAt(i, daBalikObj.matrix);
@@ -375,6 +376,7 @@ if (cvTema === 'denizalti') {
     daBalikIM = new T.InstancedMesh(cvTon(F.geo()), cvMalz(daBalikHar), toplamBalik);
     daBalikIM.frustumCulled = false;
     daBalikObj = new T.Object3D();
+    daBalikObj.rotation.order = 'YXZ';
     const rc = new T.Color();
     let bIdx = 0;
     for (let o = 0; o < okulAyar.length; o++) {

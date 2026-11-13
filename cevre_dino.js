@@ -187,7 +187,7 @@ if (cvTema === 'dino') {
   if ((p = yerBul(0.335, -1, 24, 4))) yuva(p, 2.2, 1, 1);
   // 3 · göl ve şelale
   golcuk(0.5, 1, 26, 1.2, true); golcuk(0.56, -1, 23, 0.8, false);
-  if ((p = yerBul(0.47, -1, 17.5, 7, 0))) kopru(p); else if ((p = yerBul(0.58, 1, 17.5, 7, 0))) kopru(p);
+  if ((p = yerBul(0.47, -1, 18.6, 7, 0))) kopru(p); else if ((p = yerBul(0.58, 1, 18.6, 7, 0))) kopru(p);
   // 4 · mantar çayırı
   if ((p = yerBul(0.74, 1, 21, 8))) kemer(p, 0.9, 2);
   if ((p = yerBul(0.7, 1, 17, 2.8))) yuva(p, 1, 3, 1);
@@ -242,7 +242,7 @@ if (cvTema === 'dino') {
 
   // virajlarda yazısız tahta ok tabelaları (taş ayaklı)
   { let son = -999, say = 0;
-    const tabela = (i, yon) => { const q = cvKenar(i, -yon, YARI + 4.3), x = q.x, z = q.z; if (yakin(x, z) < YARI + 3.6 || !cvBos(x, z, 1)) return; cvYasak.push([x, z, 1.6]);
+    const tabela = (i, yon) => { const q = cvKenar(i, -yon, YARI + 4.7), x = q.x, z = q.z; if (yakin(x, z) < YARI + 4.2 || !cvBos(x, z, 1)) return; cvYasak.push([x, z, 1.6]);
       S.yer(x, z, Math.atan2(-TX[i], -TZ[i]), 1.15); s(cvG.kutu, 0, 1.1, 0, 0.26, 2.2, 0.26, KOYU); s(cvG.ufak, 0.25, 0.22, 0, 0.5, 0.32, 0.45, TAS[0]); s(cvG.ufak, -0.3, 0.18, 0.1, 0.4, 0.26, 0.4, TAS[3]);
       s(cvG.kutu, 0, 2.15, 0.14, 2.4, 1.0, 0.16, AHSAP); s(cvG.kutu, 0, 2.15, 0.2, 2.2, 0.8, 0.1, 0xf3dba6);
       s(cvG.kutu, -0.28 * yon, 2.15, 0.27, 1.0, 0.26, 0.07, 0xff7a3c); s(cvG.ucgen, 0.5 * yon, 2.15, 0.27, 0.42, 0.62, 0.07, 0xff7a3c, 0, 0, -PI / 2 * yon); s(cvG.okt, 0, 2.75, 0.1, 0.5, 0.08, 0.2, YESIL[1], 0, 0.3, 0.3); golge.push([x, 0.012, z, 1.2, 1, 0.8, 0]); };

@@ -82,7 +82,7 @@ if (cvTema === 'seker') {
   const yer = (i, yan, uz, r, donuk) => {   // pist kenarında boş yer bul (yola ve başka süslere taşmaz)
     for (let k = 0; k < 8; k++) {
       const p = cvKenar(i + (k % 2 ? -1 : 1) * Math.ceil(k / 2) * 5, yan, uz, donuk || 0), x = p.x, z = p.z, ry = p.ry;
-      if (yakin(x, z) > YARI + 3.6 + r && cvBos(x, z, r)) { cvYasak.push([x, z, r + 0.6]); golge.push([x - 0.5, 0.012, z + 0.4, r * 1.05, 1, r * 0.8, -0.4]); return { x, z, ry }; }
+      if (yakin(x, z) > YARI + 4.1 + r && cvBos(x, z, r)) { cvYasak.push([x, z, r + 0.6]); golge.push([x - 0.5, 0.012, z + 0.4, r * 1.05, 1, r * 0.8, -0.4]); return { x, z, ry }; }
     }
     return null;
   };
@@ -232,7 +232,7 @@ if (cvTema === 'seker') {
     break; } }
   // baston şeker fenerler: yol boyunca eşit aralıkla, sırayla bir sağda bir solda (kancası yola doğru, ucunda sarı şeker fener)
   for (let i0 = 25, k = 0; i0 < N; i0 += 100, k++) {
-    skGizle = skBas(i0); const q = yer(i0, k % 2 ? 1 : -1, YARI + 4.4, 0.5, 0); if (!q) continue;
+    skGizle = skBas(i0); const q = yer(i0, k % 2 ? 1 : -1, YARI + 4.8, 0.5, 0); if (!q) continue;
     S.yer(q.x, q.z, q.ry, 1.15); const r = 0.17, c = k % 2 ? 0xff7fb0 : KIRMIZI;
     for (let j = 0; j < 9; j++) S.ekle(skSil8, 0, 0.3 + j * 0.6, 0, r, 0.6, r, j % 2 ? BEYAZ : c);
     for (let j = 0; j < 5; j++) { const a = (j + 0.5) * Math.PI / 5; S.ekle(skSil8, 0, 5.4 + 0.7 * Math.sin(a), 0.7 - 0.7 * Math.cos(a), r, 0.52, r, j % 2 ? c : BEYAZ, a); }
@@ -273,8 +273,8 @@ if (cvTema === 'seker') {
     if ((i0 / 58 | 0) % 3 !== (yan > 0 ? 1 : 0)) continue;
     S.yer(0, 0, 0); let ox = 0, oz = 0, var_ = false; skGizle = skBas(i0) || skBas(i0 + 32);
     for (let k = 0; k <= 8; k++) {
-      const p = cvKenar(i0 + k * 4, yan, YARI + 3.8), x = p.x, z = p.z;
-      if (yakin(x, z) < YARI + 3.5 || !cvBos(x, z, 0.3)) { var_ = false; continue; }
+      const p = cvKenar(i0 + k * 4, yan, YARI + 4.2), x = p.x, z = p.z;
+      if (yakin(x, z) < YARI + 4.0 || !cvBos(x, z, 0.3)) { var_ = false; continue; }
       S.ekle(cvG.sil5, x, 0.6, z, 0.13, 1.2, 0.13, BEYAZ); S.ekle(cvG.ufak, x, 1.34, z, 0.24, 0.24, 0.24, CANLI[(k + i0) % 6]);
       if (var_) { const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); S.ekle(cvG.kutu, (x + ox) / 2, 0.95, (z + oz) / 2, 0.1, 0.16, l, PEMBE, 0, ry); S.ekle(cvG.kutu, (x + ox) / 2, 0.5, (z + oz) / 2, 0.1, 0.16, l, NANE, 0, ry); }
       ox = x; oz = z; var_ = true;

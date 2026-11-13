@@ -161,7 +161,7 @@ const o1 = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };
 // Ek göstergeler: seri({adet,hedef,odul,toplam}), ilerleme({tur,oran,toplam,roket}), ozet({yildiz,roket,ziplama,seri,sira,sure}).
 const OLAY = (() => { const m = {}; return { on(a, f) { (m[a] = m[a] || []).push(f); }, emit(a, v) { const l = m[a]; if (l) for (const f of l) { try { f(v); } catch (e) { console.error(e); } } } }; })();
 // Pist üstü nesnelerin verisi (görselleri pist.js'te): s = pist boyunca metre, d = yanal konum
-const OKLAR = [{ s: L * 0.2, d: 2.5, tur: -1 }, { s: L * 0.52, d: -2.5, tur: -1 }, { s: L * 0.83, d: 0, tur: -1 }];
+const OKLAR = [{ s: L * 0.145, d: 2.5, tur: -1 }, { s: L * 0.485, d: -2.5, tur: -1 }, { s: L * 0.83, d: 0, tur: -1 }];
 const TUMSEK = [{ s: L * 0.36, d: 0, tur: -1 }, { s: L * 0.68, d: 2, tur: -1 }];
 // Görsel rampa ve teker teması aynı ölçüleri kullanır; diğer bütün yol düzdür.
 const RAMPA = { bas: -1.6, tepe: 2.3, son: 3, h: 0.92, yari: 2.9, ucus: PIST_TEMA === 'uzay' ? 1.45 : PIST_TEMA === 'gokkusagi' ? 1.15 : 0.95, yuk: PIST_TEMA === 'uzay' ? 2.5 : PIST_TEMA === 'gokkusagi' ? 2.15 : 1.9, firlat: 1.1, aks: 1.05, iz: 0.97, temas: 0.2 };   // ucus = havada kalma (sn), yuk = zıplama yüksekliği (m); Ay'da az yer çekimi, gökkuşağında hafif süzülme
@@ -209,7 +209,7 @@ function yildizDuzenle(tur) {
   OLAY.emit('turduzen', { tur });
 }
 // Sürpriz balonlar: tur başına 3 balon (yıldız sıraları, oklar ve rampalarla çakışmayan boş yerlerde). s = pist boyunca metre, d = yanal konum,
-// tur = balonun türü ('dev' | 'baloncuk' | 'gokkusagi' | 'miknatis'), var = duruyor mu. Her turda yeniden çıkar; türler ve şeritler sırayla değişir.
+// tur = balonun türü ('turbo' | 'kanat' | 'gokkusagi' | 'miknatis'), var = duruyor mu. Her turda yeniden çıkar; türler ve şeritler sırayla değişir.
 // Nesneler yerinde güncellenir (yeni nesne yok); görselleri pist.js çizer, toplama mantığı oyun.js'te.
 const SURPRIZ_TURLER = ['turbo', 'kanat', 'gokkusagi', 'miknatis'];
 const SURPRIZ = [0.25, 0.598, 0.94].map((u, j) => ({ s: L * u, d: 0, tur: SURPRIZ_TURLER[j], var: true, j, x: 0, z: 0 }));

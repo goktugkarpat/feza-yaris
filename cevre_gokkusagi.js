@@ -161,7 +161,7 @@ if (cvTema === 'gokkusagi') {
     for (let i = 0; i < N; i += 3) {
       let k = 0; for (let j = -10; j <= 10; j += 2) k += KAP[(i + j + N) % N]; k /= 11;
       if (Math.abs(k) < 0.0125 || i - son < 60 || adet > 7) continue;
-      const yon = k > 0 ? 1 : -1, q = yer(i, -yon, YARI + 5, 1.6, 3); if (!q) continue;
+      const yon = k > 0 ? 1 : -1, q = yer(i, -yon, YARI + 5.6, 1.6, 3); if (!q) continue;
       son = i; adet++;
       S.yer(q.x, q.z, q.ry, 1.15);
       for (const sx of [-1, 1]) { S.ekle(cvG.sil5, sx * 1.15, 1.2, 0, 0.14, 2.4, 0.14, BEYAZ); const p = S.dunya(sx * 1.15, 0); bulut.push([p.x, -0.3, p.z, 0.5, 0.42, 0.5, R() * 6, BEYAZ]); }

@@ -163,7 +163,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   const S = cvYapi(), E = cvYapi(), golge = [], hale = [], astro = [], uzayli = [], krater = [];
   const GRI = 0x8d89ad, ACIK = 0xdfe3f2, BEYAZ = 0xf6f7ff, MAVI = 0x3b6fe0, CANLI = [0xff5a6e, 0xffb23c, 0xffe14d, 0x5fe38a, 0x4fd6ff, 0xb58cff, 0xff8fd0];
   const KRISTAL = [0x5ff0ff, 0xff7ad9, 0xb58cff, 0x8fd8ff, 0xff9be6];   // uyumlu üç ton: camgöbeği, pembe, lila
-  const yerVar = (x, z, r) => yakin(x, z) > YARI + 3 + r && cvBos(x, z, r);
+  const yerVar = (x, z, r) => yakin(x, z) > YARI + 4.1 + r && cvBos(x, z, r);   // yol koridoru (YARI + 4m = 11m) dışını güvenceye alır
   const koy = (f, yan, uz, r) => {   // pist kenarında boş yer arar; bulursa ayırır
     for (const q of [[0, yan, 0], [0, yan, 6], [0.012, yan, 3], [-0.012, yan, 3], [0, -yan, 0], [0, -yan, 6], [0.02, -yan, 10], [0.02, yan, 12]]) {
       const p = cvKenar(cvI(f + q[0]), q[1], YARI + uz + q[2]), x = p.x, z = p.z, ry = p.ry;
@@ -270,9 +270,9 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   };
   const tabela = (i, yon) => {   // viraj oku: yazısız, üç ışıklı ok
     const yan = -yon, j = ((i - 18) % N + N) % N;
-    for (const uz of [5.4, 7.5, 10]) {
+    for (const uz of [5.8, 8.0, 10.5]) {
       const k = (i + 5) % N, x = PX[k] - TZ[k] * (YARI + uz) * yan, z = PZ[k] + TX[k] * (YARI + uz) * yan;
-      if (!yerVar(x, z, 1.6)) continue;
+      if (!yerVar(x, z, 1.8)) continue;
       cvYasak.push([x, z, 2.2]); yer2(x, z, Math.atan2(-TX[j], -TZ[j]));
       for (const px of [-1.45, 1.45]) S.ekle(cvG.sil5, px, 1.0, 0, 0.1, 2.0, 0.1, ACIK);
       S.ekle(uzYK, 0, 2.75, 0, 3.9, 1.7, 0.16, 0x2b2f78); S.ekle(uzYK, 0, 2.75, -0.03, 4.1, 1.9, 0.12, BEYAZ);
@@ -353,7 +353,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   }
 
   // ── renkli ışık direkleri ──
-  { let k = 0; for (let i = 14; i < N; i += 40) { const c = cvKenar(i, k % 2 ? 1 : -1, YARI + 3.9), x = c.x, z = c.z; if (yerVar(x, z, 0.7)) { cvYasak.push([x, z, 1]); direk(x, z, CANLI[k % 7]); } k++; } }
+  { let k = 0; for (let i = 14; i < N; i += 40) { const c = cvKenar(i, k % 2 ? 1 : -1, YARI + 4.2), x = c.x, z = c.z; if (yerVar(x, z, 0.7)) { cvYasak.push([x, z, 1]); direk(x, z, CANLI[k % 7]); } k++; } }
 
   // ── seyirciler: astronotlar ve küçük uzaylılar ──
   const UZR = [0x6fe36a, 0x58d8f0, 0x9af07a, 0x5aa8ff, 0x58e0b0, 0xb0f060];
@@ -474,7 +474,7 @@ function cevreEkGuncelle(dt, t) {
   uzKubbe.position.set(c.x, 0, c.z); uzYildiz.position.set(c.x, 0, c.z);
   uzDunya.rotation.y = t * 0.035; uzHalkali.rotation.y = t * 0.05; uzUydu.rotation.y = t * 0.018;
   const a = t * 0.11; uzUfo.position.set(8 + Math.cos(a) * 30, 17 + Math.sin(t * 0.9) * 1.3, -52 + Math.sin(a) * 22); uzUfo.rotation.set(Math.sin(t * 0.7) * 0.05, t * 0.6, Math.cos(t * 0.6) * 0.05);
-  if (uzUfoYer) uzUfoYer.position.set(uzUfo.position.x, 0.05, uzUfo.position.z);
+  if (uzUfoYer) { uzUfoYer.position.set(uzUfo.position.x, 0.05, uzUfo.position.z); uzUfoYer.scale.setScalar(3.6 + Math.sin(t * 2.2) * 0.35); }
   for (let k = 0; k < uzGezgin.length; k++) { const q = uzGezgin[k], u = t * 0.22 + q.f; q.o.position.set(q.x + Math.sin(u) * 2.2, q.y + Math.sin(u * 1.7) * 1.1, q.z + Math.cos(u * 0.8) * 2.2); q.o.rotation.set(Math.sin(u * 0.9) * 0.35, q.ry + Math.sin(u * 0.5) * 0.6, 0.25 + Math.sin(u * 0.7) * 0.3); }
   for (let k = 0; k < 2; k++) {
     const s = uzKayan[k], sure = 4.6 + k * 2.3, tt = t + k * 2.9, u = (tt % sure) / 1.5;
@@ -484,9 +484,10 @@ function cevreEkGuncelle(dt, t) {
       uzKayanN[k] = n; camera.getWorldDirection(uzV2);
       uzKayanAz[k] = Math.atan2(uzV2.z, uzV2.x) + (((n * 0.618 + k * 0.37) % 1) - 0.5) * 1.1;
     }
-    const az = uzKayanAz[k], yon = (n + k) % 2 ? 1 : -1;
+    const az = uzKayanAz[k], yon = (n + k) % 2 ? 1 : -1, kOlc = Math.sin(u * Math.PI);
     uzV1.set((-Math.sin(az) * 0.85 - Math.cos(az) * 0.3) * yon, -0.34, (Math.cos(az) * 0.85 - Math.sin(az) * 0.3) * yon).normalize();
     s.position.set(c.x + Math.cos(az) * 560 + uzV1.x * (u - 0.5) * 300, 300 + uzV1.y * u * 300, c.z + Math.sin(az) * 560 + uzV1.z * (u - 0.5) * 300);
+    s.scale.set(3.2 * (0.4 + 0.6 * kOlc), 95 * kOlc, 3.2 * (0.4 + 0.6 * kOlc));
     uzV2.copy(uzV1).negate(); s.quaternion.setFromUnitVectors(uzYukari, uzV2); s.visible = true;
   }
 }

@@ -19,15 +19,15 @@ function cevreEkGuncelle(dt, t) {
   for (let i = 0; i < mzDavul.length; i++) {
     const d = mzDavul[i];
     const s1 = Math.sin(t * 4.4 + d.f);
-    const s2 = Math.sin(t * 4.4 + d.f + Math.PI);
     const hit1 = s1 > 0 ? s1 : 0;
-    const hit2 = s2 > 0 ? s2 : 0;
-    const p = Math.pow(hit1 > hit2 ? hit1 : hit2, 4);
-    d.g.position.y = d.y0 + p * 0.48;
+    const hit2 = s1 < 0 ? -s1 : 0;
+    const strike = 1 - Math.abs(s1);
+    const p = strike * strike * strike * strike * strike * strike;
+    d.g.position.y = d.y0 + p * 0.42;
     d.g.scale.set(d.s * (1 + p * 0.07), d.s * (1 - p * 0.06), d.s * (1 + p * 0.07));
     d.head.scale.y = 1 + p * 0.55;
-    d.b1.rotation.z = -0.32 + hit1 * 0.62;
-    d.b2.rotation.z = 0.32 - hit2 * 0.62;
+    d.b1.rotation.z = -0.19 + hit1 * 0.58;
+    d.b2.rotation.z = -0.19 + hit2 * 0.58;
   }
   for (let i = 0; i < mzNota.length; i++) {
     const n = mzNota[i];
@@ -281,6 +281,7 @@ if (cvTema === 'muzik') {
   // ───────── 4) Altın Pirinç Trompet Kemerleri ve Sütunları ─────────
   {
     const kemerF = [0.23, 0.54, 0.80];
+    const kemer = new T.TorusGeometry(3.2, 0.26, 7, 16, Math.PI);
     for (let idx = 0; idx < kemerF.length; idx++) {
       const p = yer(kemerF[idx], idx % 2 ? -1 : 1, YARI + 13, 8.5, YARI + 9);
       if (!p) continue;
@@ -296,7 +297,6 @@ if (cvTema === 'muzik') {
           S.ekle(cvG.kureK, x - yan * 0.8, 3.2 + v * 0.65, 0, 0.16, 0.16, 0.16, GOKKUSAGI[v * 2]);
         }
       }
-      const kemer = new T.TorusGeometry(3.2, 0.26, 7, 16, Math.PI);
       S.ekle(kemer, 0, 7.7, 0, 1, 1, 1, ALTIN);
       S.ekle(cvG.okt, 0, 11.25, 0, 0.95, 1.2, 0.95, GOKKUSAGI[idx * 2 % 8]);
       golge.push([p.x - 3.2, p.z, 2.3, 2.3, 0.24]);
@@ -523,8 +523,8 @@ if (cvTema === 'muzik') {
     for (let k = 0; k < 90; k++) {
       const f = 0.04 + (k / 90) * 0.92;
       const i = cvI(f), yan = (k % 2 ? 1 : -1) * mzDis(i);
-      const p = cvKenar(i, yan, YARI + 4.4 + (k % 3) * 2.1);
-      if (yakin(p.x, p.z) < YARI + 3.4 || !cvBos(p.x, p.z, 1.2)) continue;
+      const p = cvKenar(i, yan, YARI + 4.5 + (k % 3) * 2.1);
+      if (yakin(p.x, p.z) < YARI + 4.0 || !cvBos(p.x, p.z, 1.2)) continue;
       const s = 1.05 + (k % 3) * 0.22;
       ziller.push([p.x, 0, p.z, s, s, s, k * 0.9, GOKKUSAGI[k % GOKKUSAGI.length]]);
     }

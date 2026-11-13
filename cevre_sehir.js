@@ -266,11 +266,11 @@ if (cvTema === 'sehir') {
     for (const u of [8, 13, 17]) { const a = cvKenar(i, yan, YARI + u); cvYasak.push([a.x, a.z, 4.4]); }
     S.yer(x, z, ry, 1); S.ekle(cvG.kutu, 0, 0.03, 0, 6.6, 0.06, 14, 0x7c8592); for (const sx of [-1, 1]) S.ekle(cvG.kutu, sx * 3.7, 0.06, 0, 0.8, 0.12, 14, 0xd3d8df);
     for (let k = -2; k <= 2; k++) S.ekle(cvG.kutu, k * 1.2, 0.07, 4.6, 0.7, 0.04, 2.8, BEYAZ); for (let k = 0; k < 3; k++) S.ekle(cvG.kutu, 0, 0.07, 0.5 - k * 2.6, 0.24, 0.04, 1.4, BEYAZ);
-    const a = cvKenar(i - 6, yan, YARI + 4.2, 2.2), ax = a.x, az = a.z, ary = a.ry; if (yakin(ax, az) > YARI + 3.6) { cvYasak.push([ax, az, 0.9]); trafik(ax, az, ary); }
+    const a = cvKenar(i - 6, yan, YARI + 4.6, 2.2), ax = a.x, az = a.z, ary = a.ry; if (yakin(ax, az) > YARI + 4.2) { cvYasak.push([ax, az, 0.9]); trafik(ax, az, ary); }
     break;
   }
   // ───────── sokak lambaları ─────────
-  for (let i = 10; i < N; i += 84) { const yan = (i / 84 | 0) % 2 ? 1 : -1, p = cvKenar(i, yan, YARI + 4), x = p.x, z = p.z, ry = p.ry; if (yakin(x, z) > YARI + 3.7 && cvBos(x, z, 0.5)) { cvYasak.push([x, z, 0.9]); lamba(x, z, ry); } }
+  for (let i = 10; i < N; i += 84) { const yan = (i / 84 | 0) % 2 ? 1 : -1, p = cvKenar(i, yan, YARI + 4.9), x = p.x, z = p.z, ry = p.ry; if (yakin(x, z) > YARI + 4.6 && cvBos(x, z, 0.5)) { cvYasak.push([x, z, 0.9]); lamba(x, z, ry); } }
   // ───────── virajlarda yazısız renkli ok tabelaları ─────────
   {
     const tepe = []; for (let i = 0; i < N; i++) { let k = 0; for (let j = -6; j <= 6; j++) k += KAP[(i + j + N) % N]; tepe.push(k / 13); }

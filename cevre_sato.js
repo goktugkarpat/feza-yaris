@@ -143,7 +143,7 @@ if (cvTema === 'sato') {
     for (let k = 0; k < 3; k++) s(yuvarlak, -0.2, Y + 13.8 - k * 1.4, 3.65, 2.2, 1.45, 0.2, k === 1 ? MAVI : KIRMIZI, -0.1, 0, 0, 0, 0.1 + k * 0.15);
     s(cvG.ucgen, -0.2, Y + 9.5, 3.85, 1.1, 1.2, 0.2, KIRMIZI, PI + 0.1, 0, 0, 0, 0.5); s(cvG.kure, -0.2, Y + 12.4, 3.9, 0.42, 0.42, 0.15, ALTIN);
     // tepeden yola inen yassı taş patika
-    for (let k = 0; k < 14; k++) { const u = k / 13, z = A + 2.5 + u * (HR / SK - A - 1), x = Math.sin(u * 3) * 2.2, y = (tepeY(Math.hypot(x, z * 1.05) * SK, HR, HH) + 0.1) / SK; s(cvG.daire, x + (k % 2 - 0.5) * 0.6, y, z, 1.0, 0.8, 1, TAS[k % 3], -PI / 2 + Math.sin(PI * Math.min(1, z * SK / HR)) * HH * PI / 2 / HR); }
+    for (let k = 0; k < 14; k++) { const u = k / 13, z = A + 2.5 + u * (HR / SK - A - 3.5), x = Math.sin(u * 3) * 2.2, y = (tepeY(Math.hypot(x, z * 1.05) * SK, HR, HH) + 0.1) / SK; s(cvG.daire, x + (k % 2 - 0.5) * 0.6, y, z, 1.0, 0.8, 1, TAS[k % 3], -PI / 2 + Math.sin(PI * Math.min(1, z * SK / HR)) * HH * PI / 2 / HR); }
     // 2 · Pırıl: şatonun yanında, yola dönük oturur; yavaşça kanat çırpar, kuyruğunu sallar
     { const k = 4.3, ox = 11, oz = 16.5, yy = tepeY(Math.hypot(ox, oz * 1.05) * SK, HR, HH) - 0.2, w = S.dunya(ox, oz), wx = w.x, wz = w.z;
       S.yer(wx, wz, ry + 0.45, k); const Y0 = yy / k;

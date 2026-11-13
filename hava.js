@@ -4,7 +4,7 @@
    Kare başına yeni nesne yok. Orman pistinde yarışın ortasında kısa bir yağmur, sonra gökkuşağı (+1 çizim).
    Güncelleme kendi onBeforeRender kancasıyla olur (oyun.js'e dokunmaz). Deneme: ?yagmur (ormanda yağmuru hep açar). */
 const HAVA = (() => {
-  const TUR = { kar: 0, yagmur: 1, yaprak: 2, konfeti: 3, isilti: 4, baloncuk: 5, kum: 6, duman: 7, bocek: 8, ucak: 9, tuy: 10, kayan: 11, halka: 12, cali: 13, kopuk: 14 };
+  const TUR = { kar: 0, yagmur: 1, yaprak: 2, konfeti: 3, isilti: 4, baloncuk: 5, kum: 6, duman: 7, bocek: 8, ucak: 9, tuy: 10, kayan: 11, halka: 12, cali: 13, kopuk: 14, nota: 15 };
   // grup: [tür, adet, boy (m) [en az, en çok], düşüş/yükseliş hızı [en az, en çok] (+ aşağı), sallanma (m), renkler]
   // Sade: yalnız karda kar ve ormanda ara ara yağmur belirgin; diğer pistlerde tek tür, seyrek ve sakin (şehirde hiç yok).
   const PLAN = {
@@ -13,20 +13,28 @@ const HAVA = (() => {
       [TUR.yagmur, 430, [1.0, 1.4], [17, 20], 0, [0xeef6ff, 0xdcecff]],
       [TUR.halka, 30, [0.9, 1.3], [0, 0], 0, [0xf2f9ff]]] },
     kiyi: { kutu: [60, 16, 60], ruzgar: [1.6, 0.5], gruplar: [[TUR.tuy, 22, [0.5, 0.7], [0.3, 0.55], 1.4, [0xffffff, 0xf6f3ec]]] },
-    seker: { kutu: [60, 18, 60], ruzgar: [0.3, 0.15], gruplar: [[TUR.isilti, 40, [0.45, 0.65], [0.15, 0.35], 0.6, [0xfff3c4, 0xffe0f0]]] },
+    seker: { kutu: [60, 18, 60], ruzgar: [0.3, 0.15], gruplar: [[TUR.isilti, 40, [0.45, 0.65], [0.15, 0.35], 0.6, [0xfff3c4, 0xffe0f0, 0xd8fbff]]] },
     uzay: { kutu: [70, 24, 70], ruzgar: [0.15, 0.1], gruplar: [
       [TUR.isilti, 60, [0.4, 0.65], [-0.15, 0.15], 0.6, [0xfff6d8, 0xe0e8ff]],
       [TUR.kayan, 1, [10, 10], [0, 0], 0, [0xfff8e0]]] },
     col: { kutu: [64, 8, 64], ruzgar: [6, 1.0], gruplar: [[TUR.kum, 40, [2.4, 3.6], [0, 0.05], 0.3, [0xfff0d4]]] },
-    gokkusagi: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [[TUR.isilti, 45, [0.45, 0.65], [-0.1, 0.25], 0.7, [0xffffff, 0xfff1b8]]] },
+    gokkusagi: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [[TUR.isilti, 45, [0.45, 0.65], [-0.1, 0.25], 0.7, [0xffffff, 0xfff1b8, 0xffd6ec, 0xd6f4ff]]] },
     dino: { kutu: [60, 12, 60], ruzgar: [0.25, 0.15], gruplar: [[TUR.bocek, 36, [0.5, 0.7], [-0.12, 0.12], 1.1, [0xffe86a, 0xf0ff9a]]] },
     sehir: { kutu: [60, 18, 60], ruzgar: [0, 0], gruplar: [] },
     /*SATO*/ sato: { kutu: [60, 16, 60], ruzgar: [0.3, 0.15], gruplar: [[TUR.isilti, 32, [0.45, 0.65], [-0.1, 0.2], 0.7, [0xfff3c4, 0xffffff]]] }, /*/SATO*/            // seyrek, sıcak altın ışıltı
     /*LUNAPARK*/ lunapark: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [[TUR.isilti, 24, [0.32, 0.5], [-0.12, 0.12], 0.7, [0xfff0b0, 0xffd0e8, 0xc8fff6]]] }, /*/LUNAPARK*/
-    /*KORSAN*/ korsan: { kutu: [60, 18, 60], ruzgar: [0, 0], gruplar: [] }, /*/KORSAN*/
-    /*DENIZALTI*/ denizalti: { kutu: [56, 18, 56], ruzgar: [0.15, 0.1], gruplar: [[TUR.baloncuk, 52, [0.35, 0.65], [-1.4, -0.7], 0.7, [0xffffff, 0xbefaff, 0x8ef0ff]]] }, /*/DENIZALTI*/
-    /*CIFTLIK*/ ciftlik: { kutu: [60, 16, 60], ruzgar: [0.4, 0.2], gruplar: [[TUR.isilti, 24, [0.4, 0.6], [0.1, 0.25], 0.7, [0xfff6c4, 0xffe49a]]] }, /*/CIFTLIK*/
-    /*MUZIK*/ muzik: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [[TUR.isilti, 36, [0.42, 0.65], [-0.15, 0.2], 0.8, [0xffe885, 0xff9ed6, 0x8ef0ff]]] } /*/MUZIK*/
+    /*KORSAN*/ korsan: { kutu: [60, 18, 60], ruzgar: [0.9, 0.3], gruplar: [
+      [TUR.isilti, 18, [0.35, 0.55], [-0.08, 0.14], 0.7, [0xfff4c8, 0xffe494]],
+      [TUR.tuy, 10, [0.42, 0.6], [0.22, 0.45], 1.3, [0xffffff, 0xfff6e0]]] }, /*/KORSAN*/
+    /*DENIZALTI*/ denizalti: { kutu: [56, 18, 56], ruzgar: [0.15, 0.1], gruplar: [
+      [TUR.baloncuk, 64, [0.32, 0.72], [-1.5, -0.75], 0.75, [0xffffff, 0xbefaff, 0x8ef0ff]],
+      [TUR.isilti, 20, [0.36, 0.58], [-0.12, 0.12], 0.8, [0xdffcff, 0xfff5c8]]] }, /*/DENIZALTI*/
+    /*CIFTLIK*/ ciftlik: { kutu: [60, 16, 60], ruzgar: [1.0, 0.35], gruplar: [
+      [TUR.bocek, 34, [0.38, 0.6], [-0.08, 0.14], 1.1, [0xfff8d6, 0xffe89e, 0xffffff]],
+      [TUR.tuy, 12, [0.42, 0.62], [0.15, 0.35], 1.4, [0xffffff, 0xfff8ea]]] }, /*/CIFTLIK*/
+    /*MUZIK*/ muzik: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [
+      [TUR.isilti, 28, [0.4, 0.62], [-0.15, 0.18], 0.8, [0xffe885, 0xff9ed6, 0x8ef0ff]],
+      [TUR.nota, 16, [0.55, 0.85], [-0.38, 0.04], 0.85, [0xffe066, 0xff8ac8, 0x7ceeff, 0xc9a6ff]]] } /*/MUZIK*/
   };
   const plan = PLAN[PIST_TEMA] || PLAN.orman;
   let sayi = 0; for (const g of plan.gruplar) sayi += g[1];
@@ -124,7 +132,7 @@ const HAVA = (() => {
       void main() {
         vec2 c = gl_PointCoord * 2.0 - 1.0; c.y = -c.y;
         float t = vTur, a = 0.0, d = length(c); vec3 col = vRenk;
-        if (t < 0.5 || t > 13.5) {                               // kar / köpük: yumuşak tombul tane
+        if (t < 0.5 || (t > 13.5 && t < 14.5)) {                 // kar / köpük: yumuşak tombul tane
           // uzak tane: küçük, net kenarlı; yakın tane: iri, kenarı yumuşak dağılan ve biraz saydam
           a = smoothstep(1.0, mix(0.5, 0.0, vYak), d) * mix(0.95, 0.6, vYak);
           col = mix(vRenk * 0.92, vec3(1.0), smoothstep(0.85, 0.0, d));
@@ -143,7 +151,7 @@ const HAVA = (() => {
           float y = smoothstep(0.16, 0.0, abs(c.x)) * (1.0 - abs(c.y)) + smoothstep(0.16, 0.0, abs(c.y)) * (1.0 - abs(c.x));
           a = clamp(y + smoothstep(0.45, 0.0, d), 0.0, 1.0); col = mix(col, vec3(1.0), smoothstep(0.4, 0.0, d));
         } else if (t < 5.5) {                                    // baloncuk: halka + parıltı
-          a = smoothstep(0.1, 0.02, abs(d - 0.84)) * 0.85 + step(d, 0.86) * 0.12;
+          a = smoothstep(0.1, 0.02, abs(d - 0.84)) * 0.85 + smoothstep(0.88, 0.80, d) * 0.14;
           float p = smoothstep(0.24, 0.1, length(c - vec2(-0.36, 0.36))); a = max(a, p); col = mix(col, vec3(1.0), p);
         } else if (t < 6.5) {                                    // rüzgârla savrulan kum çizgisi
           float y = (c.y + c.x * 0.08) / 0.1, u = 1.0 - c.x * c.x;      // yumuşak, kuma karışan ince toz tülü
@@ -168,10 +176,18 @@ const HAVA = (() => {
           col = mix(col, vec3(1.0), 0.5);
         } else if (t < 12.5) {                                   // yerde damla halkası (yassı elips)
           float e = length(vec2(c.x, c.y * 3.2)); a = smoothstep(0.05, 0.0, abs(e - 0.15 - vFaz * 0.8)) * 0.4;
-        } else {                                                 // dönen çalı
+        } else if (t < 13.5) {                                   // dönen çalı
           vec2 q = don(c, vDon); float an = atan(q.y, q.x);
           a = step(d, 0.95) * clamp(smoothstep(0.1, 0.0, abs(d - 0.82)) + smoothstep(0.1, 0.0, abs(sin(an * 3.0 + d * 7.0))) * 0.85, 0.0, 1.0);
           col *= 0.8 + 0.3 * d;
+        } else {                                                 // müzik notası
+          vec2 q = don(c, sin(vDon) * 0.22);
+          vec2 h = don(q - vec2(-0.14, -0.34), -0.38);
+          float bas = smoothstep(0.32, 0.22, length(vec2(h.x * 0.78, h.y * 1.15)));
+          float sap = smoothstep(0.08, 0.03, abs(q.x - 0.06)) * step(-0.34, q.y) * step(q.y, 0.54);
+          float bayrak = smoothstep(0.1, 0.03, abs(q.y - (0.54 - (q.x - 0.06) * 0.65))) * step(0.06, q.x) * step(q.x, 0.48);
+          a = clamp(max(bas, max(sap, bayrak)), 0.0, 1.0) * 0.92;
+          col = mix(col, vec3(1.0), 0.22);
         }
         a *= vAlfa;
         if (a < 0.02) discard;

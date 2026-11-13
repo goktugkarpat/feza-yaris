@@ -98,14 +98,14 @@ if (cvTema === 'col') {
   // ───────── bölge yapıları ─────────
   let p;
   // 0 · başlangıç pazarı: çadırlar ve bayrak ipleri
-  if ((p = yerBul(0.03, 1, 15.5, 4))) cadir(p, KUMAS[0], KUMAS[2], 1);
-  if ((p = yerBul(0.985, -1, 15.5, 4))) cadir(p, KUMAS[1], KUMAS[4], 1);
-  if ((p = yerBul(0.055, -1, 15.5, 4))) cadir(p, KUMAS[3], KUMAS[2], 0.9);
+  if ((p = yerBul(0.03, 1, 16.4, 4))) cadir(p, KUMAS[0], KUMAS[2], 1);
+  if ((p = yerBul(0.985, -1, 16.4, 4))) cadir(p, KUMAS[1], KUMAS[4], 1);
+  if ((p = yerBul(0.055, -1, 16.4, 4))) cadir(p, KUMAS[3], KUMAS[2], 0.9);
   const ip = (i0, say, yan, adim) => {
     S.yer(0, 0, 0); let ox = 0, oz = 0, var_ = false, n = 0;
     for (let k = 0; k <= say; k++) {
-      const q = cvKenar(i0 + k * adim, yan, YARI + 3.9), x = q.x, z = q.z;
-      if (yakin(x, z) < YARI + 3.5 || !cvBos(x, z, 0.4)) { var_ = false; continue; }
+      const q = cvKenar(i0 + k * adim, yan, YARI + 4.3), x = q.x, z = q.z;
+      if (yakin(x, z) < YARI + 4.1 || !cvBos(x, z, 0.4)) { var_ = false; continue; }
       s(clSil, x, 1.9, z, 0.09, 3.8, 0.09, KOYU); s(cvG.kureK, x, 3.85, z, 0.17, 0.17, 0.17, 0xffd166);
       if (var_) { const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); s(cvG.kutu, (x + ox) / 2, 3.62, (z + oz) / 2, 0.04, 0.04, l, 0xfff0c8, 0, ry); for (let j = 1; j < 7; j++) { const u = j / 7; W.ekle(cvG.ucgen, ox + dx * u, 3.3, oz + dz * u, 0.3, 0.56, 0.035, KUMAS[n++ % 6], PI, ry + PI / 2, 0, 0, 0, 0.8); } }
       ox = x; oz = z; var_ = true;
@@ -113,7 +113,7 @@ if (cvTema === 'col') {
   };
   ip(N - 30, 9, 1, 8); ip(N - 30, 9, -1, 8);
   // 1 · kaktüs bahçesi: kuyu ve küpler
-  if ((p = yerBul(0.13, -1, 14.5, 3.4))) {
+  if ((p = yerBul(0.13, -1, 15.6, 3.4))) {
     S.yer(p.x, p.z, p.ry, 1.4);
     s(cvG.sil, 0, 0.45, 0, 1.15, 0.9, 1.15, 0xdccbab); s(cvG.sil, 0, 0.9, 0, 1.25, 0.14, 1.25, 0xefe2c6); s(cvG.sil, 0, 0.93, 0, 0.9, 0.1, 0.9, 0x39b4e6);
     for (const x of [-1.05, 1.05]) s(clYK, x, 1.6, 0, 0.18, 3.2, 0.18, AHSAP); s(cvG.sil, 0, 2.7, 0, 0.09, 2.3, 0.09, KOYU, 0, 0, PI / 2); s(clYK, 1.35, 2.7, 0, 0.08, 0.5, 0.08, KOYU);
@@ -177,10 +177,10 @@ if (cvTema === 'col') {
     for (let k = 0; k < 4; k++) { const a = k * PI / 2; B.ekle(cvG.kutu, -Math.sin(a) * 1.95, Math.cos(a) * 1.95, 0, 0.14, 3.6, 0.1, KOYU, 0, 0, a); B.ekle(cvG.kutu, -Math.sin(a) * 2.3 - Math.cos(a) * 0.45, Math.cos(a) * 2.3 - Math.sin(a) * 0.45, -0.04, 0.85, 2.6, 0.05, k % 2 ? 0xfff6e0 : 0xffd9a0, 0, 0, a); }
     const q = S.dunya(0, 2.25), rotor = new T.Group(), mesh = new T.Mesh(B.geo(), cvMalz(0, { side: T.DoubleSide })); rotor.position.set(q.x, 5.3 * 1.15, q.z); rotor.rotation.y = p.ry; rotor.scale.setScalar(1.15); rotor.add(mesh); scene.add(rotor); cvDegirmen.push({ mesh, hiz: 0.7 });
   }
-  if ((p = yerBul(0.87, -1, 15.5, 4))) cadir(p, KUMAS[4], KUMAS[1], 1.05);
-  if ((p = yerBul(0.9, 1, 15.5, 4))) cadir(p, KUMAS[5], KUMAS[2], 0.95);
-  if ((p = yerBul(0.925, -1, 15.5, 4))) cadir(p, KUMAS[0], KUMAS[3], 0.9);
-  if ((p = yerBul(0.8, -1, 15.5, 4))) cadir(p, KUMAS[2], KUMAS[0], 1);
+  if ((p = yerBul(0.87, -1, 16.4, 4))) cadir(p, KUMAS[4], KUMAS[1], 1.05);
+  if ((p = yerBul(0.9, 1, 16.4, 4))) cadir(p, KUMAS[5], KUMAS[2], 0.95);
+  if ((p = yerBul(0.925, -1, 16.4, 4))) cadir(p, KUMAS[0], KUMAS[3], 0.9);
+  if ((p = yerBul(0.8, -1, 16.4, 4))) cadir(p, KUMAS[2], KUMAS[0], 1);
   ip(cvI(0.855), 6, 1, 8);
   { // kervan: yüklü develer yol kenarından 9,5 m uzakta, boş bir şeritte sırayla ağır ağır yürür (konumları cevreEkGuncelle'de)
     dis: for (const uzun of [120, 90, 64]) for (const f of [0.84, 0.88, 0.62, 0.7, 0.2, 0.08, 0.5, 0.3, 0.96]) for (const yan of [-1, 1]) {
@@ -194,7 +194,7 @@ if (cvTema === 'col') {
   }
   // virajlarda yazısız tahta ok tabelaları
   { let son = -999, say = 0;
-    const tabela = (i, yon) => { const q = cvKenar(i, -yon, YARI + 4.3), x = q.x, z = q.z; if (yakin(x, z) < YARI + 3.6 || !cvBos(x, z, 1)) return; cvYasak.push([x, z, 1.6]);
+    const tabela = (i, yon) => { const q = cvKenar(i, -yon, YARI + 4.7), x = q.x, z = q.z; if (yakin(x, z) < YARI + 4.2 || !cvBos(x, z, 1)) return; cvYasak.push([x, z, 1.6]);
       S.yer(x, z, Math.atan2(-TX[i], -TZ[i]), 1.15); s(clYK, 0, 1.1, 0, 0.24, 2.2, 0.24, KOYU); s(clYK, 0, 2.15, 0.14, 2.4, 1.0, 0.16, 0xe8b872); s(clYK, 0, 2.15, 0.2, 2.2, 0.8, 0.1, 0xfff0c8);
       s(clYK, -0.28 * yon, 2.15, 0.27, 1.0, 0.26, 0.07, 0xe9524a); s(cvG.ucgen, 0.5 * yon, 2.15, 0.27, 0.42, 0.62, 0.07, 0xe9524a, 0, 0, -PI / 2 * yon); golge.push([x, 0.012, z, 1.2, 1, 0.8, 0]); };
     for (let i = 30; i < N - 30 && say < 10; i++) { let k = 0; for (let j = -10; j <= 10; j++) k += KAP[(i + j + N) % N]; k /= 21; if (Math.abs(k) > 0.017 && i - son > 80) { const yon = k > 0 ? 1 : -1; tabela((i - 15 + N) % N, yon); son = i; say++; } }
