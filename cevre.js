@@ -7,11 +7,11 @@ const cvTema = typeof PIST_TEMA === 'string' ? PIST_TEMA : 'orman';
 scene.background = tuvalDoku(8, 512, (g, w, h) => {
   const gr = g.createLinearGradient(0, 0, 0, h);
   // Gök dokusu ekrana sabittir; ufuk çizgisi ekranın ~%40'ında olduğundan açık ve sıcak tonlar oraya denk getirilir.
-  const d = cvTema==='kiyi' ? ['#1b8fdc', '#3fa9ec', '#86d3f6', '#c9f0fb', '#fff0cf'] : cvTema==='kar' ? ['#4388d2', '#69a9e6', '#a6d0f4', '#dcecff', '#ffe6ec'] : ['#2a84e2', '#4ea6f1', '#8fcff9', '#cfeeff', '#fff2d2'];
+  const d = cvTema==='kiyi' ? ['#147ed4', '#39a4ec', '#82d4f6', '#ccf2fc', '#fff0cc'] : cvTema==='kar' ? ['#2262b4', '#4a8fdd', '#8fc4f4', '#d8eeff', '#ffeef4'] : ['#1f78d8', '#48a2ef', '#8ed0fa', '#d2f0ff', '#fff2d2'];
   [0, 0.14, 0.29, 0.39, 0.47].forEach((u, i) => gr.addColorStop(u, d[i])); gr.addColorStop(1, d[4]);
   g.fillStyle = gr; g.fillRect(0, 0, w, h);
 });
-scene.fog = new T.Fog(0xdaf2ff, 330, 950);
+scene.fog = new T.Fog(cvTema === 'kar' ? 0xdfeeff : cvTema === 'kiyi' ? 0xdcf6ff : 0xdaf2ff, 330, 950);
 // Yeşil zemin ışığı yüzleri yeşertmesin; ten ve beyazlar nötr, ortam yine aydınlık kalır.
 const cvGokIsik = new T.HemisphereLight(0xffffff, cvTema==='kiyi'?0xd1bda0:cvTema==='kar'?0xc4dbe4:0xb8aa94, cvTema==='kar'?1.0:1.18); scene.add(cvGokIsik);   // seker/uzay/col pistleri kendi dosyalarında (cevre_<ad>.js) gök, ışık ve zemini değiştirir
 const gunes = new T.DirectionalLight(0xfff2d0, cvTema==='kar'?1.15:1.5); gunes.position.set(95, 120, -45); scene.add(gunes);
@@ -43,7 +43,7 @@ function cvMalz(mod, o) {   // köşe renkli malzeme; kopya rengi yalnız cvK.x 
       .replace('#include <common>', '#include <common>\nuniform float cvT;\nuniform vec2 cvP;\nattribute vec3 cvK;')
       .replace('#include <color_vertex>', 'vColor = color;\n#ifdef USE_INSTANCING_COLOR\nvColor *= mix(vec3(1.0), instanceColor.xyz, cvK.x);\n#endif')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\n' + cvHAREKET[mod]);
-    if (cvTema === 'kar') sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.30 * smoothstep(0.80, 0.93, min(vColor.r, min(vColor.g, vColor.b)));\n#endif');   // karlı parçalar (çatı, yığın, dal üstü) zemindeki kar gibi ak kalsın
+    if (cvTema === 'kar') sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance += vColor.rgb * 0.26 * smoothstep(0.80, 0.93, min(vColor.r, min(vColor.g, vColor.b)));\n#endif');   // karlı parçalar (çatı, yığın, dal üstü) zemindeki kar gibi ak kalsın (ISIK_AYAR ile patlamaz)
   };
   m.customProgramCacheKey = () => 'cv' + mod + cvTema;
   return m;
@@ -59,7 +59,7 @@ function cvYapi() {   // birçok basit parçayı tek geometride toplar (tek çiz
       const g = geo.userData.cvD || (geo.userData.cvD = geo.index ? geo.toNonIndexed() : geo), p = g.attributes.position, n = g.attributes.normal;
       const tn = geo.userData.cvTon;   // yumuşak biçimlerde alttan üste ton geçişi (alt hafif koyu, üst açık)
       for (let i = 0; i < p.count; i++) {
-        const f = tn ? 0.84 + 0.24 * clamp(p.getY(i) + 0.5, 0, 1) : 1;
+        const f = tn ? 0.81 + 0.23 * clamp(p.getY(i) + 0.5, 0, 1) : 1;
         v.fromBufferAttribute(p, i).applyMatrix4(m); pos.push(v.x, v.y, v.z);
         v.fromBufferAttribute(n, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z);
         col.push(Math.min(1, c.r * f), Math.min(1, c.g * f), Math.min(1, c.b * f)); kk.push(kt || 0, kz || 0, ke || 0);
@@ -137,15 +137,24 @@ const cvBolge = i => { const f = i / N; return f < 0.08 || f > 0.94 ? 0 : f < 0.
 
 // ───────── zemin ─────────
 const cimDoku = tuvalDoku(512, 512, (g, w, h) => {
+  // Tuval içi deterministik üreteç: ortak R() sırasını değiştirmeden doku zenginliğini artırır.
+  let cS = 41793; const rc = () => { cS = (cS * 1664525 + 1013904223) >>> 0; return cS / 4294967296; };
   if(cvTema==='kiyi') {
-    g.fillStyle='#2bb8d4';g.fillRect(0,0,w,h);g.lineCap='round';
-    for(let k=0;k<85;k++){const x=R()*w,y=R()*h;g.strokeStyle=k%3?'rgba(160,242,245,.18)':'rgba(237,255,246,.36)';g.lineWidth=1+R()*3;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+10,y-4,x+21,y+4,x+34,y);g.stroke();}
+    g.fillStyle='#26b2cf';g.fillRect(0,0,w,h);
+    for(let k=0;k<22;k++){const x=rc()*w,y=rc()*h,r=28+rc()*48;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){if(x+ox<-r||x+ox>w+r||y+oy<-r||y+oy>h+r)continue;const gr=g.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,r);gr.addColorStop(0,k%2?'rgba(98,232,238,.20)':'rgba(22,148,184,.18)');gr.addColorStop(1,'rgba(38,178,207,0)');g.fillStyle=gr;g.beginPath();g.arc(x+ox,y+oy,r,0,7);g.fill();}}
+    g.lineCap='round';
+    for(let k=0;k<85;k++){const x=R()*w,y=R()*h;g.strokeStyle=k%3?'rgba(160,242,245,.20)':'rgba(237,255,246,.38)';g.lineWidth=1+R()*3;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){if(x+ox<-40||x+ox>w+40||y+oy<-12||y+oy>h+12)continue;g.beginPath();g.moveTo(x+ox,y+oy);g.bezierCurveTo(x+ox+10,y+oy-4,x+ox+21,y+oy+4,x+ox+34,y+oy);g.stroke();}}
+    for(let k=0;k<48;k++){const x=rc()*w,y=rc()*h,l=20+rc()*26;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){if(x+ox<-40||x+ox>w+40||y+oy<-12||y+oy>h+12)continue;g.strokeStyle='rgba(20,132,168,.18)';g.lineWidth=2.4;g.beginPath();g.moveTo(x+ox,y+oy+2.5);g.quadraticCurveTo(x+ox+l*.5,y+oy+5.5,x+ox+l,y+oy+2.5);g.stroke();g.strokeStyle='rgba(244,255,252,.44)';g.lineWidth=1.5;g.beginPath();g.moveTo(x+ox,y+oy);g.quadraticCurveTo(x+ox+l*.5,y+oy-3.5,x+ox+l,y+oy);g.stroke();}}
+    for(let k=0;k<55;k++){const x=rc()*w,y=rc()*h;g.fillStyle=k%3?'rgba(255,255,255,.58)':'rgba(255,250,218,.52)';g.fillRect(x,y,2,2);if(k%4===0){g.fillRect(x-2,y+.5,5,1);g.fillRect(x+.5,y-2,1,5);}}
     return;
   }
   if(cvTema==='kar') {
-    g.fillStyle='#e9f5ff';g.fillRect(0,0,w,h);
-    for(let k=0;k<100;k++){const x=R()*w,y=R()*h,r=10+R()*42;g.fillStyle=k%3?'rgba(169,207,235,.20)':'rgba(255,255,255,.65)';for(const ox of [-w,0,w])for(const oy of [-h,0,h]){g.beginPath();g.ellipse(x+ox,y+oy,r,r*.35,-.35,0,7);g.fill();}}
-    for(let k=0;k<360;k++){g.fillStyle=k%2?'rgba(255,255,255,.55)':'rgba(213,233,250,.45)';g.fillRect(R()*w,R()*h,1.5,1.5);}return;
+    g.fillStyle='#e2f1fd';g.fillRect(0,0,w,h);
+    for(let k=0;k<100;k++){const x=R()*w,y=R()*h,r=10+R()*42;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){if(x+ox<-r||x+ox>w+r||y+oy<-r||y+oy>h+r)continue;g.fillStyle=k%3?'rgba(154,198,234,.24)':'rgba(255,255,255,.76)';g.beginPath();g.ellipse(x+ox,y+oy,r,r*.35,-.35,0,7);g.fill();}}
+    for(let k=0;k<28;k++){const x=rc()*w,y=rc()*h,l=28+rc()*42;for(const ox of [-w,0,w])for(const oy of [-h,0,h]){if(x+ox<-50||x+ox>w+50||y+oy<-20||y+oy>h+20)continue;g.strokeStyle='rgba(152,198,234,.24)';g.lineWidth=4;g.lineCap='round';g.beginPath();g.moveTo(x+ox,y+oy+2);g.quadraticCurveTo(x+ox+l*.5,y+oy-5,x+ox+l,y+oy+1);g.stroke();g.strokeStyle='rgba(255,255,255,.72)';g.lineWidth=2;g.beginPath();g.moveTo(x+ox,y+oy);g.quadraticCurveTo(x+ox+l*.5,y+oy-7,x+ox+l,y+oy-1);g.stroke();}}
+    for(let k=0;k<360;k++){g.fillStyle=k%2?'rgba(255,255,255,.65)':'rgba(198,226,250,.48)';g.fillRect(R()*w,R()*h,1.5,1.5);}
+    for(let k=0;k<95;k++){const x=rc()*w,y=rc()*h;g.fillStyle=k%3===0?'#ffffff':k%3===1?'#cff4ff':'#fff8dc';g.fillRect(x,y,2,2);if(k%2===0){g.fillRect(x-2.5,y+.5,6,1);g.fillRect(x+.5,y-2.5,1,6);}}
+    return;
   }
   g.fillStyle = '#6cc24a'; g.fillRect(0, 0, w, h);
   const leke = (x, y, r) => { for (const ox of [0, -w, w]) for (const oy of [0, -h, h]) { if (x + ox < -r || x + ox > w + r || y + oy < -r || y + oy > h + r) continue; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 7); g.fill(); } };
@@ -154,14 +163,30 @@ const cimDoku = tuvalDoku(512, 512, (g, w, h) => {
   for (let i = 0; i < 2600; i++) { g.fillStyle = ['#92da6a', '#5cae42', '#a6e27c', '#58a940'][(i >> 1) % 4]; g.globalAlpha = 0.38; const x = R() * w, y = R() * h, b = 3 + R() * 4; if (i % 2 === 0) g.fillRect(x, y, 1.5, b); }   // seyrek ot (rastgele sıra korunur: yerleşim değişmez)
   for (let k = 0; k < 7; k++) { const cx = R() * w, cy = R() * h; for (let i = 0; i < 16; i++) { g.fillStyle = ['#ffffff', '#ffe46b', '#ffb3d6', '#ffffff'][(i + k) % 4]; g.globalAlpha = 0.9; leke(cx + (R() - 0.5) * 70, cy + (R() - 0.5) * 70, 1.5 + R() * 1.3); } }
   g.globalAlpha = 1;
+  for (let k = 0; k < 18; k++) {   // güneşli yosunlu açıklıklar ve orman altı benekleri
+    const x = rc() * w, y = rc() * h, r = 34 + rc() * 48, acik = k % 2 === 0;
+    for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) {
+      if (x + ox < -r || x + ox > w + r || y + oy < -r || y + oy > h + r) continue;
+      const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+      gr.addColorStop(0, acik ? 'rgba(164,226,96,.22)' : 'rgba(52,144,58,.24)');
+      gr.addColorStop(0.65, acik ? 'rgba(148,214,88,.10)' : 'rgba(62,158,64,.10)');
+      gr.addColorStop(1, 'rgba(108,194,74,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 7); g.fill();
+    }
+  }
+  for (let k = 0; k < 56; k++) {   // minik yosun öbekleri ve yonca noktaları
+    const cx = rc() * w, cy = rc() * h; g.globalAlpha = 0.34; g.fillStyle = k % 3 === 0 ? '#9de26b' : k % 3 === 1 ? '#4ca448' : '#85cf5c';
+    for (let j = 0; j < 3; j++) { const a = j * 2.1 + k; leke(cx + Math.cos(a) * 4, cy + Math.sin(a) * 4, 2.2 + (k % 2)); }
+  }
+  g.globalAlpha = 1;
 }, true); cimDoku.repeat.set(cvTema==='kiyi'?27:46,cvTema==='kiyi'?27:46);
 const zemin = new T.Mesh(new T.PlaneGeometry(1500, 1500, 44, 44), mat(0xffffff, { map: cimDoku, vertexColors: true }));
 {
   const p = zemin.geometry.attributes.position, c = new Float32Array(p.count * 3);
-  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.9 + 0.1 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017) + 0.07 * Math.sin(x * 0.05 + y * 0.043); const t2 = Math.sin(x * 0.0105 + 0.7) * Math.cos(y * 0.0125 - 0.4); c[i * 3] = v * (0.96 + 0.05 * Math.sin(y * 0.03) + 0.07 * t2); c[i * 3 + 1] = v * (1 + 0.015 * t2); c[i * 3 + 2] = v * (0.92 - 0.06 * t2); if (cvTema === 'kiyi') { c[i * 3] = v * (0.97 - 0.05 * t2); c[i * 3 + 1] = v * (0.99 + 0.02 * t2); c[i * 3 + 2] = Math.min(1, v * (1.0 + 0.04 * t2)); } if (cvTema === 'kar') { const k = 0.95 + (v - 0.9) * 0.35; c[i * 3] = k * (0.95 - 0.025 * t2); c[i * 3 + 1] = k * 0.985; c[i * 3 + 2] = Math.min(1, k * (1.04 + 0.02 * t2)); } }
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.9 + 0.1 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017) + 0.07 * Math.sin(x * 0.05 + y * 0.043); const t2 = Math.sin(x * 0.0105 + 0.7) * Math.cos(y * 0.0125 - 0.4); c[i * 3] = v * (0.94 + 0.06 * Math.sin(y * 0.03) + 0.10 * t2); c[i * 3 + 1] = v * (1 + 0.03 * t2); c[i * 3 + 2] = v * (0.90 - 0.08 * t2); if (cvTema === 'kiyi') { c[i * 3] = v * (0.94 - 0.08 * t2); c[i * 3 + 1] = v * (0.99 + 0.03 * t2); c[i * 3 + 2] = Math.min(1, v * (1.02 + 0.06 * t2)); } if (cvTema === 'kar') { const k = 0.92 + (v - 0.9) * 0.48; c[i * 3] = k * (0.93 - 0.04 * t2); c[i * 3 + 1] = k * (0.98 - 0.015 * t2); c[i * 3 + 2] = Math.min(1, k * (1.04 + 0.02 * t2)); } }
   zemin.geometry.setAttribute('color', new T.BufferAttribute(c, 3));
 }
-if (cvTema === 'kar') { zemin.material.emissive.setHex(0xffffff); zemin.material.emissiveMap = cimDoku; zemin.material.emissiveIntensity = 0.26; }   // kar loş ışıkta grileşmesin
+if (cvTema === 'kar') { zemin.material.emissive.setHex(0xffffff); zemin.material.emissiveMap = cimDoku; zemin.material.emissiveIntensity = 0.21; }   // kar loş ışıkta grileşmesin ama ışıkla da patlamasın
 zemin.rotation.x = -Math.PI / 2; zemin.position.set(0, -0.02, -70); scene.add(zemin);
 if(cvTema==='orman') { // yol kenarına doğru açılan çim ve ince toprak şeridi
   const W = YARI + 9, kenarDoku = tuvalDoku(256, 256, (g, w, h) => {

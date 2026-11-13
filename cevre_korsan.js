@@ -32,25 +32,25 @@ if (cvTema === 'korsan') {
   const S = cvYapi(), golge = [], koyuSu = [], parilti = [];
   const yer = (f, dis, uz, r, bos) => {   // yol kenarında boş yer ara (dis: 1 deniz yanı, -1 ada içi)
     for (let k = 0; k < 12; k++) { const i = cvI(f + (k % 2 ? -1 : 1) * Math.ceil(k / 2) * 0.006), yan = krDis(i) * dis, p = cvKenar(i, yan, uz, 0.2), d = yakin(p.x, p.z);
-      if (d > (bos || YARI + r + 2) && cvBos(p.x, p.z, r)) { cvYasak.push([p.x, p.z, r]); return { x: p.x, z: p.z, ry: p.ry, i, yan }; } }
+      if (d > (bos || Math.max(11.0, YARI + r + 2)) && cvBos(p.x, p.z, r)) { cvYasak.push([p.x, p.z, r]); return { x: p.x, z: p.z, ry: p.ry, i, yan }; } }
     return null;
   };
-  const AHSAP = 0x9a6438, AHSAP2 = 0xc58a52, KIRMIZI = 0xe0483c, ALTIN = 0xffcf3a, KREM = 0xfffaf0;
+  const AHSAP = 0x8a532b, AHSAP2 = 0xc58a52, KIRMIZI = 0xe63f34, ALTIN = 0xffd948, KREM = 0xfffbf2;
 
   // ───────── 1) korsan gemisi: koyda demirli, tombul, dolgun yelkenli; ayrı çizim (sallanır) ─────────
   { const p = yer(0.27, 1, YARI + 47, 15, YARI + 39);
     if (p) {
       const B = cvYapi(), e = (g, x, y, z, sx, sy, sz, r, rx, ry, rz, dalga) => B.ekle(g, x, y, z, sx, sy, sz, r, rx || 0, ry || 0, rz || 0, 0, dalga || 0, 0);
       const govde = new T.SphereGeometry(1, 18, 9, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2); govde.userData.cvTon = true;
-      e(govde, 0, 2.2, 0, 3.1, 2.7, 6.6, 0xa66a3c);                   // tombul gövde (kase)
+      e(govde, 0, 2.2, 0, 3.1, 2.7, 6.6, 0x874d26);                   // tombul gövde (kase)
       e(cvG.sil, 0, 2.2, 0, 3.12, 0.42, 6.62, KIRMIZI);                 // kırmızı küpeşte şeridi
-      e(cvG.sil, 0, 1.55, 0, 2.95, 0.22, 6.3, 0xffd76a);                // altın ince şerit
-      e(cvG.sil, 0, 2.08, 0, 2.86, 0.12, 6.32, 0xd8a468);               // güverte
-      for (const yan of [-1, 1]) for (let k = 0; k < 3; k++) { const z = -2.4 + k * 2.4, x = yan * 3.1 * Math.sqrt(Math.max(0, 1 - (z / 6.6) ** 2 - 0.06)); e(cvG.sil, x, 1.05, z, 0.5, 0.1, 0.5, 0xffd76a, 0, 0, Math.PI / 2); e(cvG.sil, x + yan * 0.04, 1.05, z, 0.38, 0.06, 0.38, 0xfff4c8, 0, 0, Math.PI / 2); }   // sarı yuvarlak pencereler
-      e(cvG.kutuY, 0, 3.0, -4.3, 4.2, 2.0, 2.6, 0xa8703f);              // kıç köşkü
+      e(cvG.sil, 0, 1.55, 0, 2.95, 0.22, 6.3, ALTIN);                   // altın ince şerit
+      e(cvG.sil, 0, 2.08, 0, 2.86, 0.12, 6.32, 0xe3b376);               // güverte
+      for (const yan of [-1, 1]) for (let k = 0; k < 3; k++) { const z = -2.4 + k * 2.4, x = yan * 3.1 * Math.sqrt(Math.max(0, 1 - (z / 6.6) ** 2 - 0.06)); e(cvG.sil, x, 1.05, z, 0.5, 0.1, 0.5, ALTIN, 0, 0, Math.PI / 2); e(cvG.sil, x + yan * 0.04, 1.05, z, 0.38, 0.06, 0.38, 0xfff6cf, 0, 0, Math.PI / 2); }   // sarı yuvarlak pencereler
+      e(cvG.kutuY, 0, 3.0, -4.3, 4.2, 2.0, 2.6, 0x8f552c);              // kıç köşkü
       e(cvG.kutuY, 0, 4.1, -4.3, 4.5, 0.35, 2.9, KIRMIZI);
-      for (const x of [-1.1, 0, 1.1]) e(cvG.kutuY, x, 3.0, -2.98, 0.6, 0.8, 0.12, 0xffe48a);
-      e(cvG.kutuY, 0, 3.0, -5.62, 2.6, 1.0, 0.12, 0xffe48a);
+      for (const x of [-1.1, 0, 1.1]) e(cvG.kutuY, x, 3.0, -2.98, 0.6, 0.8, 0.12, 0xffe68a);
+      e(cvG.kutuY, 0, 3.0, -5.62, 2.6, 1.0, 0.12, 0xffe68a);
       e(cvG.sil5, 0, 3.0, 7.0, 0.13, 4.2, 0.13, AHSAP, 1.15);           // baş direği
       e(cvG.kureK, 0, 2.75, 6.25, 0.55, 0.55, 0.5, ALTIN);              // pruvada altın top süs
       const yelken = new T.SphereGeometry(1, 10, 8, Math.PI / 2 - 0.75, 1.5, Math.PI / 2 - 0.62, 1.24);
@@ -61,20 +61,20 @@ if (cvTema === 'korsan') {
         e(yelken, -1.3 * s * sb, h * 0.45 + 0.1, z - 1.3 * s * cb, 3.9 * s, 2.7 * s, 1.5 * s, KREM, 0, b);          // dolgun alt yelken
         e(yelken, -1.0 * s * sb, h * 0.82 - 0.8, z - 1.0 * s * cb, 2.5 * s, 1.75 * s, 1.15 * s, KIRMIZI, 0, b);    // kırmızı üst yelken
       }
-      e(cvG.sil, 0, 12.6, 1.4, 0.75, 0.6, 0.75, 0xa8703f); e(cvG.sil, 0, 12.92, 1.4, 0.8, 0.12, 0.8, KIRMIZI);   // gözcü sepeti
+      e(cvG.sil, 0, 12.6, 1.4, 0.75, 0.6, 0.75, 0x8f552c); e(cvG.sil, 0, 12.92, 1.4, 0.8, 0.12, 0.8, KIRMIZI);   // gözcü sepeti
       { // bayrak: lacivert zemin, gülen sarı yüz (dalgalanır)
         const fy = 15.0, fz = 0.3;
-        e(cvG.kutu, 0, fy, fz, 0.06, 1.45, 2.2, 0x2c3a66, 0, 0, 0, 1);
+        e(cvG.kutu, 0, fy, fz, 0.06, 1.45, 2.2, 0x1e2c5c, 0, 0, 0, 1);
         for (const s of [-1, 1]) {
           e(cvG.sil, s * 0.05, fy, fz, 0.5, 0.06, 0.5, ALTIN, 0, 0, Math.PI / 2, 1);
-          for (const zz of [-0.17, 0.17]) e(cvG.kureK, s * 0.09, fy + 0.13, fz + zz, 0.03, 0.09, 0.07, 0x2c3a66, 0, 0, 0, 1);
-          e(new T.TorusGeometry(0.22, 0.045, 4, 10, Math.PI), s * 0.09, fy - 0.03, fz, 1, 1, 1, 0x2c3a66, 0, Math.PI / 2, Math.PI, 1);
+          for (const zz of [-0.17, 0.17]) e(cvG.kureK, s * 0.09, fy + 0.13, fz + zz, 0.03, 0.09, 0.07, 0x1e2c5c, 0, 0, 0, 1);
+          e(new T.TorusGeometry(0.22, 0.045, 4, 10, Math.PI), s * 0.09, fy - 0.03, fz, 1, 1, 1, 0x1e2c5c, 0, Math.PI / 2, Math.PI, 1);
         }
         e(cvG.sil, 0, 14.6, 1.4, 0.06, 2.4, 0.06, AHSAP);
       }
-      for (const yan of [-1, 1]) for (const z of [1.4, -1.9]) { const a = cvG.kutu; e(a, yan * 1.5, 7.5, z - 0.6, 0.04, 11, 0.04, 0x6b4126, 0, 0, -yan * 0.26); }   // halatlar
+      for (const yan of [-1, 1]) for (const z of [1.4, -1.9]) { const a = cvG.kutu; e(a, yan * 1.5, 7.5, z - 0.6, 0.04, 11, 0.04, 0x54311a, 0, 0, -yan * 0.26); }   // halatlar
       const geo = B.geo(); krGemi = new T.Group(); krGemi.position.set(0, 0, 0);
-      const m = new T.Mesh(geo, cvMalz(5, { side: T.DoubleSide, emissive: 0x2a2216 })); m.scale.setScalar(2.05); m.frustumCulled = false;
+      const m = new T.Mesh(geo, cvMalz(5, { side: T.DoubleSide, emissive: 0x14100a })); m.scale.setScalar(2.05); m.frustumCulled = false;
       krGemi.add(m); const kab = new T.Group(); kab.position.set(p.x, 0, p.z); kab.rotation.y = p.ry - 1.0; kab.add(krGemi); scene.add(kab);
       koyuSu.push([p.x, p.z, 17, 'koy']); krYer.gemi = [p.x, p.z, p.i];
       // gemiye uzanan ahşap iskele (kumdan suya)
@@ -176,11 +176,11 @@ if (cvTema === 'korsan') {
   // ───────── palmiyeler: tek geometri, çoklu kopya (tepeler rüzgârda salınır) ─────────
   { const P = cvYapi(), ust = new T.Vector3();
     let x = 0, y = 0;
-    for (let k = 0; k < 9; k++) { const a = 0.12 + k * 0.035, dy = 0.78; P.ekle(cvG.sil, x + Math.sin(a) * dy / 2, y + dy / 2, 0, 0.27 - k * 0.012, dy * 1.06, 0.27 - k * 0.012, k % 2 ? 0xb88a5a : 0xa77a4c, 0, 0, -a); x += Math.sin(a) * dy; y += Math.cos(a) * dy; }
+    for (let k = 0; k < 9; k++) { const a = 0.12 + k * 0.035, dy = 0.78; P.ekle(cvG.sil, x + Math.sin(a) * dy / 2, y + dy / 2, 0, 0.27 - k * 0.012, dy * 1.06, 0.27 - k * 0.012, k % 2 ? 0xc49058 : 0x8e5f34, 0, 0, -a); x += Math.sin(a) * dy; y += Math.cos(a) * dy; }
     ust.set(x, y, 0);
-    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), u = 1.55; P.ekle(cvG.kureK, ust.x + c * u, ust.y - 0.3, s * u, 1.9, 0.14, 0.5, k % 2 ? 0x2f8f45 : 0x46a84f, 0, -a, -0.38, 1); P.ekle(cvG.kureK, ust.x + c * u * 1.9, ust.y - 0.95, s * u * 1.9, 0.9, 0.1, 0.38, k % 2 ? 0x2f8f45 : 0x3d9e4c, 0, -a, -0.75, 1); }
-    for (let k = 0; k < 3; k++) { const a = k * 2.1; P.ekle(cvG.kureK, ust.x + Math.cos(a) * 0.32, ust.y - 0.25, Math.sin(a) * 0.32, 0.26, 0.26, 0.26, 0x7a5230); }
-    P.ekle(cvG.kureK, ust.x, ust.y, 0, 0.45, 0.3, 0.45, 0x3d9e4c);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a), u = 1.55; P.ekle(cvG.kureK, ust.x + c * u, ust.y - 0.3, s * u, 1.9, 0.14, 0.5, k % 2 ? 0x247e3d : 0x54b852, 0, -a, -0.38, 1); P.ekle(cvG.kureK, ust.x + c * u * 1.9, ust.y - 0.95, s * u * 1.9, 0.9, 0.1, 0.38, k % 2 ? 0x247e3d : 0x44a649, 0, -a, -0.75, 1); }
+    for (let k = 0; k < 3; k++) { const a = k * 2.1; P.ekle(cvG.kureK, ust.x + Math.cos(a) * 0.32, ust.y - 0.25, Math.sin(a) * 0.32, 0.26, 0.26, 0.26, 0x5c3a1e); }
+    P.ekle(cvG.kureK, ust.x, ust.y, 0, 0.45, 0.3, 0.45, 0x349444);
     const liste = [];
     const ekle = (f, dis, uz, s) => { const p = yer(f, dis, uz, 2.2); if (p) { liste.push([p.x, 0, p.z, s, s, s, Rk() * 6.28]); golge.push([p.x + 1.2 * s, p.z, 2.4 * s, 1.8 * s, 0.22]); } };
     [[0.1, 1, 10], [0.15, -1, 13], [0.21, 1, 11], [0.33, -1, 12], [0.4, 1, 11], [0.47, -1, 10], [0.55, 1, 12], [0.63, -1, 14], [0.66, -1, 18], [0.71, 1, 11], [0.77, -1, 12], [0.9, -1, 11]].forEach((q, k) => ekle(q[0], q[1], YARI + q[2], 0.95 + (k % 3) * 0.15));
@@ -229,40 +229,84 @@ if (cvTema === 'korsan') {
     const W = 560, X0 = mx - W / 2, Z0 = mz - W / 2, Q = 1024 / W, px = x => (x - X0) * Q, pz = z => (z - Z0) * Q;
     const yol = g => { g.beginPath(); for (let i = 0; i <= N; i += 2) { const k = i % N; i ? g.lineTo(px(PX[k]), pz(PZ[k])) : g.moveTo(px(PX[k]), pz(PZ[k])); } g.closePath(); };
     const doku = tuvalDoku(1024, 1024, (g, w, h) => {
-      const gr = g.createRadialGradient(w / 2, h / 2, w * 0.2, w / 2, h / 2, w * 0.72); gr.addColorStop(0, '#22b9c8'); gr.addColorStop(1, '#1a9fc4'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      const gr = g.createRadialGradient(w / 2, h / 2, w * 0.16, w / 2, h / 2, w * 0.72);
+      gr.addColorStop(0, '#26c4cf'); gr.addColorStop(0.55, '#199ec2'); gr.addColorStop(1, '#1183ae');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
       g.lineJoin = 'round'; g.lineCap = 'round';
       const halka = (r, renk, a) => { g.globalAlpha = a; g.strokeStyle = renk; g.lineWidth = 2 * r * Q; yol(g); g.stroke(); g.fillStyle = renk; g.fill(); };
-      for (let k = 0; k < 10; k++) halka(SIG - k * 2.2, k < 5 ? '#43cfcf' : '#6be0d6', 0.22 + k * 0.03);   // sığ su: kıyıya doğru açılan turkuaz
+      for (let k = 0; k < 10; k++) halka(SIG - k * 2.2, k < 5 ? '#43cfcf' : '#73e4da', 0.22 + k * 0.032);   // sığ su: kıyıya doğru açılan turkuaz
+      // Sığ lagünde güneş ışığı kırılma (kostik) parıltıları
+      for (let k = 0; k < 140; k++) {
+        const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q, d = yakin(wx, wz);
+        if (krIc(wx, wz) || d < KUM + 3 || d > SIG + 6) continue;
+        g.globalAlpha = 0.22; g.strokeStyle = '#b4faf2'; g.lineWidth = 1.4;
+        g.beginPath(); g.ellipse(x, z, 3 + Rk() * 5, 1.5 + Rk() * 3, Rk() * 3.14, 0, 7); g.stroke();
+      }
       g.globalAlpha = 1;
       for (const q of koyuSu) { if (q[3] === 'golcuk') continue; const x = px(q[0]), z = pz(q[1]), r = q[2] * Q;   // gemi ve kemer çevresinde sığ su + köpük halkası
-        const rg = g.createRadialGradient(x, z, 0, x, z, r * 1.6); rg.addColorStop(0, 'rgba(120,232,222,0.75)'); rg.addColorStop(0.6, 'rgba(90,214,214,0.35)'); rg.addColorStop(1, 'rgba(90,214,214,0)'); g.fillStyle = rg; g.beginPath(); g.arc(x, z, r * 1.6, 0, 7); g.fill();
-        g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 3; g.beginPath(); g.ellipse(x, z, r * 0.62, r * 0.48, 0.5, 0, 7); g.stroke(); }
-      halka(KUM + 2.2, '#e9fbf6', 0.85);   // köpük çizgisi
-      halka(KUM + 0.9, '#d9c08a', 1);       // ıslak kum
-      halka(KUM, '#f3d48f', 1);             // altın kum
-      { // ada içi: yoldan uzaklaştıkça kum yumuşakça tropik çimene döner
-        g.save(); yol(g); g.clip(); g.globalAlpha = 1; g.fillStyle = '#7cbf5a'; g.fillRect(0, 0, w, h);
-        for (let k = 0; k < 120; k++) { const x = Rk() * w, z = Rk() * h; g.globalAlpha = 0.25; g.fillStyle = k % 2 ? '#62a84c' : '#93cf68'; g.beginPath(); g.arc(x, z, 8 + Rk() * 22, 0, 7); g.fill(); }
-        for (let k = 0; k < 9; k++) { g.globalAlpha = k ? 0.32 : 1; g.strokeStyle = k < 4 ? '#f3d48f' : '#e6d08a'; g.lineWidth = 2 * (YARI + 13 + k * 1.6) * Q; yol(g); g.stroke(); }
+        const rg = g.createRadialGradient(x, z, 0, x, z, r * 1.6); rg.addColorStop(0, 'rgba(130,238,228,0.82)'); rg.addColorStop(0.6, 'rgba(90,214,214,0.38)'); rg.addColorStop(1, 'rgba(90,214,214,0)'); g.fillStyle = rg; g.beginPath(); g.arc(x, z, r * 1.6, 0, 7); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,0.65)'; g.lineWidth = 3.2; g.beginPath(); g.ellipse(x, z, r * 0.62, r * 0.48, 0.5, 0, 7); g.stroke(); }
+      halka(KUM + 2.8, '#c8f8f2', 0.52);   // dış köpük danteli
+      halka(KUM + 2.0, '#f2fdfb', 0.9);    // parlak köpük çizgisi
+      halka(KUM + 0.9, '#c4a266', 1);      // ıslak koyu kum
+      halka(KUM, '#f6da94', 1);            // sıcak altın kum
+      { // ada içi: yoldan uzaklaştıkça kum yumuşakça tropik orman zeminine döner
+        g.save(); yol(g); g.clip(); g.globalAlpha = 1; g.fillStyle = '#75ba54'; g.fillRect(0, 0, w, h);
+        for (let k = 0; k < 140; k++) { const x = Rk() * w, z = Rk() * h; g.globalAlpha = 0.28; g.fillStyle = k % 3 === 0 ? '#52a046' : k % 3 === 1 ? '#8dd064' : '#65b04d'; g.beginPath(); g.arc(x, z, 8 + Rk() * 22, 0, 7); g.fill(); }
+        for (let k = 0; k < 9; k++) { g.globalAlpha = k ? 0.34 : 1; g.strokeStyle = k < 4 ? '#f6da94' : '#e6cf88'; g.lineWidth = 2 * (YARI + 13 + k * 1.6) * Q; yol(g); g.stroke(); }
         g.restore();
       }
-      for (let k = 0; k < 2600; k++) { const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q, d = yakin(wx, wz); if (d > (krIc(wx, wz) ? YARI + 16 : KUM - 1)) continue; g.globalAlpha = 0.4; g.fillStyle = k % 3 ? '#e6c27a' : '#fff0c2'; g.fillRect(x, z, 1 + Rk() * 1.5, 1 + Rk() * 1.5); }
+      // Koy ve kumsalda rüzgâr izli kum dalgaları + sıcak kum taneleri ve deniz kabukları
+      g.lineWidth = 1.6;
+      for (let k = 0; k < 190; k++) {
+        const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q, d = yakin(wx, wz);
+        if (d > (krIc(wx, wz) ? YARI + 15 : KUM - 1.2) || d < YARI + 2.5) continue;
+        g.globalAlpha = 0.28; g.strokeStyle = k % 2 ? '#dfb86e' : '#fff0c4';
+        g.beginPath(); g.moveTo(x, z); g.quadraticCurveTo(x + 6, z - 2.2, x + 12, z); g.stroke();
+      }
+      for (let k = 0; k < 3000; k++) {
+        const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q, d = yakin(wx, wz);
+        if (d > (krIc(wx, wz) ? YARI + 16 : KUM - 0.8)) continue;
+        g.globalAlpha = k % 9 === 0 ? 0.65 : 0.42;
+        g.fillStyle = k % 9 === 0 ? '#ffd7c4' : k % 3 ? '#e2bb70' : '#fff3ca';
+        g.fillRect(x, z, 1 + Rk() * 1.5, 1 + Rk() * 1.5);
+      }
       // ada içi: orman tepelerinin altında koyu yeşil, kenarı yumuşak
-      for (const q of golge) if (q[5] === 'orman') { const x = px(q[0]), z = pz(q[1]), r = q[6] * Q; const rg = g.createRadialGradient(x, z, r * 0.3, x, z, r * 1.25); rg.addColorStop(0, 'rgba(62,140,72,1)'); rg.addColorStop(0.75, 'rgba(98,170,86,0.85)'); rg.addColorStop(1, 'rgba(150,190,100,0)'); g.globalAlpha = 1; g.fillStyle = rg; g.beginPath(); g.arc(x, z, r * 1.25, 0, 7); g.fill(); }
-      for (const q of golge) { if (q[5]) continue; const x = px(q[0]), z = pz(q[1]); g.globalAlpha = q[4]; const rg = g.createRadialGradient(x, z, 0, x, z, q[2] * Q); rg.addColorStop(0, 'rgba(120,86,40,1)'); rg.addColorStop(1, 'rgba(120,86,40,0)'); g.fillStyle = rg; g.save(); g.translate(x, z); g.scale(1, q[3] / q[2]); g.translate(-x, -z); g.beginPath(); g.arc(x, z, q[2] * Q, 0, 7); g.fill(); g.restore(); }
+      for (const q of golge) if (q[5] === 'orman') { const x = px(q[0]), z = pz(q[1]), r = q[6] * Q; const rg = g.createRadialGradient(x, z, r * 0.3, x, z, r * 1.25); rg.addColorStop(0, 'rgba(54,132,64,1)'); rg.addColorStop(0.75, 'rgba(92,166,80,0.85)'); rg.addColorStop(1, 'rgba(150,190,100,0)'); g.globalAlpha = 1; g.fillStyle = rg; g.beginPath(); g.arc(x, z, r * 1.25, 0, 7); g.fill(); }
+      for (const q of golge) { if (q[5]) continue; const x = px(q[0]), z = pz(q[1]); g.globalAlpha = q[4]; const rg = g.createRadialGradient(x, z, 0, x, z, q[2] * Q); rg.addColorStop(0, 'rgba(116,80,34,1)'); rg.addColorStop(1, 'rgba(116,80,34,0)'); g.fillStyle = rg; g.save(); g.translate(x, z); g.scale(1, q[3] / q[2]); g.translate(-x, -z); g.beginPath(); g.arc(x, z, q[2] * Q, 0, 7); g.fill(); g.restore(); }
       for (const q of golge) if (q[5] === 'x') { const x = px(q[0]) + 6, z = pz(q[1]) + 5; g.globalAlpha = 0.9; g.strokeStyle = '#d8473a'; g.lineWidth = 2.6; g.beginPath(); g.moveTo(x - 3, z - 3); g.lineTo(x + 3, z + 3); g.moveTo(x + 3, z - 3); g.lineTo(x - 3, z + 3); g.stroke(); }
       for (const q of koyuSu) if (q[3] === 'golcuk') { const x = px(q[0]), z = pz(q[1]), r = q[2] * Q; g.globalAlpha = 1;
         g.fillStyle = '#e6d08a'; g.beginPath(); g.ellipse(x, z, r * 1.25, r * 1.0, 0, 0, 7); g.fill(); g.fillStyle = '#5fd6e0'; g.beginPath(); g.ellipse(x, z, r, r * 0.78, 0, 0, 7); g.fill();
-        g.fillStyle = '#9ff0f0'; g.beginPath(); g.ellipse(x - r * 0.2, z - r * 0.1, r * 0.5, r * 0.35, 0, 0, 7); g.fill(); }
-      // lagünde hafif dalga çizgileri
-      g.globalAlpha = 0.28; g.strokeStyle = '#c8f6f2'; g.lineWidth = 1.6;
-      for (let k = 0; k < 260; k++) { const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q; if (krIc(wx, wz) || yakin(wx, wz) < KUM + 5) continue; g.beginPath(); g.moveTo(x, z); g.quadraticCurveTo(x + 5, z - 2.5, x + 10, z); g.stroke(); }
+        g.fillStyle = '#a8f6f6'; g.beginPath(); g.ellipse(x - r * 0.2, z - r * 0.1, r * 0.5, r * 0.35, 0, 0, 7); g.fill(); }
+      // lagünde iki tonlu dalga parıltıları + güneş yıldızcıkları
+      for (let k = 0; k < 280; k++) {
+        const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q;
+        if (krIc(wx, wz) || yakin(wx, wz) < KUM + 5) continue;
+        g.globalAlpha = 0.26; g.strokeStyle = '#0e789a'; g.lineWidth = 2.0;
+        g.beginPath(); g.moveTo(x, z + 1.8); g.quadraticCurveTo(x + 5, z - 0.5, x + 10, z + 1.8); g.stroke();
+        g.globalAlpha = 0.45; g.strokeStyle = '#defcf9'; g.lineWidth = 1.5;
+        g.beginPath(); g.moveTo(x, z); g.quadraticCurveTo(x + 5, z - 2.6, x + 10, z); g.stroke();
+      }
+      for (let k = 0; k < 95; k++) {
+        const x = Rk() * w, z = Rk() * h, wx = X0 + x / Q, wz = Z0 + z / Q;
+        if (krIc(wx, wz) || yakin(wx, wz) < KUM + 4) continue;
+        g.globalAlpha = 0.78; g.fillStyle = k % 3 ? '#ffffff' : '#fff5c4';
+        g.fillRect(x - 2, z - 0.5, 5, 1); g.fillRect(x - 0.5, z - 2, 1, 5);
+      }
       g.globalAlpha = 1;
     });
     doku.anisotropy = renderer.capabilities.getMaxAnisotropy ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 1;
     doku.repeat.set(1500 / W, 1500 / W); doku.offset.set((-750 - X0) / W, 1 - (680 - Z0) / W);
     doku.wrapS = doku.wrapT = T.ClampToEdgeWrapping;
     zemin.material.map = doku; zemin.material.needsUpdate = true;
-    { const p = zemin.geometry.attributes.color; for (let i = 0; i < p.count; i++) { const v = 0.96 + 0.04 * Math.sin(i * 0.37); p.setXYZ(i, v, v, v); } p.needsUpdate = true; }
+    {
+      const pos = zemin.geometry.attributes.position, col = zemin.geometry.attributes.color;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = -pos.getY(i) - 70, d = yakin(x, z);
+        const s = clamp((d - KUM) / 22, 0, 1), derin = clamp((d - SIG) / 140, 0, 1), v = 0.96 + 0.045 * Math.sin(x * 0.021 + z * 0.019);
+        col.setXYZ(i, lerp(lerp(1.06, 0.94, s), 0.84, derin) * v, lerp(lerp(1.01, 1.04, s), 0.96, derin) * v, lerp(lerp(0.91, 1.04, s), 1.02, derin) * v);
+      }
+      col.needsUpdate = true;
+    }
   }
 }

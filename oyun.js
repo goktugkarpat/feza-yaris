@@ -131,9 +131,9 @@ let hedefD = null, parmak = false, sonOvgu = -99, turSesi = -1, ipucu = 0, sonTo
 let oyPid = null, oyBekleyen = null, oyAra = 0, oyElAcik = false, oySonSira = 0, oyBitisAsama = 0, oySure = 0, oySars = 0, oyRoketK = 0, oyBitisSira = 0;
 let oySeriAdet = 0, oySeriSay = 0, oyRoketSay = 0, oyHopSay = 0, oyGosterT = 0, oyTutucu = null;
 let oyMolaCizim = -1, oyTurZum = 0, oyLiderT = -99;
-// sürpriz balon gücü (P.guc hep aynı nesne ya da null), rakip tepkileri, garaj kamerası
-const oyGuc = { tur: '', kalan: 0, sure: 0 }, oySurprizE = { tur: '', sure: 0, x: 0, z: 0 }, oyBittiE = { tur: '' }, oyGectiE = { i: 0 }, OY_GUC_SURE = 4.5;
-let oySurprizAnlat = false, oyGarajAci0 = 0, oyGarajK = 0, oyGarajW = 0, oyGarajH = 0, oyGarajSes = false, oyKavanozTamam = false, oyDevK = 0;
+// sürpriz balon gücü (P.guc hep aynı nesne ya da null), rakip tepkileri, garaj kamerası, yeniden kullanılan olay nesneleri (sıfır kare içi bellek)
+const oyGuc = { tur: '', kalan: 0, sure: 0 }, oySurprizE = { tur: '', sure: 0, x: 0, z: 0 }, oyBittiE = { tur: '' }, oyGectiE = { i: 0 }, oySeriE = { adet: 0, hedef: 3, odul: false, toplam: 0 }, oyHopE = { i: 0, tur: 0, v: 0, d: 0 }, oyInisE = { i: 0, v: 0, d: 0, tur: 0 }, OY_GUC_SURE = 4.5, OY_RAMPA_UCUS = RAMPA.ucus;
+let oySurprizAnlat = false, oyGarajAci0 = 0, oyGarajK = 0, oyGarajW = 0, oyGarajH = 0, oyGarajSes = false, oyKavanozTamam = false, oyDevK = 0, oyHopUcus = OY_RAMPA_UCUS;
 P.guc = null;
 const oyIlerleme = { tur: 1, oran: 0, toplam: 0, roket: false };   // 'ilerleme' olayı hep aynı nesneyi taşır (yeni nesne yok)
 let oyDolumSon = -1;
@@ -153,11 +153,11 @@ function izgarayaDiz() {
   yildizSay = 0; roketT = 0; roketBekle = 0; roketKullanildi = false; turSesi = -1; ipucu = 0; konfeti.visible = false; alev.visible = false;
   zaman = 0; oyBekleyen = null; oyAra = 0; oyBitisAsama = 0; oyBitisSira = 0; oySure = 0; oySonSira = 0; oySars = 0; oyRoketK = 0; sonTok = -9; sonOvgu = -99; ilkSurus = false;
   oySeriAdet = 0; oySeriSay = 0; oyRoketSay = 0; oyHopSay = 0; oyGosterT = 0; oyTurZum = 0; oyLiderT = -99; oyDolumSon = -1;
-  oyKamIlk = true; oyGeriEk = 1; oyKamY = 0; oyHopK = 0; oyGucKamK = 0; oyKanatK = 0; oyInisT = 0; const yon = pist(P.yol); kamF.set(yon.tx, 0, yon.tz);
+  oyKamIlk = true; oyGeriEk = 1; oyKamY = 0; oyHopK = 0; oyGucKamK = 0; oyKanatK = 0; oyInisT = 0; oyKamYat = 0; oyBakYan = 0; oyHopUcus = OY_RAMPA_UCUS; const yon = pist(P.yol); kamF.set(yon.tx, 0, yon.tz);
   HUD.yildiz.textContent = '0'; HUD.sira.textContent = '3'; HUD.dolum.style.height = '0%';
   HUD.isik.classList.add('gizli'); HUD.isiklar.forEach(el => { el.className = ''; });
   HUD.turlar.forEach(b => b.classList.remove('tamam')); HUD.hizlan.classList.remove('vurgu'); elGoster(false);
-  OLAY.emit('seri', { adet: 0, hedef: 3, odul: false, toplam: 0 }); ilerlemeGoster(true);
+  oySeriE.adet = 0; oySeriE.hedef = 3; oySeriE.odul = false; oySeriE.toplam = 0; OLAY.emit('seri', oySeriE); ilerlemeGoster(true);
 }
 function gec(d) { durum = d; durumT = 0; if (d === 'sayim') dongu.n = -1; OLAY.emit('durum', d); }
 // ───────── sürpriz gücü ─────────
@@ -347,7 +347,8 @@ function seriYildiz() {
   oySeriAdet++;
   const odul = oySeriAdet === 3;
   if (odul) { oySeriSay++; roketBekle = 0; roket(1.15); }
-  OLAY.emit('seri', { adet: oySeriAdet, hedef: 3, odul, toplam: yildizSay });
+  oySeriE.adet = oySeriAdet; oySeriE.hedef = 3; oySeriE.odul = odul; oySeriE.toplam = yildizSay;
+  OLAY.emit('seri', oySeriE);
   if (odul) oySeriAdet = 0;   // kaçan yıldızlar seriyi bozmaz; yeni üçlü sıradaki yıldızla başlar
 }
 
@@ -416,7 +417,7 @@ function oyuncuAdim(dt) {
   const p = pist(P.yol, o1), kanat = oyGucMu('kanat'), kenar = (kanat || oyGucMu('gokkusagi') || P.hop > 0) ? 0 : clamp((Math.abs(P.d) - (DMAX - 0.9)) / 0.9, 0, 1);   // kanat, gökkuşağı ve havadayken kenar yavaşlatmaz
   let gucEk = 0;
   if (P.guc !== null && durum === 'yaris') {
-    const gucTaban = P.guc.tur === 'turbo' ? 8.0 : P.guc.tur === 'gokkusagi' ? 6.0 : kanat ? 4.5 : 0;   // turbo +8, gökkuşağı +6, kanat +4,5 m/sn
+    const gucTaban = P.guc.tur === 'turbo' ? 8.0 : P.guc.tur === 'gokkusagi' ? 6.0 : kanat ? 4.5 : P.guc.tur === 'miknatis' ? 1.5 : 0;   // turbo +8, gökkuşağı +6, kanat +4,5, mıknatıs +1,5 m/sn
     if (gucTaban > 0) {
       const gucK = Math.min(clamp((oyGuc.sure - oyGuc.kalan) / 0.35, 0, 1), clamp(oyGuc.kalan / 0.6, 0, 1));   // yumuşak giriş/çıkış
       gucEk = gucTaban * gucK;
@@ -587,9 +588,11 @@ function rampaAdim(a, dt) {
   const onceHop = a.hop;
   a.hop = Math.max(0, a.hop - dt); rampaZemin(a);
   if (onceHop > 0 && a.hop <= 0 && a === P) {
-    oySars = 0.26; oyInisT = 0.9; P.v = Math.max(P.v + 1.6, OYV + 3.2);
+    oyHopUcus = OY_RAMPA_UCUS;
+    oySars = oyGucMu('kanat') ? 0.14 : 0.26; oyInisT = 0.9; P.v = Math.max(P.v + 1.6, OYV + 3.2);
     if (roketT > 0.05) roketT = Math.min(2.6, roketT + 0.35);
-    OLAY.emit('inis', { i: 0, v: P.v, d: P.d, tur: Math.min(TUR - 1, Math.floor(Math.max(0, P.yol) / L)) });
+    oyInisE.v = P.v; oyInisE.d = P.d; oyInisE.tur = Math.min(TUR - 1, Math.floor(Math.max(0, P.yol) / L));
+    OLAY.emit('inis', oyInisE);
   }
   if (durum !== 'yaris' || a.hop > 0) return;
   const tur = Math.max(0, Math.floor(a.yol / L));
@@ -599,9 +602,16 @@ function rampaAdim(a, dt) {
     const once = a.rampaYolOnce - (r.s + tur * L), gecen = once < RAMPA.firlat ? Math.min(dt, Math.max(0, (z - RAMPA.firlat) / Math.max(1, a.v))) : 0;
     // Fırlama adımın ortasında olduysa başlangıç yüksekliğini tam dudak noktasından al.
     if (once < RAMPA.firlat) rampaZemin(a, r.s + tur * L + RAMPA.firlat);
+    const kanat = a === P && oyGucMu('kanat');
+    const ucusSure = kanat ? OY_RAMPA_UCUS * 1.28 : OY_RAMPA_UCUS;   // kanatla rampadan uçarken havada süzülme süresi uzar
     a.hopBasY = a.rampaY; a.hopBasEgim = a.rampaEgim; a.hopBasYatis = a.rampaYatis;
-    a.hop = RAMPA.ucus - gecen; a.rampaSon = anahtar;
-    if (a === P) { oyHopSay++; P.v = Math.max(P.v + 2.5, OYV + 4.0); SES.efekt.hop(); OLAY.emit('hop', { i: 0, tur, v: P.v, d: P.d }); if (R() < 0.3 && !SES.konusuyor() && !oyBekleyen && zaman - sonOvgu > 14) { sonOvgu = zaman; SES.soyle('hop'); } }
+    a.hop = Math.max(0, ucusSure - gecen); a.rampaSon = anahtar;
+    if (a === P) {
+      oyHopUcus = ucusSure;
+      oyHopSay++; P.v = Math.max(P.v + (kanat ? 3.0 : 2.5), OYV + (kanat ? 4.8 : 4.0));
+      SES.efekt.hop(); oyHopE.tur = tur; oyHopE.v = P.v; oyHopE.d = P.d; OLAY.emit('hop', oyHopE);
+      if (R() < 0.3 && !SES.konusuyor() && !oyBekleyen && zaman - sonOvgu > 14) { sonOvgu = zaman; SES.soyle('hop'); }
+    }
     break;
   }
 }
@@ -682,19 +692,22 @@ function bitir() {
 
 // ───────── çizim ─────────
 const kamF = new T.Vector3(0, 0, 1), kamH = new T.Vector3(), kamB = new T.Vector3(), tmp = new T.Vector3(), oyBak = new T.Vector3(), oyO2 = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };
-let yT = 0, oyKamIlk = true, oyGeriEk = 1, oyKamY = 0, oyHopK = 0, oyGucKamK = 0, oyKanatK = 0, oyInisT = 0;
+let yT = 0, oyKamIlk = true, oyGeriEk = 1, oyKamY = 0, oyHopK = 0, oyGucKamK = 0, oyKanatK = 0, oyInisT = 0, oyKamYat = 0, oyBakYan = 0;
 function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küçülür), gdt = gerçek kare süresi
   yT += dt;
   const bekliyor = durum === 'giris' || durum === 'sayim';
   for (const a of A) {
-    arabaYerlestir(a, dt);
+    if (a === P && a.hop > 0 && oyHopUcus !== OY_RAMPA_UCUS) {
+      RAMPA.ucus = oyHopUcus;
+      try { arabaYerlestir(a, dt); } finally { RAMPA.ucus = OY_RAMPA_UCUS; }
+    } else arabaYerlestir(a, dt);
     if (bekliyor) { const g = durum === 'sayim' ? 1 + Math.min(2.3, durumT) * 0.6 : 0.8; a.govde.position.y = Math.sin(yT * 44 + a.faz * 3) * 0.011 * g; a.govde.rotation.z = Math.sin(yT * 31 + a.faz) * 0.006 * g; }   // motor ısıtma titreşimi
   }
   alev.visible = roketT > 0 && durum === 'yaris'; if (alev.visible) alev.scale.set(0.4, 1.1 + Math.sin(yT * 50) * 0.35, 0.4);
   pistGuncelle(dt, yT); cevreGuncelle(dt, yT);
   // kamera
   const dik = innerWidth < innerHeight;
-  let k = 9, fov = dik ? 78 : 62;
+  let k = 9, fov = dik ? 78 : 62, yatHedef = 0;
   // Kamera oyun zamanıyla yumuşar (hızlı zamanda da aynı kadraj); ağır çekimde gerçek süreyle akar.
   if (dt > gdt && durum !== 'baslik') gdt = Math.min(0.25, dt);
   if (oySars > 0) oySars -= gdt;
@@ -703,12 +716,12 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   oyDevK = 0;
   const arabaY = P.g.position.y || 0;
   if (oyKamIlk) {
-    oyKamY = arabaY; oyHopK = 0; oyGucKamK = 0; oyKanatK = 0;
+    oyKamY = arabaY; oyHopK = 0; oyGucKamK = 0; oyKanatK = 0; oyKamYat = 0; oyBakYan = 0;
   } else {
     oyKamY += (arabaY - oyKamY) * oyUs(gdt, P.hop > 0 ? 7.5 : 5.5);
     oyHopK += ((durum === 'yaris' && P.hop > 0 ? 1 : 0) - oyHopK) * oyUs(gdt, P.hop > 0 ? 5.0 : 3.2);
     const gucTur = durum === 'yaris' && P.guc ? P.guc.tur : '';
-    const gucKamHedef = gucTur === 'turbo' ? 0.95 : gucTur === 'gokkusagi' ? 0.72 : gucTur === 'kanat' ? 0.52 : 0;
+    const gucKamHedef = gucTur === 'turbo' ? 0.95 : gucTur === 'gokkusagi' ? 0.72 : gucTur === 'kanat' ? 0.52 : gucTur === 'miknatis' ? 0.18 : 0;
     oyGucKamK += (gucKamHedef - oyGucKamK) * oyUs(gdt, 3.5);
     oyKanatK += ((gucTur === 'kanat' ? 1 : 0) - oyKanatK) * oyUs(gdt, 3.2);
   }
@@ -736,17 +749,25 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   } else {
     tmp.set(P.tx, 0, P.tz); kamF.lerp(tmp, oyUs(gdt, 4.5)).normalize();
     oyGeriEk += ((bekliyor ? 1 : 0) - oyGeriEk) * oyUs(gdt, 1.6);   // dizilişte biraz geriden: arkadaki arabalar da görünsün
-    const hizKam = Math.max(oyRoketK, oyGucKamK);
-    const geri = (dik ? 13 : 9.6) + Math.max(hizKam * 1.5, oyDevK * 1.5) + oyHopK * 0.65 + oyGeriEk * 3.4,   /* dev + roket birlikteyken kamera daha da geri gitmez: arkadaki boş koridorun (14 m) içinde kalır */ yuk = (dik ? 7.2 : 4.6) + hizKam * 0.3 + oyKanatK * 0.45 + oyHopK * 0.35 + oyGeriEk * 1.1 + oyDevK * 1.0 + oyKamY * 0.55, mx = P.x + P.tz * P.d * 0.45, mz = P.z - P.tx * P.d * 0.45;
+    const hizKam = Math.min(1.08, Math.max(oyRoketK, oyGucKamK) + Math.min(oyRoketK, oyGucKamK) * 0.12), kanatHop = oyKanatK * oyHopK;
+    const geri = (dik ? 13 : 9.6) + Math.max(hizKam * 1.5, oyDevK * 1.5) + oyHopK * 0.65 + kanatHop * 0.35 + oyGeriEk * 3.4,   /* dev + roket birlikteyken kamera daha da geri gitmez: arkadaki boş koridorun (14 m) içinde kalır */
+      yuk = (dik ? 7.2 : 4.6) + hizKam * 0.3 + oyKanatK * 0.34 + oyHopK * 0.32 + oyGeriEk * 1.1 + oyDevK * 1.0 + oyKamY * 0.54,
+      mx = P.x + P.tz * P.d * 0.45, mz = P.z - P.tx * P.d * 0.45;
     kamH.set(mx - kamF.x * geri, yuk, mz - kamF.z * geri);
     if (oySars > 0) kamH.y += Math.sin(yT * 46) * 0.12 * (oySars / 0.26);
-    const il = pist(P.yol + 15, oyO2), ib = dik ? 10 : 9;   // virajda hafif öne bakış: yolun ilerisine doğru
-    kamB.set(lerp(mx + kamF.x * ib, il.x, 0.4), 1.3 + oyKamY * 0.65, lerp(mz + kamF.z * ib, il.z, 0.4));
-    k = durum === 'giris' ? 1.5 : durum === 'sayim' ? 3 : 9; fov += hizKam * 6.5 + oyHopK * 2.8;
+    const virajK = durum === 'yaris' ? pist(P.yol + 6, oyO2).k : 0;
+    const bakYanHedef = durum === 'yaris' ? clamp(P.dv * 0.14, -1.6, 1.6) : 0;
+    oyBakYan += (bakYanHedef - oyBakYan) * oyUs(gdt, 7);
+    yatHedef = durum === 'yaris' ? clamp(P.dv * 0.0024 + virajK * P.v * 0.024, -0.044, 0.044) : 0;
+    const il = pist(P.yol + 15, oyO2), ib = dik ? 10 : 9;   // virajda ve yönlendirmede hafif öne/yana bakış: sıradaki yıldız ve balonlar görüşte kalır
+    kamB.set(lerp(mx + kamF.x * ib, il.x, 0.4) - P.tz * oyBakYan, 1.3 + oyKamY * 0.64 + oyKanatK * 0.26 + oyHopK * 0.24, lerp(mz + kamF.z * ib, il.z, 0.4) + P.tx * oyBakYan);
+    k = durum === 'giris' ? 1.5 : durum === 'sayim' ? 3 : 9; fov += hizKam * 6.5 + oyHopK * 2.8 + kanatHop * 1.4;
     if (oyTurZum > 0) fov -= Math.sin((1 - oyTurZum / 0.7) * Math.PI) * 4.5;   // tur atıldı: minik zum
   }
+  if (!oyKamIlk) { oyKamYat += (yatHedef - oyKamYat) * oyUs(gdt, 5.5); if (durum !== 'yaris' && Math.abs(oyKamYat) < 0.0002) oyKamYat = 0; }
   if (oyKamIlk) { oyKamIlk = false; camera.position.copy(kamH); oyBak.copy(kamB); }
   camera.position.lerp(kamH, oyUs(gdt, k)); oyBak.lerp(kamB, oyUs(gdt, k * 1.4)); camera.lookAt(oyBak);
+  if (Math.abs(oyKamYat) > 0.0002) camera.rotateZ(-oyKamYat);
   // Garajda ekranın alt ~%42'si arayüzün: görüntü yumuşakça yukarı kayar (araba üst %58'in ortasına gelir); garajdan çıkınca geri döner.
   const gk = durum === 'garaj' ? 1 : 0;
   if (gk || oyGarajK > 0) {

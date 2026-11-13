@@ -87,7 +87,7 @@ if (cvTema === 'muzik') {
       const yan = mzDis(i) * dis;
       const p = cvKenar(i, yan, uz, 0.25);
       const d = yakin(p.x, p.z);
-      if (d > (bos || YARI + r + 2) && cvBos(p.x, p.z, r)) {
+      if (d > (bos || Math.max(11.0, YARI + r + 2)) && cvBos(p.x, p.z, r)) {
         cvYasak.push([p.x, p.z, r]);
         return { x: p.x, z: p.z, ry: p.ry, i, yan };
       }
@@ -100,8 +100,8 @@ if (cvTema === 'muzik') {
   const meydan = [];   // [x, z, r, renk]
 
   const GOKKUSAGI = [0xff5e73, 0xff9a44, 0xffd94a, 0x52d681, 0x45bfff, 0x7284ff, 0xb878ff, 0xff85c8];
-  const ALTIN = 0xffcf42, PIRINC = 0xf0b22e, KREM = 0xfff8ea, AHSAP = 0xbe7f4a, KOYU = 0x462f59, LAVANTA = 0xa988ff, NANE = 0x6cdba8;
-  const PIYANO_SIYAH = 0x1e182e, TUS_BEYAZ = 0xfffdf8, TUS_SIYAH = 0x14101f;
+  const ALTIN = 0xffd738, PIRINC = 0xdc931d, KREM = 0xfffaf0, AHSAP = 0x9e5e2e, KOYU = 0x36204c, LAVANTA = 0xa988ff, NANE = 0x6cdba8;
+  const PIYANO_SIYAH = 0x161126, TUS_BEYAZ = 0xfffef8, TUS_SIYAH = 0x0d0917;
 
   // ───────── 1) Dev Kuyruklu Piyano Sahnesi (erken virajlarda başkahraman anıt) ─────────
   {
@@ -130,7 +130,7 @@ if (cvTema === 'muzik') {
       S.ekle(cvG.sil, 0.9, 3.35, -2.9, 2.35, 1.15, 2.35, PIYANO_SIYAH);
       S.ekle(cvG.kutuY, -2.55, 3.35, -0.4, 2.1, 1.15, 2.6, PIYANO_SIYAH);
       // Altın iç ses tahtası ve teller
-      S.ekle(cvG.sil, -0.4, 3.94, -1.1, 2.6, 0.08, 2.7, 0xe8b948);
+      S.ekle(cvG.sil, -0.4, 3.94, -1.1, 2.6, 0.08, 2.7, 0xf7c942);
       for (let st = 0; st < 7; st++) {
         S.ekle(cvG.sil3, -2.2 + st * 0.7, 4.02, -0.7, 0.03, 4.0 - st * 0.22, 0.03, ALTIN, Math.PI / 2, 0.12);
       }
@@ -161,7 +161,7 @@ if (cvTema === 'muzik') {
       S.ekle(cvG.sil, 1.65, 4.95, 1.0, 0.09, 2.4, 0.09, ALTIN, 0, 0, -0.18);
 
       // Piyano taburesi (koyu mor + pembe minder)
-      S.ekle(cvG.kutuY, 0, 1.85, 4.85, 2.6, 0.25, 1.25, 0xff6f7d);
+      S.ekle(cvG.kutuY, 0, 1.85, 4.85, 2.6, 0.25, 1.25, 0xff5972);
       S.ekle(cvG.kutuY, 0, 1.68, 4.85, 2.7, 0.16, 1.35, KOYU);
       for (const [bx, bz] of [[-1.1, 4.35], [1.1, 4.35], [-1.1, 5.35], [1.1, 5.35]]) {
         S.ekle(cvG.sil, bx, 1.25, bz, 0.14, 0.85, 0.14, KOYU);
@@ -366,9 +366,9 @@ if (cvTema === 'muzik') {
       if (!p) continue;
       const sc = 1.52;
       const P = cvYapi();
-      P.ekle(cvG.sil, 0, 0.14, 0, 6.2, 0.26, 6.2, 0x1d1930);          // derin lacivert-siyah plak
-      P.ekle(cvG.sil, 0, 0.28, 0, 5.2, 0.03, 5.2, 0x342d56);          // oluk halkası
-      P.ekle(cvG.sil, 0, 0.30, 0, 4.0, 0.03, 4.0, 0x262040);
+      P.ekle(cvG.sil, 0, 0.14, 0, 6.2, 0.26, 6.2, 0x141024);          // derin lacivert-siyah plak
+      P.ekle(cvG.sil, 0, 0.28, 0, 5.2, 0.03, 5.2, 0x3b3366);          // oluk halkası
+      P.ekle(cvG.sil, 0, 0.30, 0, 4.0, 0.03, 4.0, 0x221b3e);
       // Gökkuşağı merkez etiketi (3 canlı halka)
       P.ekle(cvG.sil, 0, 0.32, 0, 2.35, 0.04, 2.35, GOKKUSAGI[(k * 2) % 8]);
       P.ekle(cvG.sil, 0, 0.34, 0, 1.72, 0.04, 1.72, GOKKUSAGI[(k * 2 + 2) % 8]);
@@ -415,7 +415,7 @@ if (cvTema === 'muzik') {
     const altSpiral = new T.TorusGeometry(1.42, 0.27, 6, 16, Math.PI * 1.65);
     G.ekle(altSpiral, 0.1, -0.55, 0, 1, 1, 1, ALTIN, 0, 0, 0.4);
     const solGeo = G.geo();
-    const solMat = cvMalz(0, { emissive: 0xffaa00, emissiveIntensity: 0.42 });
+    const solMat = cvMalz(0, { emissive: 0xd98c00, emissiveIntensity: 0.34 });
 
     for (let k = 0; k < 8; k++) {
       const f = 0.06 + k * 0.118;
@@ -524,7 +524,7 @@ if (cvTema === 'muzik') {
       const f = 0.04 + (k / 90) * 0.92;
       const i = cvI(f), yan = (k % 2 ? 1 : -1) * mzDis(i);
       const p = cvKenar(i, yan, YARI + 4.5 + (k % 3) * 2.1);
-      if (yakin(p.x, p.z) < YARI + 4.0 || !cvBos(p.x, p.z, 1.2)) continue;
+      if (yakin(p.x, p.z) < YARI + 4.2 || !cvBos(p.x, p.z, 1.2)) continue;
       const s = 1.05 + (k % 3) * 0.22;
       ziller.push([p.x, 0, p.z, s, s, s, k * 0.9, GOKKUSAGI[k % GOKKUSAGI.length]]);
     }
@@ -563,58 +563,87 @@ if (cvTema === 'muzik') {
     const doku = tuvalDoku(1024, 1024, (g, w, h) => {
       // Sıcak nane-tereyağı kremi temel çayır (soluk değil, canlı ve sıcak)
       const gr = g.createRadialGradient(w / 2, h / 2, w * 0.08, w / 2, h / 2, w * 0.72);
-      gr.addColorStop(0, '#c8f2cf');
-      gr.addColorStop(0.52, '#9ce0bb');
-      gr.addColorStop(1, '#82cda8');
+      gr.addColorStop(0, '#daf7d4');
+      gr.addColorStop(0.52, '#9be0ba');
+      gr.addColorStop(1, '#7bc4a4');
       g.fillStyle = gr; g.fillRect(0, 0, w, h);
 
-      // Tereyağı kremi, lavanta ve canlı nane çayır lekeleri
-      for (let k = 0; k < 95; k++) {
-        const x = Rm() * w, y = Rm() * h, r = 20 + Rm() * 48;
+      // Tereyağı kremi, lavanta, gül ve canlı nane çayır lekeleri
+      for (let k = 0; k < 110; k++) {
+        const x = Rm() * w, y = Rm() * h, r = 18 + Rm() * 46;
         g.globalAlpha = 0.34;
-        g.fillStyle = ['#fff0be', '#d6c6ff', '#6fc89c', '#ffd6e7'][k % 4];
+        g.fillStyle = ['#fff1be', '#d6c4ff', '#66bf96', '#ffd2e6'][k % 4];
         g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
       }
 
-      // Dev müzikal dizek şeritleri (krem alt şerit + belirgin koyu mor 5 çizgi)
+      // Dev müzikal dizek şeritleri (lavanta kenar + krem parşömen + koyu mor 5 çizgi + ölçü çizgileri)
       for (const yBase of [h * 0.28, h * 0.72]) {
-        g.globalAlpha = 0.38;
-        g.strokeStyle = '#fff8e4';
-        g.lineWidth = 58;
+        const cizgiY = (x, off) => yBase + off + Math.sin(x * 0.012 + yBase) * 26;
+        g.globalAlpha = 0.34;
+        g.strokeStyle = '#8b72cc';
+        g.lineWidth = 66;
         g.beginPath();
-        for (let x = 0; x <= w; x += 16) {
-          const yy = yBase + Math.sin(x * 0.012 + yBase) * 26;
-          x ? g.lineTo(x, yy) : g.moveTo(x, yy);
-        }
+        for (let x = 0; x <= w; x += 16) x ? g.lineTo(x, cizgiY(x, 0)) : g.moveTo(x, cizgiY(x, 0));
         g.stroke();
 
-        g.globalAlpha = 0.72;
-        g.strokeStyle = '#4d3378';
-        g.lineWidth = 3.0;
+        g.globalAlpha = 0.62;
+        g.strokeStyle = '#fff9e8';
+        g.lineWidth = 56;
+        g.beginPath();
+        for (let x = 0; x <= w; x += 16) x ? g.lineTo(x, cizgiY(x, 0)) : g.moveTo(x, cizgiY(x, 0));
+        g.stroke();
+
+        g.globalAlpha = 0.78;
+        g.strokeStyle = '#3e2466';
+        g.lineWidth = 2.9;
         for (let line = -2; line <= 2; line++) {
           g.beginPath();
-          for (let x = 0; x <= w; x += 16) {
-            const yy = yBase + line * 11 + Math.sin(x * 0.012 + yBase) * 26;
-            x ? g.lineTo(x, yy) : g.moveTo(x, yy);
-          }
+          for (let x = 0; x <= w; x += 16) x ? g.lineTo(x, cizgiY(x, line * 11)) : g.moveTo(x, cizgiY(x, line * 11));
           g.stroke();
+        }
+        // Ölçü çizgileri ve dizek üstü pastel nota başları
+        for (let mx0 = 64, n = 0; mx0 < w - 32; mx0 += 96, n++) {
+          g.globalAlpha = 0.65; g.strokeStyle = '#533585'; g.lineWidth = 2.6;
+          g.beginPath(); g.moveTo(mx0, cizgiY(mx0, -22)); g.lineTo(mx0, cizgiY(mx0, 22)); g.stroke();
+          g.globalAlpha = 0.85; g.fillStyle = ['#ff6a82', '#49b8ff', '#e8a828', '#9872ff'][n % 4];
+          const nx = mx0 + 44, ny = cizgiY(nx, ((n % 5) - 2) * 11);
+          g.beginPath(); g.ellipse(nx, ny, 5.2, 3.8, -0.35, 0, 7); g.fill();
         }
       }
 
-      // Pist kenarında belirgin tereyağı kremi ve lavanta şerit
+      // Pist kenarında belirgin lavanta kenarlık, tereyağı kremi gezinti şeridi ve pastel karo izleri
       g.lineJoin = 'round'; g.lineCap = 'round';
-      g.globalAlpha = 0.78; g.strokeStyle = '#fff5da'; g.lineWidth = 2 * (YARI + 7) * Q;
+      g.globalAlpha = 0.56; g.strokeStyle = '#b9a6f6'; g.lineWidth = 2 * (YARI + 8.6) * Q;
       yol(g); g.stroke();
-      g.globalAlpha = 0.92; g.strokeStyle = '#ede6ff'; g.lineWidth = 2 * (YARI + 3) * Q;
+      g.globalAlpha = 0.84; g.strokeStyle = '#fff6dc'; g.lineWidth = 2 * (YARI + 5.8) * Q;
       yol(g); g.stroke();
+      g.globalAlpha = 0.94; g.strokeStyle = '#f1eaff'; g.lineWidth = 2 * (YARI + 2.8) * Q;
+      yol(g); g.stroke();
+      for (let i = 0; i < N; i += 6) {
+        for (const yan of [-1, 1]) {
+          const sx = PX[i] - TZ[i] * (YARI + 3.4) * yan, sz = PZ[i] + TX[i] * (YARI + 3.4) * yan;
+          if (yakin(sx, sz) < YARI + 2.6) continue;
+          g.globalAlpha = 0.72; g.fillStyle = (i / 6 + (yan > 0 ? 1 : 0)) % 2 ? '#c5b4ff' : '#ffe8a8';
+          g.beginPath(); g.arc(px(sx), pz(sz), 2.0, 0, 7); g.fill();
+        }
+      }
 
-      // Plak ve piyano meydanları için canlı halkalar
+      // Plak ve piyano meydanları için zengin mozaik halkalar ve piyano tuşu bordürü
       for (const m of meydan) {
         const x = px(m[0]), z = pz(m[1]), r = m[2] * Q;
-        g.globalAlpha = 0.48; g.fillStyle = '#fff6e2';
+        g.globalAlpha = 0.72; g.fillStyle = '#fff7e4';
         g.beginPath(); g.arc(x, z, r, 0, 7); g.fill();
-        g.globalAlpha = 0.72; g.strokeStyle = '#6c50a8'; g.lineWidth = 2.8;
-        for (const k of [0.96, 0.8, 0.64]) {
+        for (let t = 0; t < 24; t++) {
+          const a0 = t / 24 * Math.PI * 2, a1 = (t + 0.85) / 24 * Math.PI * 2;
+          g.globalAlpha = 0.78;
+          g.strokeStyle = t % 3 === 0 ? '#4a3274' : t % 3 === 1 ? '#b69cff' : '#fffdf4';
+          g.lineWidth = 4.2;
+          g.beginPath(); g.arc(x, z, r * 0.94, a0, a1); g.stroke();
+        }
+        g.globalAlpha = 0.85; g.strokeStyle = '#e8b332'; g.lineWidth = 2.6;
+        g.beginPath(); g.arc(x, z, r * 0.82, 0, 7); g.stroke();
+        g.globalAlpha = 0.75; g.strokeStyle = '#5f429c'; g.lineWidth = 2.4;
+        for (const k of [0.68, 0.54]) {
           g.beginPath(); g.arc(x, z, r * k, 0, 7); g.stroke();
         }
       }
@@ -624,8 +653,8 @@ if (cvTema === 'muzik') {
         const x = px(q[0]), z = pz(q[1]);
         g.globalAlpha = q[4];
         const rg = g.createRadialGradient(x, z, 0, x, z, q[2] * Q);
-        rg.addColorStop(0, 'rgba(72, 52, 110, 1)');
-        rg.addColorStop(1, 'rgba(72, 52, 110, 0)');
+        rg.addColorStop(0, 'rgba(54, 34, 92, 1)');
+        rg.addColorStop(1, 'rgba(54, 34, 92, 0)');
         g.fillStyle = rg;
         g.save();
         g.translate(x, z); g.scale(1, q[3] / q[2]); g.translate(-x, -z);
@@ -640,12 +669,13 @@ if (cvTema === 'muzik') {
     doku.wrapS = doku.wrapT = T.ClampToEdgeWrapping;
     zemin.material.map = doku; zemin.material.needsUpdate = true;
     {
-      const p = zemin.geometry.attributes.color;
-      for (let i = 0; i < p.count; i++) {
-        const v = 0.94 + 0.06 * Math.sin(i * 0.37);
-        p.setXYZ(i, v, v, v);
+      const pos = zemin.geometry.attributes.position, col = zemin.geometry.attributes.color;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = -pos.getY(i) - 70, d = yakin(x, z);
+        const u = clamp((d - YARI - 4) / 38, 0, 1), y = clamp((d - 70) / 220, 0, 1), v = 0.96 + 0.045 * Math.sin(x * 0.02 + z * 0.018);
+        col.setXYZ(i, lerp(lerp(1.05, 0.96, u), 0.90, y) * v, lerp(lerp(1.03, 1.02, u), 0.93, y) * v, lerp(lerp(0.97, 0.98, u), 1.03, y) * v);
       }
-      p.needsUpdate = true;
+      col.needsUpdate = true;
     }
   }
 }

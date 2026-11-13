@@ -19,15 +19,11 @@ if (cvTema === 'sato') {
     g.fillStyle = gr; g.fillRect(0, 0, c.width, h); scene.background.needsUpdate = true;
   }
   let stT = 70913; const Rs = () => { stT = (stT * 1664525 + 1013904223) >>> 0; return stT / 4294967296; };   // kendi sayı üreteci: ortak R() sırası bozulmaz
-  { // zemin: sıcak, sarıya çalan yumuşak yeşil çimen
-    const c = cimDoku.image, g = c.getContext('2d'), w = c.width, h = c.height;
-    g.globalAlpha = 0.3; g.fillStyle = '#7cc650'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 24; i++) { const x = Rs() * w, y = Rs() * h, r = 18 + Rs() * 30; g.globalAlpha = 1; for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) { const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r * 1.3); gr.addColorStop(0, i % 3 ? 'rgba(70,160,60,.14)' : 'rgba(230,214,120,.16)'); gr.addColorStop(1, 'rgba(70,160,60,0)'); g.fillStyle = gr; g.fillRect(x + ox - r * 1.3, y + oy - r * 1.3, r * 2.6, r * 2.6); } }
-    g.globalAlpha = 1; cimDoku.needsUpdate = true;
+  { // zemin köşe renkleri: pist ve şato çevresinde sıcak altın-çayır, uzakta serin masal vadisi
     const p = zemin.geometry.attributes.position, col = zemin.geometry.attributes.color;
     for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i), z = -p.getY(i) - 70, d = yakin(x, z), u = clamp((d - YARI - 4) / 34, 0, 1), y = clamp((d - 60) / 260, 0, 1), v = 0.97 + 0.04 * Math.sin(x * 0.019 + z * 0.023);
-      col.setXYZ(i, lerp(lerp(1.07, 0.98, u), 0.92, y) * v, lerp(lerp(1.0, 1.01, u), 0.99, y) * v, lerp(lerp(0.8, 0.86, u), 0.94, y) * v);
+      const x = p.getX(i), z = -p.getY(i) - 70, d = yakin(x, z), u = clamp((d - YARI - 4) / 36, 0, 1), y = clamp((d - 60) / 260, 0, 1), v = 0.96 + 0.05 * Math.sin(x * 0.021 + z * 0.025);
+      col.setXYZ(i, lerp(lerp(1.08, 0.94, u), 0.88, y) * v, lerp(lerp(1.03, 1.02, u), 0.96, y) * v, lerp(lerp(0.84, 0.86, u), 0.95, y) * v);
     }
     col.needsUpdate = true;
   }
@@ -47,13 +43,13 @@ if (cvTema === 'sato') {
   const yuvarlak = cvG.kutuY;
   const stTepeGeo = (() => { const g = cvG.yarim.clone(), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), r = Math.min(1, Math.hypot(x, z)); p.setY(i, 0.5 + 0.5 * Math.cos(PI * r)); } g.computeVertexNormals(); return g; })();   // yumuşak, çan biçimli tümsek (dipte sert kenar yok)
   const tepeY = (d, R, H) => H * (0.5 + 0.5 * Math.cos(PI * Math.min(1, d / R)));   // yuvarlak köşeli tombul kutu
-  const TAS = [0xe9e0cc, 0xdcd2bd, 0xd0c5ae, 0xf2ebdb], KIRMIZI = 0xe0483e, MAVI = 0x3f82dc, ALTIN = 0xffd23f, AHSAP = 0xa8743f, PENCERE = 0x4b3f5c, KREM = 0xfaf3e2;
+  const TAS = [0xf0e7d4, 0xd8cdb8, 0xbdb098, 0xf8f3e6], KIRMIZI = 0xd63630, MAVI = 0x2b6fd6, ALTIN = 0xffd638, AHSAP = 0x8f5d30, PENCERE = 0x2c223e, KREM = 0xfff8e8;
   const MOR = 0xb28ae6, MORA = 0xd2b6f7, MORK = 0x8660c4, LIME = 0xc9ea52, IBIK = 0x46a83e, GOZ = 0x1c1228, IRIS = 0x4fae37, YANAK = 0xff8cc6, BEYAZ = 0xffffff;
   const golge = [], agac = [], servi = [], cali = [], tepe = [], kaya = [];
   const yerBul = (f, yan, uz, r) => {
     for (let k = 0; k < 13; k++) {
       const i = cvI(f + (k % 2 ? -1 : 1) * Math.ceil(k / 2) * 0.006), p = cvKenar(i, yan, uz, 0.25), x = p.x, z = p.z, ry = p.ry;
-      if (yakin(x, z) > YARI + 3.4 + r && cvBos(x, z, r)) { cvYasak.push([x, z, r + 1]); return { x, z, ry, i }; }
+      if (yakin(x, z) > Math.max(11.0, YARI + 3.4 + r) && cvBos(x, z, r)) { cvYasak.push([x, z, r + 1]); return { x, z, ry, i }; }
     }
     return null;
   };
@@ -70,7 +66,7 @@ if (cvTema === 'sato') {
     s(halka, x, y0 + h + 0.35, z, r * 1.18, 0.9, r * 1.18, TAS[3]);
     const n = Math.max(6, Math.round(r * 3)); for (let k = 0; k < n; k++) { const a = k / n * PI * 2; s(yuvarlak, x + Math.sin(a) * r * 1.08, y0 + h + 1.1, z + Math.cos(a) * r * 1.08, r * 0.42, 0.85, 0.55, TAS[k % 2 ? 3 : 1], 0, a); }
     s(cati, x, y0 + h + 1.0 + r * 1.05, z, r * 1.3, r * 2.1, r * 1.3, renk);
-    s(halka, x, y0 + h + 1.05, z, r * 1.32, 0.3, r * 1.32, renk === KIRMIZI ? 0xc23a32 : 0x346fc0);
+    s(halka, x, y0 + h + 1.05, z, r * 1.32, 0.3, r * 1.32, renk === KIRMIZI ? 0x991f1c : 0x1a4796);
     s(cvG.kure, x, y0 + h + 1.0 + r * 2.1 + 0.15, z, 0.3, 0.3, 0.3, ALTIN);
     bayrak(x, y0 + h + 1.0 + r * 2.1 + 0.2, z, Math.max(1, r * 0.45), renk === KIRMIZI ? MAVI : KIRMIZI, bry);
     if (pencere) for (const [a, yy] of pencere) { const px = x + Math.sin(a) * r * 1.02, pz = z + Math.cos(a) * r * 1.02, w = Math.min(0.8, r * 0.28); s(yuvarlak, px, y0 + yy, pz, w * 1.5, w * 2.6, 0.5, KREM, 0, a); s(yuvarlak, px + Math.sin(a) * 0.12, y0 + yy, pz + Math.cos(a) * 0.12, w, w * 2.0, 0.4, PENCERE, 0, a); s(cvG.kure, px + Math.sin(a) * 0.14, y0 + yy + w, pz + Math.cos(a) * 0.14, w * 0.5, w * 0.5, 0.22, PENCERE, 0, a); }
@@ -111,11 +107,12 @@ if (cvTema === 'sato') {
   // ───────── 1 · iç tepedeki şato ─────────
   let mx = 0, mz = 0; for (let i = 0; i < N; i++) { mx += PX[i] / N; mz += PZ[i] / N; }
   const icinde = (x, z) => { let ic = false; for (let i = 0, j = N - 1; i < N; j = i++) if ((PZ[i] > z) !== (PZ[j] > z) && x < (PX[j] - PX[i]) * (z - PZ[i]) / (PZ[j] - PZ[i]) + PX[i]) ic = !ic; return ic; };
-  let sx0 = mx, sz0 = mz, sd = 0;
+  let sx0 = mx, sz0 = mz, sd = 0, stNi = 0, stHR = 30, stKemer = null;
   for (let x = mx - 120; x <= mx + 120; x += 4) for (let z = mz - 90; z <= mz + 90; z += 4) { if (!icinde(x, z)) continue; const d = yakin(x, z); if (d > sd) { sd = d; sx0 = x; sz0 = z; } }
   { // tepe: geniş, yumuşak çimen tümsek; şato tepede, kapısı en yakın yola bakar
     let en = 1e9, ni = 0; for (let i = 0; i < N; i++) { const d = Math.hypot(PX[i] - sx0, PZ[i] - sz0); if (d < en) { en = d; ni = i; } }
     const ry = Math.atan2(PX[ni] - sx0, PZ[ni] - sz0), HR = Math.max(30, sd - 10), HH = 8, SK = 1.35, Y = (HH - 0.25) / SK;
+    stNi = ni; stHR = HR;
     cvYasak.push([sx0, sz0, HR + 2]);
     tepe.push([sx0, -0.2, sz0, HR, HH, HR * 0.95, ry, 0x7fca5c]);
     tepe.push([sx0 + Math.sin(ry + 2.4) * HR * 0.55, -0.2, sz0 + Math.cos(ry + 2.4) * HR * 0.55, HR * 0.55, HH * 0.75, HR * 0.5, ry, 0x74c254]);
@@ -130,7 +127,7 @@ if (cvTema === 'sato') {
     // kapı (yola bakan duvarda): taş çerçeve, kemerli tahta kapı, üstünde kırmızı-mavi flama
     s(yuvarlak, 0, Y + 2.6, A + 0.9, 5.4, 5.6, 0.9, TAS[3]); s(cvG.sil, 0, Y + 5.3, A + 0.9, 2.7, 0.9, 2.7, TAS[3], PI / 2);
     s(yuvarlak, 0, Y + 2.0, A + 1.25, 3.4, 4.0, 0.5, AHSAP); s(cvG.sil, 0, Y + 4.0, A + 1.25, 1.7, 0.5, 1.7, AHSAP, PI / 2);
-    for (const q of [-0.6, 0.6]) s(yuvarlak, q, Y + 2.5, A + 1.55, 0.12, 4.4, 0.12, 0x8a5c30);
+    for (const q of [-0.6, 0.6]) s(yuvarlak, q, Y + 2.5, A + 1.55, 0.12, 4.4, 0.12, 0x68401e);
     s(cvG.kure, 0.95, Y + 2.2, A + 1.55, 0.16, 0.16, 0.12, ALTIN);
     for (const q of [-1, 1]) { s(yuvarlak, q * 3.6, Y + 4.4, A + 1.35, 1.5, 3.4, 0.25, q > 0 ? MAVI : KIRMIZI, 0, 0, 0, 0, 0.12); s(cvG.ucgen, q * 3.6, Y + 2.35, A + 1.35, 0.75, 0.9, 0.18, q > 0 ? MAVI : KIRMIZI, PI, 0, 0, 0, 0.12); s(cvG.kure, q * 3.6, Y + 4.6, A + 1.5, 0.35, 0.35, 0.12, ALTIN); }
     // köşe kuleleri (öndekiler kırmızı, arkadakiler mavi çatılı) + iç kule (ana kule ve ince yan kule)
@@ -180,6 +177,7 @@ if (cvTema === 'sato') {
         for (const yan of [-1, 1]) for (const u of [0.8, 1, 1.25, 1.5]) { const q = cvKenar(i, yan, r * u); if (yakin(q.x, q.z) < r * u - 1.5 || (u === 1 && !cvBos(q.x, q.z, 4))) iyi = false; }
         if (!iyi) continue;
         bulundu = true;
+        stKemer = { x: PX[i], z: PZ[i], tx: TX[i], tz: TZ[i] };
         S.yer(PX[i], PZ[i], Math.atan2(-TX[i], -TZ[i]), 1);
         s(kemerGeo, 0, 7.5, 0, 28, 15, 1, TAS[1]);
         for (let j = 0; j <= 12; j++) { const t = PI - j / 12 * PI; for (const z of [-1.75, 1.75]) s(yuvarlak, Math.cos(t) * 10.75, 5.6 + Math.sin(t) * 6.55, z, 1.45, 0.95, 0.5, j % 2 ? TAS[3] : KREM, 0, 0, t - PI / 2); }   // kemer taşları (krem halka)
@@ -229,7 +227,7 @@ if (cvTema === 'sato') {
   // ───────── ağaçlar, çalılar, taşlar: seyrek, yola en yakın şerit boş ─────────
   for (let i = 0; i < N; i += 3) for (const yan of [-1, 1]) for (let k = 0; k < 2; k++) {
     const uz = YARI + 11 + (k ? 10 + Rs() * Rs() * 70 : Rs() * 6), q = cvKenar(i + ((Rs() * 3) | 0), yan, uz), x = q.x, z = q.z, d = yakin(x, z), t = Rs();
-    if (d < YARI + 10 || d < uz * 0.55 || Rs() < (k ? 0.74 : 0.88)) continue;
+    if (d < YARI + 10 || d < uz * 0.55 || Rs() < (k ? 0.77 : 0.89)) continue;
     const f = i / N; if ((f < 0.05 || f > 0.95) && d < YARI + 22) continue;   // başlangıç çevresi sade
     if (t < 0.42) { const b = 0.8 + Rs() * 0.6; if (!cvBos(x, z, 2.4 * b)) continue; cvYasak.push([x, z, 2.6 * b]); agac.push([x, 0, z, b, b * (0.9 + Rs() * 0.3), b, Rs() * 6.28, [0x5cbf4e, 0x4fb04a, 0x6fcb58, 0x63c452][(Rs() * 4) | 0]]); if (d < 50) golge.push([x - 0.6, 0.012, z + 0.4, 2.6 * b, 1, 2.2 * b, -0.4]); }
     else if (t < 0.62) { const b = 0.8 + Rs() * 0.5; if (!cvBos(x, z, 1.4 * b)) continue; cvYasak.push([x, z, 1.5 * b]); servi.push([x, 0, z, b, b * (0.9 + Rs() * 0.4), b, Rs() * 6.28, [0x3f9a48, 0x48a64c][(Rs() * 2) | 0]]); if (d < 50) golge.push([x - 0.4, 0.012, z + 0.3, 1.5 * b, 1, 1.3 * b, -0.4]); }
@@ -269,8 +267,114 @@ if (cvTema === 'sato') {
     cok(g, new T.MeshBasicMaterial({ vertexColors: true, fog: false }), l);
   }
 
-  // ───────── tek parça yapılar ve gölgeler ─────────
-  { const m = new T.Mesh(S.geo(), cvMalz(stHar, { emissive: 0x141210 })); m.frustumCulled = false; scene.add(m); }
+  // ───────── tek parça yapılar, gölgeler ve masal vadisi zemin dokusu (yonca + taş patika) ─────────
+  { const m = new T.Mesh(S.geo(), cvMalz(stHar, { emissive: 0x0a0908 })); m.frustumCulled = false; scene.add(m); }
+  {
+    const W = 560, X0 = mx - W / 2, Z0 = mz - W / 2, Q = 1024 / W;
+    const px = x => (x - X0) * Q, pz = z => (z - Z0) * Q;
+    const yol = g => {
+      g.beginPath();
+      for (let i = 0; i <= N; i += 2) { const k = i % N; i ? g.lineTo(px(PX[k]), pz(PZ[k])) : g.moveTo(px(PX[k]), pz(PZ[k])); }
+      g.closePath();
+    };
+    const doku = tuvalDoku(1024, 1024, (g, w, h) => {
+      // Sıcak bahar yeşili taban (kenarlara doğru pürüzsüzçe tek tona geçer)
+      const gr = g.createRadialGradient(w / 2, h / 2, w * 0.08, w / 2, h / 2, w * 0.49);
+      gr.addColorStop(0, '#8ad35c'); gr.addColorStop(0.55, '#74c24d'); gr.addColorStop(1, '#68b447');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+
+      // Güneşli açıklıklar ve koyu yonca öbekleri (dış sınır içinde)
+      for (let k = 0; k < 70; k++) {
+        const a = Rs() * 6.2832, r = (0.04 + Rs() * 0.37) * w, x = w / 2 + Math.cos(a) * r, y = h / 2 + Math.sin(a) * r, rr = 14 + Rs() * 34;
+        const rg = g.createRadialGradient(x, y, 0, x, y, rr);
+        rg.addColorStop(0, k % 3 === 0 ? 'rgba(232,238,130,0.22)' : k % 3 === 1 ? 'rgba(62,152,66,0.18)' : 'rgba(148,224,102,0.18)');
+        rg.addColorStop(1, 'rgba(116,194,77,0)');
+        g.fillStyle = rg; g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill();
+      }
+
+      // Üç yapraklı yonca kümeleri + kır çiçekleri (pist dışında)
+      for (let k = 0; k < 280; k++) {
+        const a = Rs() * 6.2832, r = (0.04 + Rs() * 0.39) * w, x = w / 2 + Math.cos(a) * r, y = h / 2 + Math.sin(a) * r;
+        const wx = X0 + x / Q, wz = Z0 + y / Q;
+        if (yakin(wx, wz) < YARI + 4.5) continue;
+        const lr = 1.4 + Rs() * 1.4;
+        g.globalAlpha = 0.55 + Rs() * 0.25;
+        g.fillStyle = k % 3 === 0 ? '#4da844' : k % 3 === 1 ? '#5ebe4c' : '#96df66';
+        for (let j = 0; j < 3; j++) { const ja = a + j * 2.094; g.beginPath(); g.arc(x + Math.cos(ja) * lr * 0.85, y + Math.sin(ja) * lr * 0.85, lr, 0, 7); g.fill(); }
+        if (k % 3 === 0) {
+          g.globalAlpha = 0.88;
+          g.fillStyle = k % 6 === 0 ? '#fffef0' : '#ffe35e';
+          g.beginPath(); g.arc(x + (Rs() - 0.5) * 4, y + (Rs() - 0.5) * 4, 1.3 + Rs() * 0.7, 0, 7); g.fill();
+        }
+      }
+
+      // Pist kenarı: sıcak altın-toprak geçişi ve bordür taşları
+      g.lineJoin = 'round'; g.lineCap = 'round';
+      g.globalAlpha = 0.55; g.strokeStyle = '#c8d47a'; g.lineWidth = 2 * (YARI + 5.0) * Q; yol(g); g.stroke();
+      g.globalAlpha = 0.85; g.strokeStyle = '#dfd19a'; g.lineWidth = 2 * (YARI + 2.6) * Q; yol(g); g.stroke();
+      for (let i = 0; i < N; i += 4) {
+        for (const yan of [-1, 1]) {
+          const u = YARI + 1.8 + ((i + yan) % 2) * 0.55;
+          const sx = PX[i] - TZ[i] * u * yan, sz = PZ[i] + TX[i] * u * yan;
+          if (yakin(sx, sz) < YARI + 1.2) continue;
+          const cx = px(sx), cz = pz(sz);
+          g.globalAlpha = 0.68; g.fillStyle = '#9c8d73';
+          g.beginPath(); g.ellipse(cx + 0.5, cz + 0.6, 1.8, 1.4, i * 0.3, 0, 7); g.fill();
+          g.globalAlpha = 0.92; g.fillStyle = (i / 4 + (yan > 0 ? 1 : 0)) % 3 === 0 ? '#efe6d2' : (i / 4) % 2 ? '#dfd4bc' : '#cfc2aa';
+          g.beginPath(); g.ellipse(cx, cz, 1.7, 1.3, i * 0.3, 0, 7); g.fill();
+        }
+      }
+
+      // İki kuleli taş kemer altı taş meydan
+      if (stKemer) {
+        g.save();
+        g.translate(px(stKemer.x), pz(stKemer.z));
+        g.rotate(Math.atan2(stKemer.tz, stKemer.tx));
+        g.globalAlpha = 0.9; g.fillStyle = '#c8baa0';
+        g.beginPath(); g.roundRect(-29, -15, 58, 30, 8); g.fill();
+        for (let gx = -24; gx <= 24; gx += 6) for (let gz = -11; gz <= 11; gz += 5.5) {
+          const jx = gx + (gz % 2 ? 2 : -1), jz = gz;
+          g.globalAlpha = 0.72; g.fillStyle = '#94866e';
+          g.beginPath(); g.ellipse(jx + 0.5, jz + 0.6, 2.5, 2.0, 0, 0, 7); g.fill();
+          g.globalAlpha = 0.95; g.fillStyle = (Math.abs(gx + gz) % 3 === 0) ? '#f2ead9' : '#dfd4be';
+          g.beginPath(); g.ellipse(jx, jz, 2.3, 1.8, 0, 0, 7); g.fill();
+        }
+        g.restore();
+      }
+
+      // Şato tepesi altı yosun halkası + tepeden yola inen taş patika
+      {
+        const cx = px(sx0), cz = pz(sz0), rx = px(PX[stNi]), rz = pz(PZ[stNi]);
+        const rg = g.createRadialGradient(cx, cz, stHR * Q * 0.65, cx, cz, stHR * Q * 1.15);
+        rg.addColorStop(0, 'rgba(60,136,56,0.45)'); rg.addColorStop(0.7, 'rgba(84,162,72,0.22)'); rg.addColorStop(1, 'rgba(116,194,77,0)');
+        g.globalAlpha = 1; g.fillStyle = rg; g.beginPath(); g.arc(cx, cz, stHR * Q * 1.15, 0, 7); g.fill();
+
+        const dx = rx - cx, dz = rz - cz, len = Math.hypot(dx, dz) || 1, nx = -dz / len, nz = dx / len;
+        g.globalAlpha = 0.85; g.strokeStyle = '#cab78d'; g.lineWidth = 7.5; g.lineCap = 'round';
+        g.beginPath();
+        for (let k = 0; k <= 16; k++) {
+          const u = k / 16, off = Math.sin(u * PI * 2) * 3.5;
+          const x = cx + dx * u + nx * off, y = cz + dz * u + nz * off;
+          k ? g.lineTo(x, y) : g.moveTo(x, y);
+        }
+        g.stroke();
+        for (let k = 2; k < 16; k++) {
+          const u = k / 16, off = Math.sin(u * PI * 2) * 3.5 + (k % 2 ? 1.4 : -1.4);
+          const x = cx + dx * u + nx * off, y = cz + dz * u + nz * off;
+          g.globalAlpha = 0.72; g.fillStyle = '#978870';
+          g.beginPath(); g.ellipse(x + 0.5, y + 0.6, 2.6, 2.0, k * 0.4, 0, 7); g.fill();
+          g.globalAlpha = 0.96; g.fillStyle = k % 3 === 0 ? '#f4ecdb' : k % 2 ? '#e3d8c2' : '#d2c5ad';
+          g.beginPath(); g.ellipse(x, y, 2.4, 1.85, k * 0.4, 0, 7); g.fill();
+        }
+      }
+      g.globalAlpha = 1;
+    });
+    doku.anisotropy = renderer.capabilities.getMaxAnisotropy ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 1;
+    doku.repeat.set(1500 / W, 1500 / W);
+    doku.offset.set((-750 - X0) / W, 1 - (680 - Z0) / W);
+    doku.wrapS = doku.wrapT = T.ClampToEdgeWrapping;
+    zemin.material.map = doku; zemin.material.needsUpdate = true;
+  }
   if (golge.length) { const d = tuvalDoku(64, 64, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(30,70,40,.30)'); r.addColorStop(0.45, 'rgba(30,70,40,.15)'); r.addColorStop(1, 'rgba(30,70,40,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
     const g = new T.PlaneGeometry(2, 2); g.rotateX(-PI / 2); const sh = cok(g, new T.MeshBasicMaterial({ map: d, transparent: true, depthWrite: false }), golge); sh.renderOrder = 1; }
 }

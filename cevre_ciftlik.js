@@ -29,13 +29,65 @@ function cevreEkGuncelle(dt, t) {
 if (cvTema === 'ciftlik') {
   scene.fog.color.setHex(0xdef4ff); scene.fog.near = 260; scene.fog.far = 820;
   gunes.color.setHex(0xfff3d1);
-  { // gök: sıcak yaz mavisi, ufukta yumuşak krem-altın pus
-    const c = scene.background.image, g = c.getContext('2d'), h = c.height, gr = g.createLinearGradient(0, 0, 0, h);
-    gr.addColorStop(0, '#2a92e6'); gr.addColorStop(0.18, '#58b4f4'); gr.addColorStop(0.34, '#9bd8fa');
-    gr.addColorStop(0.43, '#e2f4ff'); gr.addColorStop(0.49, '#fff3d4'); gr.addColorStop(1, '#fff3d4');
-    g.fillStyle = gr; g.fillRect(0, 0, c.width, h); scene.background.needsUpdate = true;
+  { // gök: sıcak yaz mavisi, ufukta altın güneş ışığı ve yumuşak krem-altın pus
+    const eski = scene.background;
+    scene.background = tuvalDoku(256, 512, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h);
+      gr.addColorStop(0, '#248ce3'); gr.addColorStop(0.18, '#54b2f4'); gr.addColorStop(0.34, '#9bd9fa');
+      gr.addColorStop(0.43, '#e4f5ff'); gr.addColorStop(0.49, '#fff3d2'); gr.addColorStop(1, '#fff3d2');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+
+      // Ufukta yumuşak altın yaz güneşi halesi ve hafif bulut şeritleri
+      const rg = g.createRadialGradient(w * 0.72, h * 0.43, 0, w * 0.72, h * 0.43, w * 0.85);
+      rg.addColorStop(0, 'rgba(255,248,214,0.34)');
+      rg.addColorStop(0.45, 'rgba(255,242,196,0.12)');
+      rg.addColorStop(1, 'rgba(255,242,196,0)');
+      g.fillStyle = rg; g.fillRect(0, 0, w, h * 0.55);
+
+      g.fillStyle = 'rgba(255,254,245,0.08)';
+      for (let k = 0; k < 4; k++) {
+        g.beginPath();
+        g.ellipse(w * (0.2 + k * 0.22), h * (0.14 + (k % 2) * 0.09), w * 0.26, h * 0.022, -0.06, 0, 7);
+        g.fill();
+      }
+    });
+    if (eski && eski.dispose) eski.dispose();
   }
   cvGokIsik.color.setHex(0xffffff); cvGokIsik.groundColor.setHex(0xc8c090);
+
+  // Sıcak gün ışığı kenar vurgusu + hafif ahşap/boya parıltısı (ek ışık ve çizim yok)
+  const cfCilaMalz = (mod, par, kenar, o) => {
+    const m = cvMalz(mod, o);
+    const prev = m.onBeforeCompile;
+    m.onBeforeCompile = (sh, r) => {
+      if (prev) prev.call(m, sh, r);
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n{ vec3 cfV = normalize(vViewPosition); float cfN = clamp(dot(normal, cfV), 0.0, 1.0); float cfRim = pow(1.0 - cfN, 2.2); vec3 cfH = normalize(normalize(vec3(-0.35, 0.82, 0.45)) + cfV); float cfSp = pow(clamp(dot(normal, cfH), 0.0, 1.0), 24.0); totalEmissiveRadiance += vec3(1.0, 0.94, 0.78) * (cfSp * ' + par.toFixed(3) + ') + mix(diffuseColor.rgb, vec3(1.0, 0.88, 0.66), 0.46) * cfRim * ' + kenar.toFixed(3) + '; }'
+      );
+    };
+    m.customProgramCacheKey = () => 'cfC' + mod + '_' + par + '_' + kenar;
+    return m;
+  };
+
+  // Yapılarda alt-üst ve güneş yönü köşe ton geçişi
+  const cfTonKontrast = (g, hRef) => {
+    const p = g.attributes.position, n = g.attributes.normal, c = g.attributes.color;
+    for (let i = 0; i < p.count; i++) {
+      const u = clamp(p.getY(i) / hRef, 0, 1);
+      const ny = n.getY(i);
+      const up = clamp(ny * 0.5 + 0.5, 0, 1);
+      const sun = clamp((-n.getX(i) * 0.35 + ny * 0.78 + n.getZ(i) * 0.45) * 0.5 + 0.5, 0, 1);
+      const k = 0.84 + 0.12 * u + 0.07 * up;
+      c.setXYZ(
+        i,
+        Math.min(1, c.getX(i) * k * lerp(0.93, 1.06, sun)),
+        Math.min(1, c.getY(i) * k * lerp(0.95, 1.02, sun)),
+        Math.min(1, c.getZ(i) * k * lerp(0.98, 0.92, sun))
+      );
+    }
+    return g;
+  };
 
   let cfT = 48271;
   const Rc = () => { cfT = (cfT * 1664525 + 1013904223) >>> 0; return cfT / 4294967296; };
@@ -70,7 +122,7 @@ if (cvTema === 'ciftlik') {
     return null;
   };
 
-  const KIRMIZI = 0xd93b30, KIRMIZI_K = 0xb52d24, KREM = 0xfffaf0, AHSAP = 0x8f5932, AHSAP2 = 0xba7c48, ALTIN = 0xf0c243, PEMBE = 0xff9eb5;
+  const KIRMIZI = 0xdc372c, KIRMIZI_K = 0x992018, KREM = 0xfff5de, AHSAP = 0x6b3d1e, AHSAP2 = 0xdc9442, ALTIN = 0xf2c444, PEMBE = 0xff9eb5;
 
   // ───────── 1) açılış manzarası: klasik kırmızı ahır + gümüş kubbeli silo (f ~ 0.11, daha büyük ve yakın) ─────────
   {
@@ -85,9 +137,9 @@ if (cvTema === 'ciftlik') {
       for (const sx of [-4.72, 4.72]) for (const sz of [-5.92, 5.92]) S.ekle(cvG.kutuY, sx, 3.0, sz, 0.34, 6.0, 0.34, KREM);
       S.ekle(cvG.kutuY, 0, 5.95, 0, 9.85, 0.3, 12.25, KREM);
       // beşik çatı + mahya + çatı kubbeciği (cupola)
-      S.ekle(cvG.catiY, 0, 6.0, 0, 1.95, 2.2, 2.75, 0x6b3b34);
+      S.ekle(cvG.catiY, 0, 6.0, 0, 1.95, 2.2, 2.75, 0x592d26);
       S.ekle(cvG.kutuY, 0, 9.55, 0, 0.46, 0.35, 13.1, KREM);
-      S.ekle(cvG.kutuY, 0, 10.1, 0, 1.6, 1.3, 1.6, KREM);
+      S.ekle(cvG.kutuY, 0, 10.1, 0, 1.6, 1.3, 1.6, AHSAP2);
       S.ekle(cvG.catiY, 0, 10.7, 0, 0.36, 0.55, 0.38, KIRMIZI);
       S.ekle(cvG.sil, 0, 11.7, 0, 0.05, 0.8, 0.05, ALTIN);
       S.ekle(cvG.kureK, 0, 12.1, 0, 0.16, 0.16, 0.16, ALTIN);
@@ -100,11 +152,11 @@ if (cvTema === 'ciftlik') {
         S.ekle(cvG.kutuY, s * 0.82, 2.1, 6.2, 0.18, 3.8, 0.12, KREM, 0, 0, -s * 0.46);
       }
       // açık samanlık tavan penceresi + içinden taşan saman + makara kirişi
-      S.ekle(cvG.kutuY, 0, 7.1, 5.4, 2.0, 1.9, 0.3, KREM);
-      S.ekle(cvG.kutuY, 0, 7.1, 5.45, 1.55, 1.45, 0.25, 0x452a1e);
+      S.ekle(cvG.kutuY, 0, 7.1, 5.4, 2.0, 1.9, 0.3, AHSAP2);
+      S.ekle(cvG.kutuY, 0, 7.1, 5.45, 1.55, 1.45, 0.25, 0x3b2114);
       S.ekle(cvG.kureK, 0, 6.65, 5.75, 0.78, 0.48, 0.55, ALTIN);
       S.ekle(cvG.kutuY, 0, 8.75, 6.45, 0.24, 0.24, 1.5, AHSAP);
-      for (const s of [-1, 1]) S.ekle(cvG.kutuY, s * 1.15, 7.1, 5.58, 0.55, 1.5, 0.12, KIRMIZI, 0, s * 0.4);
+      for (const s of [-1, 1]) S.ekle(cvG.kutuY, s * 1.15, 7.1, 5.58, 0.55, 1.5, 0.12, AHSAP, 0, s * 0.4);
       // yan pencereler ve çiçeklik kutuları
       for (const s of [-1, 1]) for (const z of [-3.0, 0.2, 3.2]) {
         S.ekle(cvG.kutuY, s * 4.84, 3.4, z, 0.14, 1.35, 1.25, KREM);
@@ -159,7 +211,7 @@ if (cvTema === 'ciftlik') {
           P.ekle(cvG.kutuY, ca * r - sa * 0.55, sa * r + ca * 0.55, 0.02, 0.08, 1.15, 0.08, AHSAP2, 0, 0, a);
         }
       }
-      cfPervane = new T.Mesh(P.geo(), cvMalz(0));
+      cfPervane = new T.Mesh(cfTonKontrast(P.geo(), 6.5), cfCilaMalz(0, 0.10, 0.25));
       const hub = S.dunya(0, 2.65);
       cfPervane.position.set(hub.x, 9.6 * sc, hub.z);
       cfPervane.scale.setScalar(sc);
@@ -245,7 +297,7 @@ if (cvTema === 'ciftlik') {
         O.ekle(cvG.kureK, s * 0.3, 0.24, -0.04, 0.08, 0.16, 0.28, 0xf2c22e);      // kanat
       }
       O.ekle(cvG.koni, 0, 0.32, -0.45, 0.12, 0.24, 0.12, 0xffd83b, -0.9);         // kuyruk
-      const og = O.geo(), om = cvMalz(0);
+      const og = cfTonKontrast(O.geo(), 0.75), om = cfCilaMalz(0, 0.08, 0.22);
       for (let k = 0; k < 6; k++) {
         const m = new T.Mesh(og, om);
         m.rotation.order = 'YXZ';

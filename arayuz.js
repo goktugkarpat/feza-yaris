@@ -31,7 +31,9 @@ function uiYokla() {
   const s = +uiSiraSay.textContent || 0;
   if (s !== uiSonSira) {
     if (uiSonSira) uiZipla(uiSiraSay, s < uiSonSira ? 1.9 : 1.45, 460, s < uiSonSira ? -12 : 0);
-    uiSonSira = s; uiSira.className = 'ui-kart s' + Math.min(4, Math.max(1, s));
+    uiSonSira = s;
+    uiSira.classList.remove('s1', 's2', 's3', 's4');
+    uiSira.classList.add('s' + Math.min(4, Math.max(1, s)));
   }
   const hazir = (parseFloat(uiDolum.style.height) || 0) < 0.5;
   if (hazir !== uiHazir) { uiHazir = hazir; uiHizlan.classList.toggle('ui-hazir', hazir); if (hazir) uiZipla(uiHizlan, 1.2, 480); }
@@ -58,9 +60,10 @@ try { const k = JSON.parse(localStorage.getItem(uiKayitAnahtar) || '{}'); if (Nu
 function uiRozetAyar(kart, sira) {
   if (!kart) return;
   let r = kart.querySelector('.ui-rozet');
-  if (!(sira >= 1 && sira <= 3)) { if (r) r.remove(); return; }
+  if (!(sira >= 1 && sira <= 3)) { if (r) r.remove(); kart.classList.remove('ui-rozetli'); return; }
   if (!r) { r = document.createElement('i'); r.setAttribute('aria-hidden', 'true'); r.innerHTML = '<svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg>'; kart.appendChild(r); }
   r.className = 'ui-rozet r' + Math.floor(sira);
+  kart.classList.add('ui-rozetli');
 }
 function uiRozetOku(pist) {
   if (pist === PIST_TEMA) return uiKayit.sira;
@@ -88,9 +91,10 @@ let uiMapUz = 0;
   uiMapUz = uiRotaIz.getTotalLength(); uiRotaIz.style.strokeDasharray = uiMapUz; uiRotaIz.style.strokeDashoffset = uiMapUz;
   uiEl('rota-baslangic').setAttribute('cx', uiMapX[0]); uiEl('rota-baslangic').setAttribute('cy', uiMapY[0]);
 }
+const uiRotaNoktalar = [uiRotaNokta, uiRotaGolge];
 function uiRotaAyar(o) {
   const u = clamp(o.oran, 0, 1), i = Math.min(N - 1, Math.floor(u * N));
-  for (const el of [uiRotaNokta, uiRotaGolge]) { el.setAttribute('cx', uiMapX[i].toFixed(1)); el.setAttribute('cy', uiMapY[i].toFixed(1)); }
+  for (let k = 0; k < uiRotaNoktalar.length; k++) { const el = uiRotaNoktalar[k]; el.setAttribute('cx', uiMapX[i].toFixed(1)); el.setAttribute('cy', uiMapY[i].toFixed(1)); }
   uiRotaIz.style.strokeDashoffset = (uiMapUz * (1 - u)).toFixed(1);
   uiEl('rota').classList.toggle('roketli', !!o.roket);
   uiRakipNokta();
@@ -111,8 +115,18 @@ function uiRakipNokta() {
   uiRakipRenkli = true;
 }
 
-// Küçük bir havuz: yıldızlar toplandığı yerden sayaca uçar; sürekli DOM oluşturulmaz.
+// Küçük bir havuz: yıldızlar toplandığı yerden sayaca uçar; sürekli DOM oluşturulmaz ve kare içinde yerleşim ölçülmez.
 const uiUcusan = [], uiProj = new T.Vector3(); let uiUcusNo = 0;
+let uiYildizHedefX = 0, uiYildizHedefY = 0, uiYildizHedefHazir = false;
+function uiYildizHedefOlc() {
+  const kutu = uiEl('yildiz-kutu');
+  if (!kutu || kutu.offsetWidth < 2) { uiYildizHedefHazir = false; return; }
+  const r = kutu.getBoundingClientRect();
+  uiYildizHedefX = r.left + r.width * .5 - 20;
+  uiYildizHedefY = r.top + r.height * .5 - 20;
+  uiYildizHedefHazir = true;
+}
+addEventListener('resize', () => { uiYildizHedefHazir = false; }, { passive: true });
 for (let i = 0; i < 6; i++) {
   const el = document.createElement('div'); el.className = 'ui-ucan-yildiz'; el.setAttribute('aria-hidden', 'true');
   el.innerHTML = '<svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg>'; document.body.appendChild(el); uiUcusan.push({ el, anim: null });
@@ -121,11 +135,17 @@ function uiYildizUcur(y) {
   if (!y || !Number.isFinite(y.x) || !Number.isFinite(y.z)) return;
   uiProj.set(y.x, 1.4, y.z).project(camera);
   if (uiProj.z > 1 || Math.abs(uiProj.x) > 1.3 || Math.abs(uiProj.y) > 1.3) return;
-  const p = uiUcusan[uiUcusNo++ % uiUcusan.length], hedef = uiEl('yildiz-kutu').getBoundingClientRect();
+  if (!uiYildizHedefHazir) uiYildizHedefOlc();
+  if (!uiYildizHedefHazir) return;
+  const p = uiUcusan[uiUcusNo++ % uiUcusan.length];
   const x = (uiProj.x * .5 + .5) * innerWidth - 20, y0 = (-uiProj.y * .5 + .5) * innerHeight - 20;
-  const dx = hedef.left + hedef.width * .5 - 20 - x, dy = hedef.top + hedef.height * .5 - 20 - y0;
-  if (p.anim) p.anim.cancel(); p.el.style.left = x + 'px'; p.el.style.top = y0 + 'px';
-  p.anim = p.el.animate([{ opacity: 1, transform: 'translate(0,0) scale(1.2)' }, { opacity: 1, transform: 'translate(' + dx * .4 + 'px,' + (dy * .55 - 55) + 'px) scale(1.5)', offset: .45 }, { opacity: 0, transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.45)' }], { duration: 650, easing: 'cubic-bezier(.2,.7,.2,1)' });
+  const dx = uiYildizHedefX - x, dy = uiYildizHedefY - y0;
+  if (p.anim) p.anim.cancel();
+  p.anim = p.el.animate([
+    { opacity: 1, transform: 'translate3d(' + x.toFixed(1) + 'px,' + y0.toFixed(1) + 'px,0) scale(1.2)' },
+    { opacity: 1, transform: 'translate3d(' + (x + dx * .4).toFixed(1) + 'px,' + (y0 + dy * .55 - 55).toFixed(1) + 'px,0) scale(1.5)', offset: .45 },
+    { opacity: 0, transform: 'translate3d(' + uiYildizHedefX.toFixed(1) + 'px,' + uiYildizHedefY.toFixed(1) + 'px,0) scale(.45)' }
+  ], { duration: 650, easing: 'cubic-bezier(.2,.7,.2,1)' });
 }
 
 function uiAnilar(o) {
@@ -145,13 +165,15 @@ OLAY.on('yildiz', uiYildizUcur);
 OLAY.on('ilerleme', uiRotaAyar);
 OLAY.on('seri', o => {
   clearTimeout(uiSeriTimer); uiSeri.classList.toggle('odul', !!o.odul);
+  uiSeri.dataset.adet = o.odul ? '3' : String(o.adet || 0);
   uiSeriYildiz.forEach((el, i) => el.classList.toggle('dolu', i < o.adet));
   if (o.adet) uiZipla(uiSeriYildiz[Math.min(2, o.adet - 1)], 1.35, 350);
-  if (o.odul) { uiZipla(uiSeri, 1.16, 600); uiSeriTimer = setTimeout(() => { uiSeri.classList.remove('odul'); uiSeriYildiz.forEach(el => el.classList.remove('dolu')); }, 1300); }
+  if (o.odul) { uiZipla(uiSeri, 1.16, 600); uiSeriTimer = setTimeout(() => { uiSeri.classList.remove('odul'); uiSeri.dataset.adet = '0'; uiSeriYildiz.forEach(el => el.classList.remove('dolu')); }, 1300); }
 });
 OLAY.on('ozet', uiAnilar);
 OLAY.on('durum', d => {
-  if (d === 'baslik' || d === 'giris' || d === 'sayim') { clearTimeout(uiSeriTimer); uiSeri.classList.remove('odul'); uiSeriYildiz.forEach(el => el.classList.remove('dolu')); uiRotaAyar({ oran: 0 }); uiSonOzet = null; }
+  if (d === 'baslik' || d === 'giris' || d === 'sayim') { clearTimeout(uiSeriTimer); uiSeri.classList.remove('odul'); uiSeri.dataset.adet = '0'; uiSeriYildiz.forEach(el => el.classList.remove('dolu')); uiRotaAyar({ oran: 0 }); uiSonOzet = null; }
+  if (d === 'yaris') requestAnimationFrame(uiYildizHedefOlc); else uiYildizHedefHazir = false;
   if (d === 'bitis') { uiRotaAyar({ oran: 1 }); uiEl('rota').classList.remove('roketli'); }
 });
 
@@ -470,7 +492,11 @@ try { const u = new URL(location.href); if (u.searchParams.has('adim')) { u.sear
 // ───────── Geri sayım bayrakları, yarışa geçiş perdesi, küçük sevinç parıltıları (yalnız olaylarda; kare başına iş yok) ─────────
 const uiGit = uiEl('ui-git'), uiGecis = uiEl('ui-gecis');
 let uiGitZ = 0, uiGecisZ = 0;
-function uiParla(el) { if (!el) return; el.classList.remove('ui-parla'); void el.offsetWidth; el.classList.add('ui-parla'); }
+function uiParla(el) {
+  if (!el) return;
+  el.classList.remove('ui-parla');
+  requestAnimationFrame(() => el.classList.add('ui-parla'));
+}
 OLAY.on('sayim', n => {
   clearTimeout(uiGitZ);
   if (n === 3) { uiGit.classList.remove('gizli'); uiGitZ = setTimeout(() => uiGit.classList.add('gizli'), 1500); }   // yeşil: iki yanda damalı bayrak sallanır
@@ -642,7 +668,9 @@ function uiGarajBaslikAyar() {
   const hazir = uiGarajVar() && typeof oyGarajAc === 'function';
   uiEl('garaj-kose').classList.toggle('gizli', !hazir);
   if (!hazir) return;
-  uiGjAc.classList.toggle('gj-hediye', uiGjBekleyen() > 0);
+  const bekleyen = uiGjBekleyen() > 0;
+  uiGjAc.classList.toggle('gj-hediye', bekleyen);
+  uiGj.classList.toggle('gj-bekleyen', bekleyen);
   const o = uiKvOran(); uiKvAyar(uiEl('garaj-kavanoz'), o); uiKvAyar(uiEl('garaj-kv'), o);
 }
 function uiGjGirdiler(tur) {
@@ -656,14 +684,17 @@ function uiGarajKartlar(tur) {
   uiGjKartlar.textContent = '';
   const secili = GARAJ.secili(tur), girdiler = uiGjGirdiler(tur), n = girdiler.length;
   uiGjKartlar.style.setProperty('--gn', Math.max(1, n)); uiGjKartlar.style.setProperty('--gn2', Math.max(1, n > 5 ? Math.ceil(n / 2) : n));   // yatayda tek sıra, dikeyde çok süs iki dengeli sıra
+  let secEl = null;
   girdiler.forEach((x, i) => {
-    const b = document.createElement('button'), sahip = GARAJ.sahip(tur, x.id);
+    const b = document.createElement('button'), sahip = GARAJ.sahip(tur, x.id), aktif = sahip && x.id === secili;
     b.className = 'gj-kart' + (sahip ? '' : ' kilitli'); b.dataset.id = x.id; b.style.setProperty('--i', i);
-    b.setAttribute('aria-label', sahip ? tur + ' ' + x.id : 'Hediye kutusu'); b.setAttribute('aria-pressed', sahip && x.id === secili ? 'true' : 'false');
+    b.setAttribute('aria-label', sahip ? tur + ' ' + x.id : 'Hediye kutusu'); b.setAttribute('aria-pressed', aktif ? 'true' : 'false');
     b.innerHTML = (sahip ? uiSusCiz(tur, x.id, x) : uiKutuCiz()) + UI_ONAY;
     b.addEventListener('click', () => uiGarajDokun(b, tur, x.id));
     uiGjKartlar.appendChild(b);
+    if (aktif) secEl = b;
   });
+  if (secEl && secEl.scrollIntoView) try { secEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' }); } catch (_) {}
 }
 function uiGarajDokun(b, tur, id) {
   uiGjElDur(true);
@@ -742,10 +773,12 @@ function uiKvUcur() {
   const x = a.left + Math.min(30, a.width * .3) - 20, y = a.top + a.height * .5 - 20, dx = b.left + b.width * .5 - 20 - x, dy = b.top + b.height * .45 - 20 - y;
   uiKvUcan.forEach((p, i) => {
     if (!p.el.animate) return;
-    p.el.style.left = x + 'px'; p.el.style.top = y + 'px';
-    p.anim = p.el.animate([{ opacity: 0, transform: 'translate(0,0) scale(.6)' }, { opacity: 1, transform: 'translate(' + uiF(dx * .12) + 'px,' + uiF(dy * .12 - 30) + 'px) scale(1.25)', offset: .15 },
-      { opacity: 1, transform: 'translate(' + uiF(dx * .6) + 'px,' + uiF(dy * .6 - 90 - (i % 3) * 26) + 'px) scale(1.35) rotate(140deg)', offset: .6 },
-      { opacity: 0, transform: 'translate(' + uiF(dx) + 'px,' + uiF(dy) + 'px) scale(.5) rotate(300deg)' }], { duration: 900, delay: i * 130, easing: 'ease-in-out' });
+    p.anim = p.el.animate([
+      { opacity: 0, transform: 'translate3d(' + uiF(x) + 'px,' + uiF(y) + 'px,0) scale(.6)' },
+      { opacity: 1, transform: 'translate3d(' + uiF(x + dx * .12) + 'px,' + uiF(y + dy * .12 - 30) + 'px,0) scale(1.25)', offset: .15 },
+      { opacity: 1, transform: 'translate3d(' + uiF(x + dx * .6) + 'px,' + uiF(y + dy * .6 - 90 - (i % 3) * 26) + 'px,0) scale(1.35) rotate(140deg)', offset: .6 },
+      { opacity: 0, transform: 'translate3d(' + uiF(x + dx) + 'px,' + uiF(y + dy) + 'px,0) scale(.5) rotate(300deg)' }
+    ], { duration: 900, delay: i * 130, easing: 'ease-in-out' });
     uiKvZ.push(setTimeout(() => { try { if (typeof SES !== 'undefined' && SES.efekt && typeof SES.efekt.kavanoz === 'function') SES.efekt.kavanoz(); } catch (_) { /* ses isteğe bağlı */ } }, i * 130 + 860));   // her yıldız kavanoza düşerken tık
   });
 }
@@ -801,15 +834,47 @@ OLAY.on('durum', d => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiGarajBaslikAyar); else uiGarajBaslikAyar();
 })();
 
-// Etkin sürprizin kalan süresi: üst ortada azalan renkli halka (yazısız). Olaylar oyun.js'ten: surpriz {tur,sure}, surprizBitti.
+// Etkin sürprizin kalan süresi: üst ortada azalan renkli halka + güç simgesi (yazısız, tek seferde kurulur). Olaylar oyun.js'ten: surpriz {tur,sure}, surprizBitti.
 (() => {
   const hud = document.getElementById('hud'); if (!hud || typeof OLAY === 'undefined') return;
   const el = document.createElement('div'); el.id = 'ui-guc'; el.className = 'gizli'; el.setAttribute('aria-hidden', 'true');
-  el.innerHTML = '<svg viewBox="0 0 44 44"><circle class="ui-guc-zemin" cx="22" cy="22" r="20"/><circle class="ui-guc-halka" cx="22" cy="22" r="16"/><circle class="ui-guc-ic" cx="22" cy="22" r="8"/></svg>';
+  el.innerHTML = '<svg viewBox="0 0 44 44">' +
+    '<circle class="ui-guc-zemin" cx="22" cy="22" r="20"/>' +
+    '<circle class="ui-guc-iz" cx="22" cy="22" r="16"/>' +
+    '<circle class="ui-guc-halka" cx="22" cy="22" r="16"/>' +
+    '<circle class="ui-guc-ic" cx="22" cy="22" r="11"/>' +
+    '<g class="ui-guc-simge guc-dev" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M16.5 22.5 22 17l5.5 5.5"/><path d="M16.5 27.5 22 22l5.5 5.5"/>' +
+    '</g>' +
+    '<g class="ui-guc-simge guc-baloncuk">' +
+      '<circle cx="22" cy="22" r="6.8" fill="none" stroke="#fff" stroke-width="2.3"/>' +
+      '<path d="M18.6 19.8a4 4 0 0 1 3.6-2.2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
+    '</g>' +
+    '<g class="ui-guc-simge guc-gokkusagi" fill="none" stroke-width="2.1" stroke-linecap="round">' +
+      '<path d="M15.2 25.2a6.8 6.8 0 0 1 13.6 0" stroke="#ffe14d"/>' +
+      '<path d="M17.4 25.2a4.6 4.6 0 0 1 9.2 0" stroke="#ff84b8"/>' +
+      '<path d="M19.6 25.2a2.4 2.4 0 0 1 4.8 0" stroke="#fff"/>' +
+    '</g>' +
+    '<g class="ui-guc-simge guc-miknatis" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M17.5 17.5v5.2a4.5 4.5 0 0 0 9 0v-5.2" stroke="#fff" stroke-width="2.8"/>' +
+      '<path d="M17.5 17.5v2M26.5 17.5v2" stroke="#ffe14d" stroke-width="2.8"/>' +
+    '</g>' +
+    '</svg>';
   hud.appendChild(el);
-  const halka = el.querySelector('.ui-guc-halka'), RENK = { dev: '#ff8a2a', baloncuk: '#2fc4d6', gokkusagi: '#9a6bff', miknatis: '#3bbf5c' };
-  OLAY.on('surpriz', o => { el.style.setProperty('--gr', RENK[o.tur] || '#ffb02e'); el.style.setProperty('--gs', (o.sure || 4.5) + 's'); el.classList.remove('gizli'); halka.style.animation = 'none'; void halka.getBoundingClientRect(); halka.style.animation = ''; });
-  OLAY.on('surprizBitti', () => el.classList.add('gizli'));
-  OLAY.on('durum', d => { if (d !== 'yaris') el.classList.add('gizli'); });
+  const halka = el.querySelector('.ui-guc-halka');
+  const RENK = { dev: '#ff7d24', baloncuk: '#1db9ce', gokkusagi: '#8b5cff', miknatis: '#2db854' };
+  const GLOW = { dev: 'rgba(255,138,42,.55)', baloncuk: 'rgba(47,196,214,.55)', gokkusagi: 'rgba(154,107,255,.55)', miknatis: 'rgba(59,191,92,.55)' };
+  OLAY.on('surpriz', o => {
+    const tur = o && o.tur ? String(o.tur) : '';
+    el.dataset.tur = tur;
+    el.style.setProperty('--gr', RENK[tur] || '#ffb02e');
+    el.style.setProperty('--grg', GLOW[tur] || 'rgba(255,176,46,.5)');
+    el.style.setProperty('--gs', ((o && o.sure) || 4.5) + 's');
+    el.classList.remove('gizli');
+    halka.style.animation = 'none';
+    requestAnimationFrame(() => { if (!el.classList.contains('gizli')) halka.style.animation = ''; });
+  });
+  OLAY.on('surprizBitti', () => { el.classList.add('gizli'); el.dataset.tur = ''; });
+  OLAY.on('durum', d => { if (d !== 'yaris') { el.classList.add('gizli'); el.dataset.tur = ''; } });
   OLAY.on('mola', m => document.body.classList.toggle('ui-mola', !!m));
 })();

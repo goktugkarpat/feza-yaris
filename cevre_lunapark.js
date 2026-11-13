@@ -19,8 +19,32 @@ function lpDonKod(eksen, hiz, isik) {
     : 'if (cvK.y > 1.5) transformed.y += sin(cvT * 2.0 + cvK.x) * 0.38;\nif (cvK.y > 0.5) transformed.xz = lpM * transformed.xz;';
   return {
     n: '#include <beginnormal_vertex>\n{ ' + rot + (eksen === 'xy' ? 'if (cvK.y > 0.5 && cvK.y < 1.5) objectNormal.xy = lpM * objectNormal.xy;' : 'if (cvK.y > 0.5) objectNormal.xz = lpM * objectNormal.xz;') + ' }',
-    b: '#include <begin_vertex>\n{ ' + rot + v + (isik ? '\nvColor *= 0.72 + 0.4 * smoothstep(-0.4, 0.8, sin(cvT * 2.6 - cvK.x * 2.0));' : '') + ' }'
+    b: '#include <begin_vertex>\n{ ' + rot + v + (isik ? '\nvColor *= 0.64 + 0.52 * smoothstep(-0.4, 0.8, sin(cvT * 2.6 - cvK.x * 2.0));' : '') + ' }'
   };
+}
+function lpCila(m, par, kenar) {   // gece neon/pastel kenar parıltısı: doygun renklere canlı kenar ışıması + temiz vurgu (ek ışık / çizim yok)
+  const o = m.onBeforeCompile, ok = m.customProgramCacheKey ? m.customProgramCacheKey.call(m) : 'lp';
+  m.onBeforeCompile = (sh, r) => {
+    if (o) o.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n{ vec3 cV = normalize(vViewPosition); float cN = clamp(dot(normal, cV), 0.0, 1.0); vec3 cH = normalize(normalize(vec3(-0.35, 0.8, 0.5)) + cV);'
+      + ' float cS = pow(clamp(dot(normal, cH), 0.0, 1.0), 26.0); float cD = max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)) - min(diffuseColor.r, min(diffuseColor.g, diffuseColor.b));'
+      + ' float cSat = smoothstep(0.08, 0.36, cD); float cFr = pow(1.0 - cN, 2.2);'
+      + ' totalEmissiveRadiance += diffuseColor.rgb * (0.06 + cFr * ' + kenar.toFixed(3) + ' * (0.40 + 0.75 * cSat)) + vec3(cS * ' + par.toFixed(3) + ' * (0.30 + 0.70 * cSat)); }');
+  };
+  m.customProgramCacheKey = () => ok + '|lpCila' + par + '_' + kenar;
+  return m;
+}
+function lpTon(g, h, merkez) {   // gece lunapark kontrastı: üst yüzler parlak pastel, alt gölgeler serin lacivert-mor
+  const p = g.attributes.position, n = g.attributes.normal, c = g.attributes.color, hh = h || 6;
+  for (let i = 0; i < p.count; i++) {
+    const u = merkez ? clamp((p.getY(i) + hh) / (2 * hh), 0, 1) : clamp(p.getY(i) / hh, 0, 1);
+    const yk = 0.80 + 0.22 * u, nk = 0.92 + n.getY(i) * 0.10 + n.getX(i) * 0.05 - n.getZ(i) * 0.02;
+    const f = yk * nk, alt = n.getY(i) < -0.15 ? 0.90 : 1.0;
+    const r = c.getX(i), gg = c.getY(i), b = c.getZ(i), sat = Math.max(r, gg, b) - Math.min(r, gg, b);
+    const canli = sat > 0.22 ? 1.05 : 1.0;
+    c.setXYZ(i, Math.min(1, r * f * alt * canli), Math.min(1, gg * f * alt * canli), Math.min(1, b * f * (2 - alt) * canli));
+  }
+  return g;
 }
 function lpDonMalz(eksen, hiz, isik, o) {
   const m = isik ? new T.MeshBasicMaterial({ vertexColors: true }) : new T.MeshLambertMaterial(Object.assign({ color: 0xffffff, vertexColors: true }, o || {}));
@@ -31,18 +55,18 @@ function lpDonMalz(eksen, hiz, isik, o) {
       .replace('#include <beginnormal_vertex>', k.n).replace('#include <begin_vertex>', k.b);
     if (isik) sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>', 'vColor = color;');
   };
-  m.customProgramCacheKey = () => 'lpDon' + eksen + hiz + (isik ? 'i' : 'l');
-  return m;
+  m.customProgramCacheKey = () => 'lpDon' + eksen + hiz + (isik ? 'i' : 'l2');
+  return isik ? m : lpCila(m, 0.30, 0.38);
 }
 
 if (cvTema === 'lunapark') {
-  // ───────── gök: üstte koyu lacivert, ufka doğru mor, ufukta sıcak pembe ışıltı ─────────
+  // ───────── gök: üstte derin gece laciverti, ufka doğru mor ve sıcak akşam kızıllığı ─────────
   {
     const c = scene.background.image, g = c.getContext('2d'), h = c.height, gr = g.createLinearGradient(0, 0, 0, h);
-    [[0, '#10164a'], [0.16, '#1c2266'], [0.28, '#2f2c82'], [0.36, '#55409e'], [0.42, '#8a58b0'], [0.465, '#d27fa8'], [0.5, '#f0a6a4'], [1, '#f6b8a8']].forEach(q => gr.addColorStop(q[0], q[1]));
+    [[0, '#090e38'], [0.16, '#141a58'], [0.28, '#282578'], [0.36, '#4d3996'], [0.42, '#864ea8'], [0.465, '#d47aa6'], [0.5, '#f2a49e'], [1, '#f6b8a8']].forEach(q => gr.addColorStop(q[0], q[1]));
     g.fillStyle = gr; g.fillRect(0, 0, c.width, h); scene.background.needsUpdate = true;
   }
-  scene.fog.color.setHex(0x7a5aa6); scene.fog.near = 220; scene.fog.far = 900;
+  scene.fog.color.setHex(0x7454a0); scene.fog.near = 220; scene.fog.far = 900;
   // aydınlık gece: dolgu ışığı güçlü (arabalar ve yol kararmaz), ana ışık sıcak lunapark ışığı
   cvGokIsik.color.setHex(0xf2ecff); cvGokIsik.groundColor.setHex(0xa898d8); cvGokIsik.intensity = 1.34;
   gunes.color.setHex(0xfff0dc); gunes.intensity = 1.45;
@@ -78,17 +102,55 @@ if (cvTema === 'lunapark') {
     lpYildiz = new T.Points(g, m); lpYildiz.frustumCulled = false; lpYildiz.renderOrder = -9; scene.add(lpYildiz);
   }
 
-  // ───────── zemin: yumuşak gece çimi (turkuaz-yeşil), yer yer açık lekeler ─────────
+  // ───────── zemin: sıcak alacakaranlık şenlik meydanı taş karoları ─────────
   {
-    const c = cimDoku.image, g = c.getContext('2d'), w = c.width, h = c.height;
+    for (let i = 0; i < 5166; i++) R();   // yerleşim sırası değişmesin diye eski R() çağrı sayısı korunur
+    let lpS = 73521; const lpR = () => { lpS = (lpS * 1664525 + 1013904223) >>> 0; return lpS / 4294967296; };
+    const c = cimDoku.image, g = c.getContext('2d'), w = c.width, h = c.height, n = 8, k = w / n;
     const leke = (x, y, r) => { for (const ox of [0, -w, w]) for (const oy of [0, -h, h]) { if (x + ox < -r || x + ox > w + r || y + oy < -r || y + oy > h + r) continue; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 7); g.fill(); } };
-    g.globalAlpha = 1; g.fillStyle = '#42868a'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 46; i++) { g.fillStyle = ['#50a094', '#3c7e80', '#58a69a', '#447f88'][i % 4]; g.globalAlpha = 0.22; const x = R() * w, y = R() * h, r = 28 + R() * 50; leke(x, y, r); leke(x + r * 0.5, y + r * 0.3, r * 0.7); }
-    for (let i = 0; i < 1600; i++) { g.fillStyle = ['#62b0a2', '#3a7c7c', '#6cbaaa', '#387478'][i % 4]; g.globalAlpha = 0.32; g.fillRect(R() * w, R() * h, 1.5, 2.5 + R() * 3); }
-    for (let k = 0; k < 6; k++) { const cx = R() * w, cy = R() * h; for (let i = 0; i < 12; i++) { g.fillStyle = ['#fff4c0', '#ffb8d8', '#bff4ff'][(i + k) % 3]; g.globalAlpha = 0.85; leke(cx + (R() - 0.5) * 60, cy + (R() - 0.5) * 60, 1.4 + R() * 1.2); } }   // minik çiçekler
-    g.globalAlpha = 1; cimDoku.needsUpdate = true;
+    g.globalAlpha = 1; g.fillStyle = '#403566'; g.fillRect(0, 0, w, h);
+    const tas = ['#5c4e86', '#67568e', '#56497e', '#6f5b92', '#615288', '#735e8f'];
+    for (let iy = 0; iy < n; iy++) for (let ix = 0; ix < n; ix++) {
+      const kay = (iy % 2) * (k * 0.5), x = ix * k + kay, y = iy * k, ren = tas[(ix * 3 + iy * 5 + ((lpR() * 3) | 0)) % 6];
+      for (const ox of [0, -w]) {
+        const tx = x + ox; if (tx + k < 0 || tx > w) continue;
+        g.fillStyle = ren; g.fillRect(tx + 2, y + 2, k - 4, k - 4);
+        g.fillStyle = 'rgba(255,216,184,0.18)'; g.fillRect(tx + 2, y + 2, k - 4, 2.5); g.fillRect(tx + 2, y + 2, 2.5, k - 4);
+        g.fillStyle = 'rgba(26,20,56,0.28)'; g.fillRect(tx + 2, y + k - 4.5, k - 4, 2.5); g.fillRect(tx + k - 4.5, y + 2, 2.5, k - 4);
+        if ((ix + iy) % 2 === 0) {
+          g.fillStyle = (ix + iy) % 4 === 0 ? 'rgba(255,202,130,0.12)' : 'rgba(255,156,206,0.10)';
+          g.beginPath(); g.moveTo(tx + k * 0.5, y + 11); g.lineTo(tx + k - 11, y + k * 0.5); g.lineTo(tx + k * 0.5, y + k - 11); g.lineTo(tx + 11, y + k * 0.5); g.closePath(); g.fill();
+        }
+      }
+    }
+    for (let i = 0; i < 24; i++) {   // yumuşak fener ışığı hareleri (dikişsiz)
+      const x = lpR() * w, y = lpR() * h, r = 34 + lpR() * 48, col = i % 3 === 0 ? '255,204,136' : i % 3 === 1 ? '255,156,206' : '156,232,232';
+      for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) {
+        if (x + ox < -r || x + ox > w + r || y + oy < -r || y + oy > h + r) continue;
+        const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+        gr.addColorStop(0, 'rgba(' + col + ',0.13)'); gr.addColorStop(0.6, 'rgba(' + col + ',0.05)'); gr.addColorStop(1, 'rgba(' + col + ',0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 7); g.fill();
+      }
+    }
+    for (let i = 0; i < 720; i++) {   // ince taş dokusu ve şenlik pırıltıları
+      g.fillStyle = ['#7e6ea8', '#3c3160', '#ffd4a8', '#ffa8d8'][i % 4];
+      g.globalAlpha = i % 4 < 2 ? 0.22 : 0.30;
+      g.fillRect(lpR() * w, lpR() * h, i % 4 < 2 ? 2 : 1.6, i % 4 < 2 ? 2 : 1.6);
+    }
+    for (let k = 0; k < 16; k++) {   // köşelerde küçük yıldız/elmas süsleri
+      const cx = (k % 4 + 0.5) * (w / 4), cy = ((k >> 2) + 0.5) * (h / 4);
+      g.fillStyle = k % 2 ? 'rgba(255,224,140,0.45)' : 'rgba(180,248,244,0.40)';
+      g.globalAlpha = 0.7; leke(cx + (lpR() - 0.5) * 18, cy + (lpR() - 0.5) * 18, 1.5);
+    }
+    g.globalAlpha = 1; cimDoku.repeat.set(42, 42); cimDoku.needsUpdate = true;
     const p = zemin.geometry.attributes.position, cl = zemin.geometry.attributes.color;
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), v = 0.94 + 0.06 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017), q = 0.5 + 0.5 * Math.sin(x * 0.008 + 0.6) * Math.cos(y * 0.0065 - 0.4); cl.setXYZ(i, v * lerp(0.94, 1.0, q), v * lerp(0.98, 1.0, q), v * lerp(1.0, 0.96, q)); }
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), wz = -y - 70, d = yakin(x, wz);
+      const u = clamp((d - YARI - 4) / 48, 0, 1), dis = clamp((d - 95) / 240, 0, 1);
+      const v = 0.94 + 0.055 * Math.sin(x * 0.021 + 1) * Math.cos(y * 0.017), q = 0.5 + 0.5 * Math.sin(x * 0.008 + 0.6) * Math.cos(y * 0.0065 - 0.4);
+      const rT = lerp(lerp(1.06, 0.96, u), 0.80, dis), gT = lerp(lerp(0.98, 0.93, u), 0.78, dis), bT = lerp(lerp(0.94, 1.00, u), 0.94, dis);
+      cl.setXYZ(i, v * rT * lerp(0.96, 1.03, q), v * gT * lerp(0.96, 1.01, q), v * bT * lerp(1.02, 0.97, q));
+    }
     cl.needsUpdate = true;
   }
 
@@ -109,7 +171,7 @@ if (cvTema === 'lunapark') {
   // ───────── süsler ─────────
   const S = cvYapi(), E = cvYapi(), golge = [], hale = [];
   const PEMBE = 0xff6fae, PEMBE_A = 0xffb6d6, TURKUAZ = 0x3fd4d0, TURKUAZ_A = 0xa6f0ea, SARI = 0xffd23f, KREM = 0xfff3dc, LACI = 0x2c3480, MOR = 0x8a6cd8;
-  const AMPUL = [0xfff0a0, 0xffd0e6, 0xc8fff6];
+  const AMPUL = [0xffe875, 0xff8fd0, 0x6df6ea];
   const lpYK = cvG.kutuY;   // yuvarlak köşeli tombul kutu (alttan üste ton geçişli)
   const yerVar = (x, z, r) => yakin(x, z) > YARI + 8 + r && cvBos(x, z, r);
   const iz = (x, z, rx, rz) => golge.push([x - 0.3, 0.02, z + 0.25, rx, 1, rz || rx, 0]);
@@ -162,7 +224,7 @@ if (cvTema === 'lunapark') {
       W.ekle(cvG.sil, x, y - 2.6, 0, 1.0, 0.25, 0.85, 0xffffff, 0, 0, 0, a, 2, R0);
       WE.ekle(ampul, x, y - 0.7, 0, 0.18, 0.18, 0.18, 0xfff0a0, 0, 0, 0, a, 2, R0);
     }
-    const wm = new T.Mesh(W.geo(), lpDonMalz('xy', 0.16, false, { emissive: 0x2a2050 })), we = new T.Mesh(WE.geo(), lpDonMalz('xy', 0.16, true));
+    const wm = new T.Mesh(lpTon(W.geo(), 16, true), lpDonMalz('xy', 0.16, false, { emissive: 0x100c24 })), we = new T.Mesh(WE.geo(), lpDonMalz('xy', 0.16, true));
     for (const m of [wm, we]) { m.position.set(yer.x, HUB, yer.z); m.rotation.y = ry; m.frustumCulled = false; scene.add(m); }
     // çevresinde iki ampul dizisi direği
     lpDonmeYer = yer;
@@ -208,7 +270,7 @@ if (cvTema === 'lunapark') {
       ekle(cvG.yarim, 0, 3.42, -0.05, 0.6, 0.18, 0.55, EYER[k % 4]);
       for (const q of [[-0.28, 0.6, 0.6], [0.28, 0.6, -0.4], [-0.28, -0.55, -0.6], [0.28, -0.55, 0.5]]) ekle(lpYK, q[0], 2.35, q[1], 0.2, 0.9, 0.2, c, q[2]);
     }
-    const km = new T.Mesh(K.geo(), lpDonMalz('xz', 0.42, false, { emissive: 0x2a2050 })), ke = new T.Mesh(KE.geo(), lpDonMalz('xz', 0.42, true));
+    const km = new T.Mesh(lpTon(K.geo(), 11, false), lpDonMalz('xz', 0.42, false, { emissive: 0x100c24 })), ke = new T.Mesh(KE.geo(), lpDonMalz('xz', 0.42, true));
     for (const m of [km, ke]) { m.position.set(yer.x, 0, yer.z); m.frustumCulled = false; scene.add(m); }
     lpKarincaYer = yer;
   }
@@ -304,13 +366,13 @@ if (cvTema === 'lunapark') {
     if (k % 3 === 0) { E.yer(x, z, 0, s); for (let j = 0; j < 7; j++) { const a = j * 0.9, y = 1.6 + j * 0.24; E.ekle(cvG.kureK, Math.cos(a) * 1.38 * Math.sqrt(1 - Math.pow((y - 2.6) / 1.55, 2)), y, Math.sin(a) * 1.38 * Math.sqrt(1 - Math.pow((y - 2.6) / 1.55, 2)), 0.17, 0.17, 0.17, AMPUL[j % 3], 0, 0, 0, 0, 0, 1); } isik(x, z, 3.2 * s, 0xffe0a0); } } }
 
   // ── birleşik meshler ──
-  { const g = S.geo(), p = g.attributes.position, c = g.attributes.color; for (let i = 0; i < p.count; i++) { const k = 0.82 + 0.18 * clamp(p.getY(i) / 6, 0, 1); c.setXYZ(i, c.getX(i) * k, c.getY(i) * k, c.getZ(i) * k); }   // ton geçişi: dipte biraz koyu
-    const sm = new T.Mesh(g, cvMalz(0, { side: T.DoubleSide, emissive: 0x1c1640 })); sm.frustumCulled = false; scene.add(sm); }
+  { const g = lpTon(S.geo(), 7, false);   // kulübeler, çadır ve ayaklarda canlı pastel/neon köşe kontrastı
+    const sm = new T.Mesh(g, lpCila(cvMalz(0, { side: T.DoubleSide, emissive: 0x0e0a20 }), 0.28, 0.36)); sm.frustumCulled = false; scene.add(sm); }
   const emM = new T.MeshBasicMaterial({ vertexColors: true });   // ampuller: cvK.z = 1 olanlar yumuşakça sırayla yanıp söner, 0,5 olanlar ağır nabız
   emM.onBeforeCompile = sh => {
     sh.uniforms.cvT = cvZ;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float cvT;\nattribute vec3 cvK;')
-      .replace('#include <color_vertex>', 'vColor = color;\nfloat lpP = position.x * 0.53 + position.z * 0.41;\nfloat lpY = step(0.75, cvK.z) * (0.62 + 0.42 * smoothstep(-0.3, 0.7, sin(cvT * 2.4 + lpP))) + step(0.25, cvK.z) * (1.0 - step(0.75, cvK.z)) * (0.84 + 0.18 * sin(cvT * 1.3 + lpP));\nvColor *= mix(1.0, lpY, step(0.25, cvK.z));');
+      .replace('#include <color_vertex>', 'vColor = color;\nfloat lpP = position.x * 0.53 + position.z * 0.41;\nfloat lpY = step(0.75, cvK.z) * (0.58 + 0.50 * smoothstep(-0.3, 0.7, sin(cvT * 2.4 + lpP))) + step(0.25, cvK.z) * (1.0 - step(0.75, cvK.z)) * (0.80 + 0.22 * sin(cvT * 1.3 + lpP));\nvColor *= mix(1.0, lpY, step(0.25, cvK.z));');
   };
   emM.customProgramCacheKey = () => 'lpIsik';
   { const em = new T.Mesh(E.geo(), emM); em.frustumCulled = false; scene.add(em); }

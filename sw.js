@@ -1,7 +1,7 @@
 /* İnternetsiz çalışma. index.html önce ağdan, diğer dosyalar önce önbellekten.
    Yalnız bu oyunun önbellekleri (feza-yaris-) silinir; aynı sitedeki diğer oyunlara dokunulmaz. */
 const ONEK = 'feza-yaris-';
-const CACHE = ONEK + 'v21';
+const CACHE = ONEK + 'v22';
 const SESLER = ['giris', 'hazir', 'basla', 'yildiz', 'roket', 'sontur', 'bir', 'iki', 'uc', 'ovgu1', 'ovgu2', 'ovgu3', 'hop', 'tekrar', 'giris_orman', 'giris_kiyi', 'giris_kar', 'giris_seker', 'giris_uzay', 'giris_col', 'giris_gokkusagi', 'giris_dino', 'giris_sehir', 'giris_sato', 'giris_lunapark', 'giris_korsan', 'giris_denizalti', 'giris_ciftlik', 'giris_muzik', 'ad_orman', 'ad_kiyi', 'ad_kar', 'ad_seker', 'ad_uzay', 'ad_col', 'ad_gokkusagi', 'ad_dino', 'ad_sehir', 'ad_sato', 'ad_lunapark', 'ad_korsan', 'ad_denizalti', 'ad_ciftlik', 'ad_muzik', 'araba_kart', 'araba_yaris', 'araba_cip', 'araba_roket', 'araba_dondurma', 'araba_unicorn', 'araba_itfaiye', 'araba_ejderha', 'araba_ucak', 'araba_gemi', 'araba_polis', 'araba_kedi', 'araba_tren', 'araba_traktor', 'araba_ufo', 'yildiz2', 'ovgu4', 'ovgu5', 'ovgu6', 'ovgu7', 'hop2', 'hop3', 'sontur2', 'sontur3', 'tur1', 'tur2', 'roket2', 'roket3', 'bir2', 'iki2', 'uc2', 'tekrar2', 'garaj_gir', 'garaj_kilit', 'hediye_acildi', 'hediye_var', 'surpriz'];
 const CORE = ['./', 'index.html', 'style.css', 'ses.js', 'cekirdek.js', 'cevre.js', 'cevre_seker.js', 'cevre_uzay.js', 'cevre_col.js', 'cevre_gokkusagi.js', 'cevre_dino.js', 'cevre_sehir.js', 'cevre_sato.js', 'cevre_lunapark.js', 'cevre_korsan.js', 'cevre_denizalti.js', 'cevre_ciftlik.js', 'cevre_muzik.js', 'hava.js', 'pist.js', 'araba.js', 'arayuz.js', 'oyun.js', 'vendor/three.js', 'manifest.webmanifest',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',

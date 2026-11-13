@@ -14,37 +14,59 @@ let tohum = 20261111; const R = () => { tohum = (tohum * 1664525 + 1013904223) >
 const canvas = $('c');
 const renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.outputColorSpace = T.SRGBColorSpace;
-// Renk: sakin, temiz palet için çok hafif doygunluk + yumuşak omuz (0,8'e kadar renk aynı, üstü 1'e yavaşça yaklaşır: kar/beyazlar patlamaz, ton korunur).
+// Renk: sakin, temiz palet için hafif doygunluk (koyu/orta tonlarda solmayı önler) + yumuşak omuz (0,76'dan sonra 1'e C1-sürekli yaklaşır: kar/bulut/krema patlamaz).
 // Ek çizim geçişi yok; her malzemenin sonunda birkaç işlem. Sis ton eşlemeden SONRA karıştığı için ufuk/gök renkleri değişmez.
-// Pist başına renk eğrisi (ışık karakteri): doy = doygunluk, gol = gölgelere çok hafif renk (koyular biraz kalkar: yüz/arka yüzler kararmaz),
-// isk = aydınlık yerlerin tonu (sıcak/serin), poz = pozlama. Değerler bilerek küçük; gök dokusu ve sis bundan etkilenmez.
+// Pist başına renk eğrisi (ışık karakteri): doy = doygunluk, gol = gölge orta tonlarına temiz renk sıcaklığı (en koyu siyahları/lastikleri puslandırmadan çamur griliği alır),
+// isk = aydınlık yerlerin tonu (sıcak/serin), poz = pozlama, kenar = arkadan güneş kenarı vurgusu. Değerler bilerek ölçülü; gök dokusu ve sis bundan etkilenmez.
 const ISIK_TON = {
-  orman:     { doy: 1.08, gol: [0.004, 0.018, 0.010], isk: [1.04, 1.0, 0.94], poz: 1.0, kenar: 0.32 },    // sıcak sabah, yeşil dolgu
-  kiyi:      { doy: 1.10, gol: [0.000, 0.018, 0.024], isk: [1.01, 1.0, 0.985], poz: 1.02, kenar: 0.28 },    // parlak öğle, turkuaz gölge
-  kar:       { doy: 1.07, gol: [0.000, 0.012, 0.040], isk: [1.03, 1.0, 0.95], poz: 0.97, kenar: 0.32 },     // serin mavi gölge, sıcak güneş
-  seker:     { doy: 1.07, gol: [0.024, 0.006, 0.018], isk: [1.01, 0.99, 0.99], poz: 0.97, kenar: 0.24 },    // yumuşak pastel, pembe
-  uzay:      { doy: 1.07, gol: [0.014, 0.004, 0.030], isk: [0.975, 0.995, 1.035], poz: 1.04, kenar: 0.4 },   // serin ana ışık, mor dolgu
-  col:       { doy: 1.08, gol: [0.016, 0.004, 0.020], isk: [1.035, 1.0, 0.93], poz: 1.0, kenar: 0.45 },     // altın gün batımı, menekşe gölge
-  gokkusagi: { doy: 1.03, gol: [0.024, 0.022, 0.030], isk: [1.0, 1.0, 1.0], poz: 1.0, kenar: 0.22 },        // süt gibi yumuşak, aydınlık
-  dino:      { doy: 1.10, gol: [0.006, 0.014, 0.004], isk: [1.04, 1.0, 0.94], poz: 1.0, kenar: 0.32 },      // sıcak tropik
-  sehir:     { doy: 1.10, gol: [0.002, 0.008, 0.020], isk: [1.01, 1.0, 0.98], poz: 1.02, kenar: 0.28 },     // canlı, temiz gündüz
-  /*SATO*/ sato:         { doy: 1.08, gol: [0.006, 0.012, 0.016], isk: [1.045, 1.0, 0.93], poz: 1.0, kenar: 0.3 }, /*/SATO*/   // altın masal gündüzü, serin mavi-yeşil gölge
-  /*LUNAPARK*/ lunapark: { doy: 1.08, gol: [0.016, 0.006, 0.034], isk: [1.03, 1.0, 0.97], poz: 1.06, kenar: 0.42 }, /*/LUNAPARK*/   // sıcak akşam: mor dolgu, sıcak ışık, aydınlık (arabalar kararmaz)
-  /*KORSAN*/ korsan:     { doy: 1.10, gol: [0.002, 0.016, 0.018], isk: [1.035, 1.0, 0.95], poz: 1.01, kenar: 0.3 }, /*/KORSAN*/   // sıcak tropik öğle, turkuaz gölge
-  /*DENIZALTI*/ denizalti: { doy: 1.12, gol: [0.005, 0.024, 0.032], isk: [0.94, 1.03, 1.06], poz: 1.02, kenar: 0.32 }, /*/DENIZALTI*/
-  /*CIFTLIK*/ ciftlik:   { doy: 1.12, gol: [0.010, 0.014, 0.004], isk: [1.04, 1.02, 0.94], poz: 1.02, kenar: 0.28 }, /*/CIFTLIK*/
-  /*MUZIK*/   muzik:     { doy: 1.14, gol: [0.014, 0.008, 0.022], isk: [1.03, 0.99, 1.02], poz: 1.02, kenar: 0.30 } /*/MUZIK*/
+  orman:     { doy: 1.09, gol: [0.008, 0.017, 0.012], isk: [1.035, 1.005, 0.950], poz: 1.00, kenar: 0.68 },    // sıcak sabah, temiz çayır dolgu
+  kiyi:      { doy: 1.10, gol: [0.003, 0.018, 0.025], isk: [1.015, 1.000, 0.980], poz: 1.01, kenar: 0.64 },    // parlak öğle, turkuaz gölge
+  kar:       { doy: 1.08, gol: [0.006, 0.016, 0.036], isk: [1.010, 1.000, 0.990], poz: 0.98, kenar: 0.60 },    // berrak buz mavisi gölge, temiz kış güneşi
+  seker:     { doy: 1.08, gol: [0.022, 0.007, 0.018], isk: [1.015, 0.992, 0.990], poz: 0.98, kenar: 0.58 },    // yumuşak pastel, çilek-gül gölge
+  uzay:      { doy: 1.09, gol: [0.014, 0.006, 0.032], isk: [0.988, 0.998, 1.022], poz: 1.03, kenar: 0.78 },    // serin yıldız ışığı, berrak mor dolgu
+  col:       { doy: 1.09, gol: [0.018, 0.005, 0.024], isk: [1.028, 1.000, 0.945], poz: 1.02, kenar: 0.80 },    // altın gün batımı, sıcak erik gölge
+  gokkusagi: { doy: 1.06, gol: [0.022, 0.008, 0.024], isk: [1.005, 1.000, 0.995], poz: 0.98, kenar: 0.54 },    // süt gibi yumuşak, temiz gül-lila gölge
+  dino:      { doy: 1.10, gol: [0.009, 0.015, 0.006], isk: [1.035, 1.005, 0.945], poz: 1.00, kenar: 0.68 },    // sıcak tropik
+  sehir:     { doy: 1.10, gol: [0.004, 0.010, 0.022], isk: [1.015, 1.000, 0.980], poz: 1.01, kenar: 0.64 },    // canlı, temiz gündüz
+  /*SATO*/ sato:         { doy: 1.09, gol: [0.008, 0.013, 0.018], isk: [1.035, 1.002, 0.945], poz: 1.00, kenar: 0.66 }, /*/SATO*/   // altın masal gündüzü, serin mavi-yeşil gölge
+  /*LUNAPARK*/ lunapark: { doy: 1.10, gol: [0.018, 0.007, 0.034], isk: [1.028, 1.000, 0.972], poz: 1.03, kenar: 0.80 }, /*/LUNAPARK*/   // sıcak akşam: berrak mor dolgu, sıcak ışık, canlı arabalar
+  /*KORSAN*/ korsan:     { doy: 1.10, gol: [0.005, 0.016, 0.020], isk: [1.028, 1.000, 0.958], poz: 1.01, kenar: 0.66 }, /*/KORSAN*/   // sıcak tropik öğle, turkuaz gölge
+  /*DENIZALTI*/ denizalti: { doy: 1.12, gol: [0.008, 0.020, 0.030], isk: [1.000, 1.010, 1.030], poz: 1.01, kenar: 0.66 }, /*/DENIZALTI*/
+  /*CIFTLIK*/ ciftlik:   { doy: 1.11, gol: [0.011, 0.015, 0.006], isk: [1.032, 1.014, 0.948], poz: 1.01, kenar: 0.64 }, /*/CIFTLIK*/
+  /*MUZIK*/   muzik:     { doy: 1.12, gol: [0.015, 0.008, 0.024], isk: [1.025, 0.995, 1.015], poz: 1.01, kenar: 0.66 } /*/MUZIK*/
 }[PIST_TEMA];
 const glV = a => 'vec3( ' + a.map(v => v.toFixed(4)).join(', ') + ' )';
 T.ShaderChunk.tonemapping_pars_fragment = T.ShaderChunk.tonemapping_pars_fragment.replace('vec3 CustomToneMapping( vec3 color ) { return color; }',
-  'vec3 CustomToneMapping( vec3 color ) {\n\tcolor *= toneMappingExposure;\n\tfloat l = dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n\tcolor = max( vec3( l ) + ( color - vec3( l ) ) * ' + ISIK_TON.doy.toFixed(3) + ', vec3( 0.0 ) );\n' +
-  '\tcolor += ' + glV(ISIK_TON.gol) + ' * ( 1.0 - smoothstep( 0.0, 0.6, l ) );\n\tcolor *= mix( vec3( 1.0 ), ' + glV(ISIK_TON.isk) + ', smoothstep( 0.25, 0.85, l ) );\n' +
-  '\tfloat p = max( color.r, max( color.g, color.b ) );\n\tif ( p > 0.8 ) color *= ( 1.0 - 0.04 / ( p - 0.6 ) ) / p;\n\treturn color;\n}');
+  'vec3 CustomToneMapping( vec3 color ) {\n\tcolor *= toneMappingExposure;\n\tfloat l = dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );\n' +
+  '\tfloat sat = ' + ISIK_TON.doy.toFixed(3) + ' + 0.08 * ( 1.0 - smoothstep( 0.18, 0.72, l ) );\n' +
+  '\tcolor = max( vec3( l ) + ( color - vec3( l ) ) * sat, vec3( 0.0 ) );\n' +
+  '\tfloat gw = smoothstep( 0.015, 0.14, l ) * ( 1.0 - smoothstep( 0.14, 0.56, l ) );\n' +
+  '\tcolor += ' + glV(ISIK_TON.gol) + ' * gw;\n\tcolor *= mix( vec3( 1.0 ), ' + glV(ISIK_TON.isk) + ', smoothstep( 0.25, 0.85, l ) );\n' +
+  '\tfloat p = max( color.r, max( color.g, color.b ) );\n\tif ( p > 0.76 ) color *= ( 1.0 - 0.0576 / ( p - 0.52 ) ) / p;\n\treturn color;\n}');
 renderer.toneMapping = T.CustomToneMapping; renderer.toneMappingExposure = ISIK_TON.poz;
-// Hacim: dik yüzlerin kenarında çok hafif açık vurgu (rim) → kutu/karton yüzler yuvarlak ve hacimli okunur. Yer ve çatı gibi yatay yüzlere değmez (uzakta yol/çimen ağarmaz).
-// Güneş kenarı: güneş nesnenin arkasındayken (yarış kamerasında çoğu zaman) silüete güneş renginde ince bir parlaklık → arabalar/sürücüler zeminden ayrışır.
+// Hacim ve yansıma: dik/eğik yüzlerde yumuşak gök-zemin yansıması, güneş sınırında hafif sarma ve karşı yüzde ince dolgu → ön, yan, 3/4 ve arka açılardan arabalar, sürücüler, tekerler ve süsler heykel gibi okunur; düz yol/zemin (rimD = 0) ağarmaz.
 // Lambert/Phong/Standard ortak parçası; ek ışık, doku ya da geçiş yok.
-T.ShaderChunk.lights_fragment_end += '\n{\n\tfloat rimK = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );\n\tfloat rimD = 1.0 - abs( dot( geometryNormal, normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz ) ) );\n\treflectedLight.indirectDiffuse += diffuseColor.rgb * ( rimK * rimK * rimK * rimD * 0.3 );\n#if NUM_DIR_LIGHTS > 0\n\tfloat rimS = saturate( dot( directionalLights[ 0 ].direction, - geometryViewDir ) * 0.7 + 0.3 );\n\treflectedLight.directDiffuse += diffuseColor.rgb * directionalLights[ 0 ].color * ( rimK * rimK * rimD * rimS * ' + ISIK_TON.kenar.toFixed(3) + ' );\n#endif\n}\n';
+T.ShaderChunk.lights_fragment_end += '\n{\n' +
+  '#if NUM_HEMI_LIGHTS > 0\n' +
+  '\tvec3 bounceUp = hemisphereLights[ 0 ].direction;\n\tvec3 skyB = hemisphereLights[ 0 ].skyColor;\n\tvec3 gndB = hemisphereLights[ 0 ].groundColor;\n' +
+  '#else\n' +
+  '\tvec3 bounceUp = normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz );\n\tvec3 skyB = vec3( 1.0 );\n\tvec3 gndB = vec3( 0.72, 0.68, 0.64 );\n' +
+  '#endif\n' +
+  '\tfloat upDot = dot( geometryNormal, bounceUp );\n' +
+  '\tfloat rimK = 1.0 - saturate( dot( geometryNormal, geometryViewDir ) );\n' +
+  '\tfloat rimD = saturate( 1.0 - upDot * upDot );\n' +
+  '\tvec3 bounceCol = mix( gndB * 1.12, skyB, smoothstep( -0.55, 0.65, upDot ) );\n' +
+  '\tfloat bounceF = ( 0.025 + 0.28 * rimK * rimK ) * rimD;\n' +
+  '#if NUM_DIR_LIGHTS > 0\n' +
+  '\tfloat dotNL = dot( geometryNormal, directionalLights[ 0 ].direction );\n' +
+  '\tfloat wrap = ( saturate( ( dotNL + 0.26 ) / 1.26 ) - saturate( dotNL ) ) * rimD;\n' +
+  '\tfloat backB = smoothstep( -0.25, -1.0, dotNL ) * rimD * 0.11;\n' +
+  '\tfloat rimS = saturate( dot( directionalLights[ 0 ].direction, - geometryViewDir ) * 0.65 + 0.35 );\n' +
+  '\treflectedLight.indirectDiffuse += diffuseColor.rgb * bounceCol * ( ( bounceF + backB ) * RECIPROCAL_PI );\n' +
+  '\treflectedLight.directDiffuse += diffuseColor.rgb * directionalLights[ 0 ].color * ( ( wrap * 0.24 + rimK * rimK * rimD * rimS * ' + ISIK_TON.kenar.toFixed(3) + ' ) * RECIPROCAL_PI );\n' +
+  '#else\n' +
+  '\treflectedLight.indirectDiffuse += diffuseColor.rgb * bounceCol * ( bounceF * RECIPROCAL_PI );\n' +
+  '#endif\n}\n';
 // Çizim oranı: en çok 2 ve ekran başına ~4,6 milyon piksel (12,9" iPad'de ≈1,8; 11"de 2). Kare uzarsa oyun.js daha da düşürür.
 const oranTavan = () => clamp(Math.sqrt(4.6e6 / Math.max(1, innerWidth * innerHeight)), 1, 2);
 let oran = Math.min(window.devicePixelRatio || 1, oranTavan());
@@ -76,21 +98,21 @@ addEventListener('load', () => {
 // gr = güneş rengi çarpanı, gi = güneş gücü çarpanı, gy = güneş yüksekliği çarpanı, ust/alt = gök/zemin dolgu renk hedefi (yarı yarıya), altK = alt dolgu koyuluğu,
 // di = dolgu gücü çarpanı, sis = [yakın, uzak] en çok (renk pist dosyasının).
 const ISIK_AYAR = {
-  orman:     { gr: 0xffe8c8, gi: 1.2,  gy: 0.62, ust: 0xfff6e2, alt: 0xa9bd8c, altK: 0.85, di: 0.9,  sis: [90, 820] },
-  kiyi:      { gr: 0xfffaf0, gi: 1.22, gy: 0.8,  ust: 0xeafcff, alt: 0xb4dcd2, altK: 0.9,  di: 0.92, sis: [120, 860] },
-  kar:       { gr: 0xffe2bc, gi: 1.2,  gy: 0.6,  ust: 0xd8e6ff, alt: 0xa6bedf, altK: 0.85, di: 0.9,  sis: [90, 820] },
-  seker:     { gr: 0xfff0e8, gi: 1.12, gy: 0.75, ust: 0xfff2f8, alt: 0xf2b4cc, altK: 0.88, di: 0.93, sis: [90, 800] },
-  uzay:      { gr: 0xccdcff, gi: 1.02, gy: 0.8,  ust: 0xe8e6ff, alt: 0xa490d6, altK: 0.9,  di: 1.0,  sis: [260, 880] },
-  col:       { gr: 0xffe0b0, gi: 1.15, gy: 0.72, ust: 0xffecd8, alt: 0xd49470, altK: 0.85, di: 0.9,  sis: [80, 780] },
-  gokkusagi: { gr: 0xfff8f0, gi: 1.05, gy: 0.9,  ust: 0xffffff, alt: 0xf6dcea, altK: 0.95, di: 1.0,  sis: [70, 720] },
-  dino:      { gr: 0xffe6b4, gi: 1.2,  gy: 0.7,  ust: 0xf6ffe8, alt: 0xb4bc86, altK: 0.85, di: 0.9,  sis: [90, 820] },
-  sehir:     { gr: 0xfff6ea, gi: 1.2,  gy: 0.8,  ust: 0xf4faff, alt: 0xc8c8bc, altK: 0.85, di: 0.9,  sis: [100, 840] },
-  /*SATO*/ sato:         { gr: 0xffe4b8, gi: 1.22, gy: 0.68, ust: 0xfff6e0, alt: 0xb2bc8e, altK: 0.86, di: 0.9,  sis: [100, 840] }, /*/SATO*/
-  /*LUNAPARK*/ lunapark: { gr: 0xffe6c8, gi: 1.08, gy: 0.8,  ust: 0xeee8ff, alt: 0xa894d8, altK: 0.92, di: 1.0,  sis: [220, 880] }, /*/LUNAPARK*/   // lunapark ışığı: sıcak ana ışık, lila dolgu
-  /*KORSAN*/ korsan:     { gr: 0xfff0d4, gi: 1.2,  gy: 0.72, ust: 0xf2fcf6, alt: 0xc8c49a, altK: 0.88, di: 0.92, sis: [110, 860] }, /*/KORSAN*/   // sıcak güneş, kum yansıması
-  /*DENIZALTI*/ denizalti: { gr: 0xc8fbff, gi: 1.05, gy: 0.78, ust: 0x9ef4ff, alt: 0x52a8b8, altK: 0.92, di: 0.98, sis: [120, 740] }, /*/DENIZALTI*/
-  /*CIFTLIK*/ ciftlik:   { gr: 0xfff4d6, gi: 1.24, gy: 0.76, ust: 0xf4fbff, alt: 0xc8c88c, altK: 0.86, di: 0.94, sis: [130, 880] }, /*/CIFTLIK*/
-  /*MUZIK*/   muzik:     { gr: 0xfff0ff, gi: 1.18, gy: 0.78, ust: 0xf6f0ff, alt: 0xd0c4e8, altK: 0.90, di: 0.96, sis: [130, 860] } /*/MUZIK*/
+  orman:     { gr: 0xffeed8, gi: 1.22, gy: 0.64, ust: 0xfff8ec, alt: 0xadc28a, altK: 0.80, di: 0.85, sis: [90, 820] },
+  kiyi:      { gr: 0xfffbf2, gi: 1.20, gy: 0.76, ust: 0xeefcff, alt: 0x9edfd8, altK: 0.84, di: 0.86, sis: [120, 860] },
+  kar:       { gr: 0xf4f8ff, gi: 1.42, gy: 0.62, ust: 0xe8f3ff, alt: 0xa4c8f2, altK: 0.82, di: 0.90, sis: [90, 820] },
+  seker:     { gr: 0xfff4ee, gi: 1.24, gy: 0.65, ust: 0xfff6fb, alt: 0xf0acca, altK: 0.80, di: 0.84, sis: [90, 800] },
+  uzay:      { gr: 0xeaf1ff, gi: 1.16, gy: 0.66, ust: 0xeae8ff, alt: 0x9b86d2, altK: 0.82, di: 0.90, sis: [260, 880] },
+  col:       { gr: 0xfff5e6, gi: 1.32, gy: 0.76, ust: 0xfff0e0, alt: 0xd98f72, altK: 0.78, di: 0.86, sis: [80, 780] },
+  gokkusagi: { gr: 0xfff8f2, gi: 1.24, gy: 0.68, ust: 0xffffff, alt: 0xf4c4dc, altK: 0.78, di: 0.84, sis: [85, 760] },
+  dino:      { gr: 0xfff0d4, gi: 1.22, gy: 0.68, ust: 0xf6ffe8, alt: 0xb6bc80, altK: 0.80, di: 0.85, sis: [90, 820] },
+  sehir:     { gr: 0xfff7ee, gi: 1.22, gy: 0.76, ust: 0xf4faff, alt: 0xc2c8bc, altK: 0.80, di: 0.85, sis: [100, 840] },
+  /*SATO*/ sato:         { gr: 0xfff0d6, gi: 1.24, gy: 0.68, ust: 0xfff6e4, alt: 0xb0be8c, altK: 0.80, di: 0.85, sis: [100, 840] }, /*/SATO*/
+  /*LUNAPARK*/ lunapark: { gr: 0xffeed8, gi: 1.22, gy: 0.72, ust: 0xf2eaff, alt: 0x9c86d2, altK: 0.80, di: 0.86, sis: [220, 880] }, /*/LUNAPARK*/   // lunapark ışığı: sıcak ana ışık, berrak lila dolgu
+  /*KORSAN*/ korsan:     { gr: 0xfff4de, gi: 1.20, gy: 0.72, ust: 0xf2fcf8, alt: 0xc8c092, altK: 0.82, di: 0.86, sis: [110, 860] }, /*/KORSAN*/   // sıcak güneş, kum yansıması
+  /*DENIZALTI*/ denizalti: { gr: 0xf8feff, gi: 1.22, gy: 0.72, ust: 0xe4feff, alt: 0x8ad8d6, altK: 0.84, di: 0.88, sis: [135, 760] }, /*/DENIZALTI*/
+  /*CIFTLIK*/ ciftlik:   { gr: 0xfff5de, gi: 1.20, gy: 0.74, ust: 0xf4fbff, alt: 0xc4c286, altK: 0.80, di: 0.86, sis: [130, 880] }, /*/CIFTLIK*/
+  /*MUZIK*/   muzik:     { gr: 0xfff2ff, gi: 1.22, gy: 0.74, ust: 0xf6f0ff, alt: 0xc8bae6, altK: 0.82, di: 0.88, sis: [130, 860] } /*/MUZIK*/
 };
 
 function tuvalDoku(w, h, ciz, tekrar) {
