@@ -270,6 +270,31 @@ function uiArabaCiz(id, c1, c2) {
       '<circle cx="73.500" cy="35.500" r="2.600" fill="#ff8fb0" opacity=".7"/><path d="M71 19v4M76 18.500v4" ' + kz + '/>' +
       uiTeker(26, 49, 8.5, c2) + uiTeker(62, 49, 8.5, c2);
     /*/KEDI*/
+  } else if (id === 'tren') {   // buharlı tren: renkli kabin, pirinç kubbe ve çan, dumanlı baca, ön mahmuz, biyel kolu
+    g = '<g fill="#f4f7fb" stroke="#17335c" stroke-width="1.8"><circle cx="67" cy="6.5" r="3.6"/><circle cx="59" cy="5.5" r="4.4"/><circle cx="51" cy="7" r="3"/></g>' +
+      uiSurucu(25, 24) + '<g ' + UI_CIZGI + '><path d="M10 45V20q0-4 4-4h19q4 0 4 4v25z" fill="' + c1 + '"/>' +
+      '<path d="M8 16h31" fill="none" stroke="' + c2 + '" stroke-width="3.6"/><rect x="16" y="22" width="14" height="10" rx="2.5" fill="' + cam + '"/>' +
+      '<path d="M37 24h36q5 0 6 5v16H37z" fill="' + c1 + '"/><path d="M68 24h8q4 0 4 5v16H68z" fill="#2b3550"/>' +
+      '<path d="M47 24q0-7 5-7t5 7z" fill="' + c2 + '"/><path d="M60 24l2-6h3l2 6z" fill="' + c2 + '"/>' +
+      '<path d="M70 24l-2-11h9l-2 11z" fill="#2b3550"/><path d="M67 13h11" fill="none" stroke="' + c2 + '" stroke-width="2.6"/>' +
+      '<path d="M80 35l11 11H80z" fill="' + c1 + '"/><path d="M83 40l4 4" fill="none" stroke="' + c2 + '" stroke-width="2.2"/>' +
+      '<circle cx="81" cy="29" r="3" fill="#fff3b0"/><path d="M10 43h70" fill="none" stroke="' + c2 + '" stroke-width="3"/></g>' +
+      uiTeker(22, 46, 10, c2) + uiTeker(45, 47, 8, c2) + uiTeker(69, 49, 7, c2) +
+      '<path d="M22 46h47" fill="none" stroke="#17335c" stroke-width="4.4" stroke-linecap="round"/><path d="M22 46h47" fill="none" stroke="#dfe6ee" stroke-width="2" stroke-linecap="round"/>';
+  } else if (id === 'traktor') {   // neşeli traktör: dev arka teker, açık kabin tentesi, dik egzoz, önde sarı kepçe
+    g = '<g fill="#eef3f8" stroke="#17335c" stroke-width="1.8"><circle cx="58" cy="7.5" r="3.4"/><circle cx="51" cy="6" r="2.6"/></g>' +
+      uiSurucu(33, 21) + '<g ' + UI_CIZGI + '><path d="M20 27V11h23v4" fill="none" stroke-width="3.2"/><path d="M16 10h29" fill="none" stroke="' + c2 + '" stroke-width="4"/>' +
+      '<path d="M17 42V28q0-4 5-4h18v18z" fill="' + c1 + '"/><path d="M40 25h29q5 0 6 5v14H40z" fill="' + c1 + '"/>' +
+      '<path d="M42 32h31" fill="none" stroke="' + c2 + '" stroke-width="3.4"/><path d="M62 25V12" fill="none" stroke-width="3.4"/>' +
+      '<circle cx="75" cy="29" r="3.2" fill="#fff3b0"/><path d="M46 35l34 6" fill="none" stroke="' + c2 + '" stroke-width="4.2"/>' +
+      '<path d="M78 33q12 0 13 13H77z" fill="' + c2 + '"/></g>' +
+      uiTeker(24, 41, 14.5, c2) + uiTeker(65, 48, 8.5, c2);
+  } else if (id === 'ufo') {   // ışıklı uçan daire: cam kubbe içinde Feza, tepede anten, etrafında pastel ışıklar, altta küçük tekerler
+    g = '<g ' + UI_CIZGI + '><path d="M48 9V3.5" fill="none" stroke-width="2.4"/><circle cx="48" cy="3.5" r="2.6" fill="' + c2 + '"/></g>' +
+      uiSurucu(48, 22) + '<g ' + UI_CIZGI + '><path d="M27 29q2-20 21-20t21 20z" fill="' + cam + '" fill-opacity=".55"/>' +
+      '<ellipse cx="48" cy="35" rx="41" ry="10.5" fill="' + c1 + '"/><path d="M9 35q39 7 78 0" fill="none" stroke="' + c2 + '" stroke-width="4"/></g>' +
+      '<g stroke="#17335c" stroke-width="1.6"><circle cx="19" cy="35" r="2.8" fill="#ff9ec4"/><circle cx="33" cy="38" r="2.8" fill="#ffe066"/><circle cx="48" cy="39" r="2.8" fill="#72f2eb"/><circle cx="63" cy="38" r="2.8" fill="#a3ff9e"/><circle cx="77" cy="35" r="2.8" fill="#c79eff"/></g>' +
+      uiTeker(30, 49, 6.5, c2) + uiTeker(66, 49, 6.5, c2);
   } else {
     g = '<g ' + UI_CIZGI + '><path d="M8 46V35q0-5 6-6l12-2 9-11h24l12 12 11 2q6 1 6 7v9z" fill="' + c1 + '"/><path d="M31 27l6-8h9v8zM50 19h8l8 8H50z" fill="' + cam + '"/>' +
       '<path d="M8 40h80" fill="none" stroke="' + c2 + '" stroke-width="3.4"/></g>' + uiTeker(25, 48, 9, c2) + uiTeker(71, 48, 9, c2);
@@ -278,7 +303,7 @@ function uiArabaCiz(id, c1, c2) {
 }
 function uiArabaIsaretle(id) {
   let var_ = false;
-  uiArabaSec.querySelectorAll('.araba-kart').forEach(b => { const s = b.dataset.araba === id; var_ = var_ || s; b.setAttribute('aria-pressed', s ? 'true' : 'false'); });
+  uiArabaSec.querySelectorAll('.araba-kart').forEach(b => { const s = b.dataset.araba === id; var_ = var_ || s; b.setAttribute('aria-pressed', s ? 'true' : 'false'); if (s && b.scrollIntoView) try { b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch (_) {} });
   return var_;
 }
 function uiArabaKur() {
@@ -359,7 +384,7 @@ function uiPistResim(kart) {   // gerçek pist görüntüsü (hazır dosya: icon
 function uiPistIsaretle(pist, dokunus) {
   if (uiSecGidiyor) return;
   uiPistSecili = pist;
-  document.querySelectorAll('.pist-kart').forEach(b => { const s = b.dataset.pist === pist; b.setAttribute('aria-pressed', s ? 'true' : 'false'); if (s && dokunus) uiSecZipla(b); });
+  document.querySelectorAll('.pist-kart').forEach(b => { const s = b.dataset.pist === pist; b.setAttribute('aria-pressed', s ? 'true' : 'false'); if (s) { if (dokunus) uiSecZipla(b); if (b.scrollIntoView) try { b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' }); } catch (_) {} } });
   // kısa pist adı (uzun giriş cümlesi yarışa girerken zaten söylenir; iki kez duyulmasın)
   if (dokunus && typeof SES !== 'undefined' && SES.CUMLE && SES.CUMLE['ad_' + pist]) SES.soyle('ad_' + pist);
 }

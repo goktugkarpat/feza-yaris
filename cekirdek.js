@@ -3,7 +3,7 @@
 'use strict';
 
 const Q = new URLSearchParams(location.search);
-const PIST_TEMALARI = ['orman', 'kiyi', 'kar', 'seker', 'uzay', 'col', 'gokkusagi', 'dino', 'sehir', 'sato', 'lunapark', 'korsan'];   // yeni pist = buraya ad + PIST_NOKTALARI + cevre_<ad>.js + index.html kartı
+const PIST_TEMALARI = ['orman', 'kiyi', 'kar', 'seker', 'uzay', 'col', 'gokkusagi', 'dino', 'sehir', 'sato', 'lunapark', 'korsan', 'denizalti', 'ciftlik', 'muzik'];   // yeni pist = buraya ad + PIST_NOKTALARI + cevre_<ad>.js + index.html kartı
 const PIST_TEMA = PIST_TEMALARI.includes(Q.get('pist')) ? Q.get('pist') : 'orman';
 const ZAMAN = Math.max(0.25, Math.min(12, parseFloat(Q.get('hiz')) || 1)), OTO = Q.has('oto');
 const $ = id => document.getElementById(id);
@@ -31,6 +31,9 @@ const ISIK_TON = {
   /*SATO*/ sato:         { doy: 1.08, gol: [0.006, 0.012, 0.016], isk: [1.045, 1.0, 0.93], poz: 1.0, kenar: 0.3 }, /*/SATO*/   // altın masal gündüzü, serin mavi-yeşil gölge
   /*LUNAPARK*/ lunapark: { doy: 1.08, gol: [0.016, 0.006, 0.034], isk: [1.03, 1.0, 0.97], poz: 1.06, kenar: 0.42 }, /*/LUNAPARK*/   // sıcak akşam: mor dolgu, sıcak ışık, aydınlık (arabalar kararmaz)
   /*KORSAN*/ korsan:     { doy: 1.10, gol: [0.002, 0.016, 0.018], isk: [1.035, 1.0, 0.95], poz: 1.01, kenar: 0.3 }, /*/KORSAN*/   // sıcak tropik öğle, turkuaz gölge
+  /*DENIZALTI*/ denizalti: { doy: 1.12, gol: [0.005, 0.024, 0.032], isk: [0.94, 1.03, 1.06], poz: 1.02, kenar: 0.32 }, /*/DENIZALTI*/
+  /*CIFTLIK*/ ciftlik:   { doy: 1.12, gol: [0.010, 0.014, 0.004], isk: [1.04, 1.02, 0.94], poz: 1.02, kenar: 0.28 }, /*/CIFTLIK*/
+  /*MUZIK*/   muzik:     { doy: 1.14, gol: [0.014, 0.008, 0.022], isk: [1.03, 0.99, 1.02], poz: 1.02, kenar: 0.30 } /*/MUZIK*/
 }[PIST_TEMA];
 const glV = a => 'vec3( ' + a.map(v => v.toFixed(4)).join(', ') + ' )';
 T.ShaderChunk.tonemapping_pars_fragment = T.ShaderChunk.tonemapping_pars_fragment.replace('vec3 CustomToneMapping( vec3 color ) { return color; }',
@@ -85,6 +88,9 @@ const ISIK_AYAR = {
   /*SATO*/ sato:         { gr: 0xffe4b8, gi: 1.22, gy: 0.68, ust: 0xfff6e0, alt: 0xb2bc8e, altK: 0.86, di: 0.9,  sis: [100, 840] }, /*/SATO*/
   /*LUNAPARK*/ lunapark: { gr: 0xffe6c8, gi: 1.08, gy: 0.8,  ust: 0xeee8ff, alt: 0xa894d8, altK: 0.92, di: 1.0,  sis: [220, 880] }, /*/LUNAPARK*/   // lunapark ışığı: sıcak ana ışık, lila dolgu
   /*KORSAN*/ korsan:     { gr: 0xfff0d4, gi: 1.2,  gy: 0.72, ust: 0xf2fcf6, alt: 0xc8c49a, altK: 0.88, di: 0.92, sis: [110, 860] }, /*/KORSAN*/   // sıcak güneş, kum yansıması
+  /*DENIZALTI*/ denizalti: { gr: 0xc8fbff, gi: 1.05, gy: 0.78, ust: 0x9ef4ff, alt: 0x52a8b8, altK: 0.92, di: 0.98, sis: [120, 740] }, /*/DENIZALTI*/
+  /*CIFTLIK*/ ciftlik:   { gr: 0xfff4d6, gi: 1.24, gy: 0.76, ust: 0xf4fbff, alt: 0xc8c88c, altK: 0.86, di: 0.94, sis: [130, 880] }, /*/CIFTLIK*/
+  /*MUZIK*/   muzik:     { gr: 0xfff0ff, gi: 1.18, gy: 0.78, ust: 0xf6f0ff, alt: 0xd0c4e8, altK: 0.90, di: 0.96, sis: [130, 860] } /*/MUZIK*/
 };
 
 function tuvalDoku(w, h, ciz, tekrar) {
@@ -98,19 +104,21 @@ function tuvalDoku(w, h, ciz, tekrar) {
 // ───────── pist ─────────
 const GEN = 14, YARI = GEN / 2, DMAX = YARI - 1.0, TUR = 3;
 const PIST_NOKTALARI = {
-  orman: [[0, 0], [55, -4], [100, -30], [118, -80], [95, -128], [45, -140], [10, -112], [-25, -95], [-60, -118], [-105, -110], [-128, -65], [-105, -22], [-55, -2]],
-  kiyi: [[0, 0], [65, 0], [116, -21], [139, -62], [126, -106], [82, -128], [24, -119], [-20, -91], [-66, -104], [-118, -93], [-135, -53], [-114, -12], [-59, 5]],
-  seker: [[0, 0], [50, -6], [95, -28], [112, -70], [90, -108], [48, -118], [20, -150], [-30, -160], [-75, -140], [-96, -104], [-90, -70], [-112, -40], [-100, -8], [-50, 2]],
-  uzay: [[0, 0], [60, 4], [115, -12], [140, -55], [120, -98], [75, -110], [40, -88], [0, -105], [-45, -128], [-100, -118], [-135, -80], [-125, -35], [-85, -10], [-45, -4]],
-  col: [[0, 0], [70, 0], [125, -18], [135, -60], [100, -95], [55, -100], [25, -135], [-25, -150], [-80, -135], [-118, -100], [-120, -66], [-134, -34], [-104, -4], [-45, 4]],
-  gokkusagi: [[0, 0], [55, 2], [105, -15], [130, -55], [118, -100], [78, -125], [30, -118], [-5, -96], [-40, -112], [-85, -135], [-128, -110], [-138, -62], [-110, -22], [-55, -6]],
-  dino: [[0, 0], [60, -2], [108, -22], [125, -62], [108, -100], [70, -118], [38, -104], [6, -119], [-30, -145], [-78, -138], [-112, -108], [-120, -65], [-100, -28], [-52, -4]],
-  sehir: [[0, 0], [70, 0], [118, -8], [132, -45], [130, -95], [105, -128], [55, -132], [20, -110], [-20, -112], [-60, -132], [-108, -125], [-130, -90], [-128, -40], [-105, -8], [-55, 0]],
-  kar: [[0, 0], [48, 8], [91, -4], [121, -35], [111, -72], [77, -87], [53, -122], [4, -141], [-48, -131], [-79, -101], [-121, -83], [-137, -45], [-112, -13], [-61, -8]],
-  // Yeni üç pist (ALTYAPI): uzunluk 696/723/733 m, en dar viraj yarıçapı 12,0/12,4/10,6 m (mevcutlar 633–719 m, 10,6–20 m); kendini kesmez, kollar arası ≥ 44 m.
-  /*SATO*/ sato: [[0, 0], [60, 2], [112, -14], [136, -52], [124, -96], [90, -118], [52, -106], [22, -130], [-20, -150], [-70, -146], [-112, -120], [-132, -78], [-118, -36], [-70, -6]], /*/SATO*/
-  /*LUNAPARK*/ lunapark: [[0, 0], [65, -2], [118, -20], [140, -60], [128, -102], [88, -122], [45, -126], [10, -104], [-25, -86], [-62, -100], [-100, -128], [-132, -108], [-138, -62], [-112, -20], [-58, -4]], /*/LUNAPARK*/
-  /*KORSAN*/ korsan: [[0, 0], [58, 6], [108, -6], [132, -40], [118, -78], [132, -112], [100, -146], [50, -150], [8, -128], [-40, -138], [-92, -142], [-128, -110], [-126, -62], [-104, -22], [-54, -4]] /*/KORSAN*/
+  orman:     [[0, 0], [55, -4], [100, -30], [118, -80], [95, -128], [45, -140], [10, -112], [-25, -95], [-60, -118], [-105, -110], [-128, -65], [-105, -22], [-55, -2]],
+  kiyi:      [[0, 0], [68, 4], [124, -18], [146, -68], [118, -118], [58, -134], [0, -112], [-52, -130], [-112, -112], [-140, -60], [-112, -12], [-56, 6]],
+  kar:       [[0, 0], [62, 4], [118, -16], [124, -72], [88, -120], [36, -112], [-2, -148], [-54, -158], [-106, -128], [-126, -72], [-98, -24], [-50, -2]],
+  seker:     [[0, 0], [60, -10], [112, -46], [112, -102], [62, -136], [10, -118], [-34, -96], [-78, -126], [-126, -106], [-130, -48], [-88, -8], [-44, 2]],
+  uzay:      [[0, 0], [66, 8], [122, -18], [132, -74], [86, -116], [36, -104], [-2, -148], [-60, -156], [-112, -120], [-124, -62], [-104, -8], [-52, 8]],
+  col:       [[0, 0], [76, 0], [132, -16], [142, -68], [98, -112], [44, -108], [4, -146], [-54, -154], [-112, -120], [-128, -62], [-94, -16], [-46, 0]],
+  gokkusagi: [[0, 0], [64, 12], [122, 4], [152, -38], [130, -88], [74, -116], [12, -124], [-56, -116], [-114, -86], [-136, -36], [-102, 8], [-48, 10]],
+  dino:      [[0, 0], [58, -6], [112, -28], [132, -76], [94, -118], [42, -112], [6, -146], [-52, -154], [-104, -124], [-124, -70], [-90, -28], [-46, -4]],
+  sehir:     [[0, 0], [76, 0], [126, -10], [134, -54], [132, -104], [92, -134], [36, -134], [0, -108], [-38, -134], [-94, -134], [-132, -102], [-132, -46], [-112, -8], [-58, 0]],
+  /*SATO*/ sato: [[0, 0], [66, 0], [124, -20], [144, -72], [112, -126], [48, -148], [-22, -148], [-92, -128], [-134, -78], [-118, -22], [-60, 2]], /*/SATO*/
+  /*LUNAPARK*/ lunapark: [[0, 0], [68, -6], [124, -34], [136, -88], [90, -130], [34, -118], [-12, -92], [-60, -124], [-114, -122], [-136, -68], [-106, -16], [-54, 0]], /*/LUNAPARK*/
+  /*KORSAN*/ korsan: [[0, 0], [64, 12], [122, -8], [138, -62], [102, -112], [48, -120], [6, -94], [-38, -124], [-92, -136], [-132, -96], [-124, -36], [-78, 4], [-38, 4]], /*/KORSAN*/
+  /*DENIZALTI*/ denizalti: [[0, 0], [62, -14], [118, -2], [142, 48], [108, 102], [50, 120], [-6, 94], [-56, 124], [-114, 108], [-136, 54], [-106, 4], [-52, -14]], /*/DENIZALTI*/
+  /*CIFTLIK*/ ciftlik: [[0, 0], [76, 4], [136, -14], [148, -70], [108, -118], [50, -116], [4, -88], [-44, -120], [-98, -128], [-134, -82], [-118, -22], [-68, 8], [-34, 4]], /*/CIFTLIK*/
+  /*MUZIK*/ muzik: [[0, 0], [62, -10], [118, 8], [140, 60], [102, 110], [48, 118], [4, 92], [-42, 122], [-98, 124], [-132, 76], [-116, 18], [-72, -16], [-36, -12]] /*/MUZIK*/
 };
 const NOKTA = PIST_NOKTALARI[PIST_TEMA];
 const egri = new T.CatmullRomCurve3(NOKTA.map(p => new T.Vector3(p[0], 0, p[1])), true, 'centripetal');
@@ -203,7 +211,7 @@ function yildizDuzenle(tur) {
 // Sürpriz balonlar: tur başına 3 balon (yıldız sıraları, oklar ve rampalarla çakışmayan boş yerlerde). s = pist boyunca metre, d = yanal konum,
 // tur = balonun türü ('dev' | 'baloncuk' | 'gokkusagi' | 'miknatis'), var = duruyor mu. Her turda yeniden çıkar; türler ve şeritler sırayla değişir.
 // Nesneler yerinde güncellenir (yeni nesne yok); görselleri pist.js çizer, toplama mantığı oyun.js'te.
-const SURPRIZ_TURLER = ['dev', 'baloncuk', 'gokkusagi', 'miknatis'];
+const SURPRIZ_TURLER = ['turbo', 'kanat', 'gokkusagi', 'miknatis'];
 const SURPRIZ = [0.25, 0.598, 0.94].map((u, j) => ({ s: L * u, d: 0, tur: SURPRIZ_TURLER[j], var: true, j, x: 0, z: 0 }));
 function oySurprizDuzenle(tur) {   // tur = kaçıncı tur (0, 1, 2)
   const yan = [-2.2, 2.2, 0];

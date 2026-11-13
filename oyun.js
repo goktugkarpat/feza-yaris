@@ -408,8 +408,8 @@ function oyOtoHedef() {
   return h === null ? Math.sin(zaman * 0.6) * 2 : h;
 }
 function oyuncuAdim(dt) {
-  const p = pist(P.yol, o1), kenar = oyGucMu('baloncuk') ? 0 : clamp((Math.abs(P.d) - (DMAX - 0.9)) / 0.9, 0, 1);   // köpük balonunda kenar yavaşlatmaz
-  const hedefV = durum === 'bitis' ? 9 : OYV * (1 - 0.09 * kenar * kenar) + Math.max(roketT > 0 ? 8.5 : 0, P.guc === null || durum !== 'yaris' ? 0 : P.guc.tur === 'gokkusagi' ? 6 : P.guc.tur === 'baloncuk' ? 1.2 : 0);   // gökkuşağı +6, köpük +1,2 m/sn; roketle üst üste binmez (yarış süresi aralıkta kalır)   // kenar bandı: hafif, yumuşak yavaşlama
+  const p = pist(P.yol, o1), kenar = oyGucMu('kanat') ? 0 : clamp((Math.abs(P.d) - (DMAX - 0.9)) / 0.9, 0, 1);   // kanat gücünde kenar yavaşlatmaz
+  const hedefV = durum === 'bitis' ? 9 : OYV * (1 - 0.09 * kenar * kenar) + Math.max(roketT > 0 ? 8.5 : 0, P.guc === null || durum !== 'yaris' ? 0 : P.guc.tur === 'turbo' ? 8.0 : P.guc.tur === 'gokkusagi' ? 6 : P.guc.tur === 'kanat' ? 4.5 : 0);   // turbo +8, gökkuşağı +6, kanat +4,5 m/sn
   P.v += (hedefV - P.v) * oyUs(dt, hedefV > P.v ? 1.6 : 1.0);
   let dv = 0, surdu = false;
   if (durum === 'bitis') dv = clamp((0 - P.d) * 1.2, -4, 4);
@@ -553,7 +553,7 @@ function rakipAdim(a, dt, onde, gecebilir) {
 function carpisma(dt) {   // değme: ışınlanma yok, yumuşak ayrılma; rakip daha çok kenara çekilir
   for (let i = 0; i < A.length; i++) for (let j = i + 1; j < A.length; j++) {
     const a = A[i], b = A[j], ds = a.yol - b.yol, dd = a.d - b.d, ad = Math.abs(dd);
-    const dev = a === P && P.guc !== null && P.guc.tur === 'dev', gen = dev ? 3.3 : 2.15;   // dev araba: rakipler nazikçe yana açılır, Feza yolundan sapmaz
+    const dev = false, gen = 2.15;
     if (Math.abs(ds) < (dev ? 5 : 3.8) && ad < gen) {
       const ort = gen - ad, yon = dd >= 0 ? 1 : -1, m = Math.min(ort, (dev ? 9 : 7) * dt), pa = a === P ? (dev ? 0.05 : 0.25) : 0.5;
       a.d = clamp(a.d + yon * m * pa, -DMAX, DMAX); b.d = clamp(b.d - yon * m * (1 - pa), -DMAX, DMAX);
@@ -674,7 +674,7 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   if (oySars > 0) oySars -= gdt;
   if (oyTurZum > 0) oyTurZum = Math.max(0, oyTurZum - gdt);
   oyRoketK += ((roketT > 0 && durum === 'yaris' ? 1 : 0) - oyRoketK) * oyUs(gdt, 3.5);
-  oyDevK += ((durum === 'yaris' && P.guc !== null && P.guc.tur === 'dev' ? 1 : 0) - oyDevK) * oyUs(gdt, 3);   // dev araba: kamera biraz geri ve yukarı açılır (yol görünür kalsın)
+  oyDevK = 0;
   if (durum === 'baslik') {
     // Açılış: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır.
     const a = 1.25 + Math.sin(yT * 0.3) * 0.42, r = dik ? 9.2 : 7.6, ri = r * Math.cos(a), ry = Math.min(6.4, r * Math.sin(a));

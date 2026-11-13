@@ -302,6 +302,9 @@ body[data-pist=sehir] #rota-yol{stroke:#f7f9fc}
 /*SATO*/body[data-pist=sato] #rota{background:#e4f3d2}body[data-pist=sato] #rota-kenar{fill:#b5dd8e;stroke:#c9bda6}body[data-pist=sato] #rota-yol{stroke:#f8f0dc}/*/SATO*/
 /*LUNAPARK*/body[data-pist=lunapark] #rota{background:#232a6e}body[data-pist=lunapark] #rota-kenar{fill:#3f9c8e;stroke:#ffd23f}body[data-pist=lunapark] #rota-yol{stroke:#ffe2f0}/*/LUNAPARK*/
 /*KORSAN*/body[data-pist=korsan] #rota{background:#9fe3e6}body[data-pist=korsan] #rota-kenar{fill:#f3d48f;stroke:#2fb7c9}body[data-pist=korsan] #rota-yol{stroke:#d79c5e}/*/KORSAN*/
+/*DENIZALTI*/body[data-pist=denizalti] #rota{background:#7be3ea}body[data-pist=denizalti] #rota-kenar{fill:#8cebf0;stroke:#ff7fa8}body[data-pist=denizalti] #rota-yol{stroke:#5ec2cc}/*/DENIZALTI*/
+/*CIFTLIK*/body[data-pist=ciftlik] #rota{background:#bce88a}body[data-pist=ciftlik] #rota-kenar{fill:#f2d7a4;stroke:#e04f3e}body[data-pist=ciftlik] #rota-yol{stroke:#c89b64}/*/CIFTLIK*/
+/*MUZIK*/body[data-pist=muzik] #rota{background:#dfd4ff}body[data-pist=muzik] #rota-kenar{fill:#fff6d6;stroke:#7b61ff}body[data-pist=muzik] #rota-yol{stroke:#b8a8e8}/*/MUZIK*/
 /* logo: iki sözcük aynı taban çizgisinde, eğimsiz. Yatayda üst-ortada ince şerit (iki yanında damalı bayrak), dikeyde en üstte. */
 #baslik h1{display:flex;align-items:baseline;justify-content:center;gap:.2em;align-self:center;margin-left:0;transform:none}
 #baslik .ui-ust{font-size:.8em}
@@ -364,14 +367,15 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 #secim[data-adim=pist] .a-pist,#secim[data-adim=araba] .a-araba{background:#fff;opacity:1;transform:scale(1.22);box-shadow:0 0 0 5px #ffd23f,0 6px 14px rgba(23,51,92,.22)}
 
 .sec-sayfa{display:none}
-#secim[data-adim=pist] #sec-pist{display:block;grid-area:sayfa;min-height:0;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
+#secim[data-adim=pist] #sec-pist{display:block;grid-area:sayfa;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:4px 8px 10px;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
+#secim[data-adim=pist] #sec-pist::-webkit-scrollbar{display:none}
 #secim[data-adim=araba] #sec-araba{display:contents}
 @keyframes sec-gel{from{opacity:0;transform:translateY(18px)}}
 @keyframes sec-zipla{0%{transform:scale(1)}40%{transform:scale(1.13) translateY(-9px)}100%{transform:scale(1.045)}}
 
-/* pist kartları: 4×3 yatay / 3×4 dikey (12 pist), her kart o pistin gerçek görüntüsü (yoksa çizimi) */
-#pist-sec{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:18px;width:100%;height:100%;max-width:1120px;max-height:880px;margin:auto;padding:4px 6px 10px;box-sizing:border-box}
-.pist-kart{position:relative;min-width:0;min-height:90px;background:#fff;border:6px solid #fff;border-radius:30px;box-sizing:border-box;
+/* pist kartları: 4 sütun yatay / 3 sütun dikey, aşağı doğru kayan eşit 4:3 kareler */
+#pist-sec{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;width:100%;max-width:1120px;margin:auto;padding:8px 8px 18px;box-sizing:border-box}
+.pist-kart{position:relative;min-width:0;aspect-ratio:4/3;min-height:0;background:#fff;border:6px solid #fff;border-radius:30px;box-sizing:border-box;
   box-shadow:0 7px 0 rgba(23,51,92,.2),0 12px 22px rgba(23,51,92,.2);transition:transform .16s,border-color .16s,box-shadow .16s}
 .pist-kart>svg,.pist-resim{position:absolute;inset:0;width:100%;height:100%;border-radius:24px;overflow:hidden}
 .pist-resim{object-fit:cover;display:block;pointer-events:none;animation:ui-belir .5s ease-out}
@@ -393,9 +397,10 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 .sec-kay:active{transform:scale(.92)}
 @keyframes sec-kay-sol{50%{transform:translateX(-7px)}}
 @keyframes sec-kay-sag{50%{transform:translateX(7px)}}
-/* 12 araba: iki sıra 6'lık (iPad'de kart ≥ 88 px; yalnız alçak yatay ekranda tek sıra) */
-#araba-sec{grid-area:serit;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;width:100%;max-width:1180px;margin:0 auto;padding:6px 4px 8px;box-sizing:border-box;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
-.araba-kart{position:relative;min-width:0;height:96px;background:linear-gradient(#f4fbff 64%,#d7ecfa 64%);border:5px solid #fff;border-radius:24px;box-sizing:border-box;
+/* 15 araba: iPad'de sağa sola rahatça kayan yatay şerit */
+#araba-sec{grid-area:serit;display:flex;flex-wrap:nowrap;gap:12px;width:100%;max-width:1180px;margin:0 auto;padding:6px 10px 10px;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x;scrollbar-width:none;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
+#araba-sec::-webkit-scrollbar{display:none}
+.araba-kart{position:relative;flex:0 0 118px;height:88px;scroll-snap-align:center;background:linear-gradient(#f4fbff 64%,#d7ecfa 64%);border:5px solid #fff;border-radius:24px;box-sizing:border-box;
   box-shadow:0 6px 0 rgba(23,51,92,.2),0 10px 18px rgba(23,51,92,.16);transition:transform .16s,border-color .16s,box-shadow .16s}
 .araba-kart>svg:first-child{position:absolute;left:6%;top:5%;width:88%;height:90%}
 .araba-kart:active{transform:scale(.95)}
@@ -412,9 +417,9 @@ html.sec-kucuk body>*:not(canvas){display:none!important}
 @media (orientation:portrait){
   #secim{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"ust" "sayfa" "serit" "ileri";gap:14px;--il:184px}
   #secim[data-adim=pist]{grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"ust" "sayfa" "ileri"}
-  #pist-sec{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr))}
-  #araba-sec{grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
-  .araba-kart{height:104px}
+  #pist-sec{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #araba-sec{gap:12px}
+  .araba-kart{flex:0 0 124px;height:94px}
   #sec-ileri{margin:4px 0 12px}
 }
 @media (max-height:560px) and (orientation:landscape){

@@ -23,7 +23,10 @@ const HAVA = (() => {
     sehir: { kutu: [60, 18, 60], ruzgar: [0, 0], gruplar: [] },
     /*SATO*/ sato: { kutu: [60, 16, 60], ruzgar: [0.3, 0.15], gruplar: [[TUR.isilti, 32, [0.45, 0.65], [-0.1, 0.2], 0.7, [0xfff3c4, 0xffffff]]] }, /*/SATO*/            // seyrek, sıcak altın ışıltı
     /*LUNAPARK*/ lunapark: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [[TUR.isilti, 24, [0.32, 0.5], [-0.12, 0.12], 0.7, [0xfff0b0, 0xffd0e8, 0xc8fff6]]] }, /*/LUNAPARK*/
-    /*KORSAN*/ korsan: { kutu: [60, 18, 60], ruzgar: [0, 0], gruplar: [] } /*/KORSAN*/
+    /*KORSAN*/ korsan: { kutu: [60, 18, 60], ruzgar: [0, 0], gruplar: [] }, /*/KORSAN*/
+    /*DENIZALTI*/ denizalti: { kutu: [56, 18, 56], ruzgar: [0.15, 0.1], gruplar: [[TUR.baloncuk, 52, [0.35, 0.65], [-1.4, -0.7], 0.7, [0xffffff, 0xbefaff, 0x8ef0ff]]] }, /*/DENIZALTI*/
+    /*CIFTLIK*/ ciftlik: { kutu: [60, 16, 60], ruzgar: [0.4, 0.2], gruplar: [[TUR.isilti, 24, [0.4, 0.6], [0.1, 0.25], 0.7, [0xfff6c4, 0xffe49a]]] }, /*/CIFTLIK*/
+    /*MUZIK*/ muzik: { kutu: [60, 18, 60], ruzgar: [0.2, 0.15], gruplar: [[TUR.isilti, 36, [0.42, 0.65], [-0.15, 0.2], 0.8, [0xffe885, 0xff9ed6, 0x8ef0ff]]] } /*/MUZIK*/
   };
   const plan = PLAN[PIST_TEMA] || PLAN.orman;
   let sayi = 0; for (const g of plan.gruplar) sayi += g[1];
