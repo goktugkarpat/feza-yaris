@@ -32,8 +32,10 @@ Seçim ekranında araba bir platformun üstünde döner; Feza içinde oturur.
 
 ## Garaj ve yıldız kavanozu
 
-Başlık ekranındaki **garaj** düğmesi Feza'nın arabasını süslediği yere açılır. Beş çeşit süs vardır: araba boyası, teker, bayrak,
-arabanın arkasında bıraktığı iz (gökkuşağı, yıldız, baloncuk, kalp) ve korna sesi (ördek, tren, zil, fil …). Toplam 30 süs.
+Başlık ekranındaki **garaj** düğmesi Feza'nın arabasını süslediği yere açılır. Yedi çeşit süs vardır: araba boyası, teker, bayrak,
+arabanın arkasında bıraktığı iz (gökkuşağı, yıldız, baloncuk, kalp), korna sesi (ördek, tren, zil, fil …), Feza'nın **şapkası**
+(taç, büyücü şapkası, kask, korsan şapkası, kedi kulaklı bere, çiçek tacı) ve arabanın **kostümü** (ayıcık kulakları, kocaman gözler
+ve gülüş, tek boynuz, çiçek çelengi, melek kanatları). Toplam 43 süs.
 
 Her yarışta toplanan yıldızlar bitişte **yıldız kavanozuna** uçar. Kavanoz dolunca içinden bir **hediye kutusu** çıkar; kutuya dokununca
 yeni bir süs açılır ve hemen arabaya takılır. Bütün süsler açıldıktan sonra kavanoz dolu kalır, yeni kutu çıkmaz.
@@ -65,7 +67,11 @@ Gücün ne kadar kaldığı ekranın üstünde küçülen renkli bir halkayla g�
 5. Yıldızları topla: her üç yıldızda kısa bir roket ödülü gelir. Kaçan yıldız seriyi bozmaz.
 6. Yoldaki rampalardan zıpla, sürpriz balonların içinden geç.
 
-Ekranda sıra (kupa), tur (bayraklar), yıldız sayısı ve küçük bir harita görünür. Yarış bitince kupa töreni ve yarış anıları çıkar;
+Her pistin ilk yarışında kamera önce pistin üstünden kısa bir tanıtım uçuşu yapar (dokununca hemen biter). Yolda Feza yaklaşınca
+pistin sakinleri tepki verir: dinozor yavruları başını çevirir, balina yüzgeç sallar, ördekler havalanır, Pırıl sevinçle zıplar.
+
+Ekranda sıra (kupa), tur (bayraklar), yıldız sayısı ve küçük bir harita görünür. Bitiş çizgisinde kamera Feza'ya döner: Feza kollarını
+kaldırıp sevinir, birinciyse altın kupayı kaldırır. Ardından sırayla sıralama, yıldız kavanozu ve (kavanoz dolduysa) hediye kutusu gelir;
 ev simgesi yarış yeri seçimine döndürür. Her pist için en iyi yıldız sayısı ve en iyi derece (kartta altın, gümüş ya da bronz kupa) hatırlanır.
 
 Klavyede ok tuşları ya da A/D ile de sürülebilir.
@@ -76,7 +82,7 @@ Klavyede ok tuşları ya da A/D ile de sürülebilir.
 - Ekranda okumayı gerektiren yazı yoktur. Anlatıcı (doğal Türkçe kadın sesi) kısa cümlelerle eşlik eder.
 - Bütün pistler ve arabalar baştan açıktır; kilitli olan yalnız garajdaki süslerdir ve onlar da yarıştıkça açılır.
 - Oyun yalnız yıldız rekorlarını, garajdaki süsleri ve son seçilen pist ile arabayı tarayıcıda saklar; kişisel veri toplamaz.
-- Hedef: M1 iPad'de saniyede 60 kare.
+- Hedef: M1 iPad'de saniyede 60 kare. Adresin sonuna `?fps` eklenirse sağ altta küçük bir kare hızı göstergesi çıkar (yeşil iyi, sarı orta, kırmızı yavaş).
 
 ## Yapım
 

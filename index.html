@@ -120,7 +120,7 @@ if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList
   <button id="garaj-kapat" aria-label="Geri"><svg viewBox="0 0 48 48"><use href="#ui-ev"/></svg></button>
   <div id="garaj-kv" class="kv-kap" aria-hidden="true"></div>
   <div class="gj-panel"><div id="garaj-kartlar" aria-label="Süsler"></div>
-    <div id="garaj-turler"><button class="gj-tur" data-tur="renk" aria-label="Boya"></button><button class="gj-tur" data-tur="teker" aria-label="Teker"></button><button class="gj-tur" data-tur="bayrak" aria-label="Bayrak"></button><button class="gj-tur" data-tur="iz" aria-label="İz"></button><button class="gj-tur" data-tur="korna" aria-label="Korna"></button></div></div>
+    <div id="garaj-turler"><button class="gj-tur" data-tur="renk" aria-label="Boya"></button><button class="gj-tur" data-tur="teker" aria-label="Teker"></button><button class="gj-tur" data-tur="bayrak" aria-label="Bayrak"></button><button class="gj-tur" data-tur="iz" aria-label="İz"></button><button class="gj-tur" data-tur="korna" aria-label="Korna"></button><!--GARAJ--><button class="gj-tur" data-tur="sapka" aria-label="Şapka"></button><button class="gj-tur" data-tur="kostum" aria-label="Kostüm"></button><!--/GARAJ--></div></div>
   <div id="garaj-el" class="gizli" aria-hidden="true"><svg viewBox="0 0 72 92"><circle class="ui-dokun" cx="30" cy="14" r="12" fill="#fff" opacity=".55"/><path d="M23 44V14a7 7 0 0 1 14 0v22l17 3.500a9 9 0 0 1 7 10l-2.500 20A14 14 0 0 1 44.500 82H32a14 14 0 0 1-11.500-6L6.500 57a6.500 6.500 0 0 1 10-8.300z" fill="#fff" stroke="#17335c" stroke-width="4.500" stroke-linejoin="round"/></svg></div>
 </div>
 <div id="hediye" class="gizli"><button id="hediye-kutu" aria-label="Hediye kutusu"></button><div id="hediye-sus" class="gizli"></div><button id="hediye-garaj" class="gizli" aria-label="Garaj"></button></div>
@@ -133,7 +133,6 @@ if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList
 </div>
 
 <div id="sonuc" class="perde gizli" role="dialog" aria-modal="true" aria-label="Yarış tamamlandı">
-  <div id="sonuc-kv" class="gizli" aria-hidden="true"><div class="kv-kap"></div></div>
   <div class="sonuc-icerik">
   <div class="ui-odul">
     <div class="ui-isin"></div>
@@ -147,6 +146,7 @@ if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList
   <div id="sonuc-anilar" aria-label="Yarışta yaptıkların"><div class="ani" id="ani-seri" aria-label="Yıldız serileri"><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><b>0</b></div><div class="ani" id="ani-roket" aria-label="Roketler"><svg viewBox="0 0 48 48"><use href="#ui-roket"/></svg><b>0</b></div><div class="ani" id="ani-hop" aria-label="Atlayışlar"><svg viewBox="0 0 48 48"><use href="#ui-hop"/></svg><b>0</b></div></div>
   <div id="rekor" class="gizli" aria-label="Yeni yıldız rekorun"><svg viewBox="0 0 120 120"><use href="#ui-kupa"/></svg><svg viewBox="0 0 48 48"><use href="#ui-yildiz"/></svg><b id="rekor-say">0</b></div>
   </div>
+  <!--SONUC--><div id="sonuc-kv" class="gizli" aria-hidden="true"><div class="kv-kap"></div></div><div id="sonuc-yeni" class="gizli"></div><!--/SONUC-->
   <div class="sonuc-dugmeler"><button id="tekrar" class="buyuk" aria-label="Bir daha"><svg viewBox="0 0 24 24"><path d="M19.5 12.5a7.5 7.5 0 1 1-3-6" fill="none" stroke="currentColor" stroke-width="3.400" stroke-linecap="round"/><path d="M19.5 2.5v6.500H13z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button><button id="sonuc-ev" class="ev-dugme" aria-label="Yarış yerini seç"><svg viewBox="0 0 48 48"><use href="#ui-ev"/></svg></button></div>
   </div>
 </div>

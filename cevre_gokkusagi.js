@@ -5,6 +5,22 @@
    · 3 bulut şatosu krallığı · 4 şelaleli uçan adacıklar · 5 yıldız ve ay tarlası. Yeni üst düzey adlar `gk` ile başlar. Bütün yerler yol verisinden hesaplanır. */
 'use strict';
 let gkBulut = null, gkKus = null, gkHava = null;
+/*PISTB*/
+// "vay" anı (gölgelendiricide): Feza yaklaşınca seyirci başını ona çevirir (y0/z0'dan ötesi = baş), başını sallar, kuyruk sallar (z < kz), sevinçle zıplar (hop).
+// Ortak 2 numaralı hayvan hareketini (zıplama cvK.y, el sallama cvK.z) aynen içerir. Kare başına JS işi yok.
+function gkOdakMod(y0, z0, kz, hop) {
+  cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3; vec2 cvD = cvP - instanceMatrix[3].xz; float cvU = length(cvD);\n'
+    + 'float cvYakin = 1.0 - smoothstep(8.0, 31.0, cvU); float cvO = 1.0 - smoothstep(7.0, 26.0, cvU);\n'
+    + 'float cvH = abs(sin(cvT * 3.4 + cvF)) * smoothstep(-0.3, 0.3, sin(cvT * 0.7 + cvF * 0.37));\n'
+    + 'vec3 cvAx = instanceMatrix[0].xyz, cvAz = instanceMatrix[2].xyz; float cvA = clamp(atan(dot(cvD, cvAx.xz) / dot(cvAx, cvAx), dot(cvD, cvAz.xz) / dot(cvAz, cvAz)), -1.25, 1.25) * cvO;\n'
+    + 'float cvW = smoothstep(' + y0.toFixed(3) + ', ' + (y0 + 0.35).toFixed(3) + ', position.y) * smoothstep(' + z0.toFixed(3) + ', ' + (z0 + 0.3).toFixed(3) + ', position.z); float cvC = cos(cvA * cvW), cvS = sin(cvA * cvW);\n'
+    + 'vec2 cvQ = transformed.xz - vec2(0.0, ' + z0.toFixed(3) + '); transformed.xz = vec2(cvQ.x * cvC + cvQ.y * cvS, -cvQ.x * cvS + cvQ.y * cvC) + vec2(0.0, ' + z0.toFixed(3) + ');\n'
+    + 'transformed.y += cvW * cvO * sin(cvT * 7.0 + cvF) * 0.06;\n'
+    + 'transformed.x += smoothstep(' + kz.toFixed(3) + ', ' + (kz - 0.3).toFixed(3) + ', position.z) * sin(cvT * 11.0 + cvF) * (0.03 + 0.18 * cvO);\n'
+    + 'transformed.y += cvK.y * (cvH * (0.10 + cvYakin * 0.25) + cvO * abs(sin(cvT * 5.5 + cvF)) * ' + hop.toFixed(3) + '); transformed.x += cvK.z * sin(cvT * 9.0 + cvF) * (0.035 + cvYakin * 0.2 + cvO * 0.14); transformed.y += cvK.z * cos(cvT * 9.0 + cvF) * (0.05 + cvO * 0.06);\n#endif');
+  return cvHAREKET.length - 1;
+}
+/*/PISTB*/
 function cevreEkGuncelle(dt, t) {
   if (gkBulut) gkBulut.rotation.y = t * 0.007;                         // gökteki bulutlar kayar
   if (gkKus) gkKus.rotation.y = t * 0.09;                              // kuş sürüsü süzülür
@@ -172,10 +188,10 @@ if (cvTema === 'gokkusagi') {
   const bayrakIpi = (i0, i1, yan) => {
     S.yer(0, 0, 0, 1); let ox = 0, oz = 0, var_ = false, n = 0;
     for (let i = i0; i <= i1; i += 9) {
-      const p = cvKenar(i, yan, YARI + 4.5), x = p.x, z = p.z;
-      if (yakin(x, z) < YARI + 3.9 || !cvBos(x, z, 0.5)) { var_ = false; continue; }
+      const p = cvKenar(i, yan, YARI + 9), x = p.x, z = p.z;   /*PISTB*/ // yoldan uzak, tombul direk
+      if (yakin(x, z) < YARI + 8.4 || !cvBos(x, z, 0.5)) { var_ = false; continue; }
       cvYasak.push([x, z, 0.9]);
-      S.ekle(cvG.sil5, x, 1.9, z, 0.13, 3.8, 0.13, BEYAZ); S.ekle(cvG.kureK, x, 3.9, z, 0.24, 0.24, 0.24, ALTIN); bulut.push([x, -0.25, z, 0.42, 0.36, 0.42, R() * 6, BEYAZ]);
+      S.ekle(cvG.sil, x, 1.9, z, 0.24, 3.8, 0.24, BEYAZ); S.ekle(cvG.kureK, x, 3.9, z, 0.24, 0.24, 0.24, ALTIN); bulut.push([x, -0.25, z, 0.42, 0.36, 0.42, R() * 6, BEYAZ]);
       if (var_) for (let k = 1; k <= 5; k++) { const u = k / 6, a = Math.atan2(x - ox, z - oz) + Math.PI / 2; S.ekle(cvG.ucgen, lerp(ox, x, u), 3.5 - Math.sin(u * Math.PI) * 0.75, lerp(oz, z, u), 0.42, 0.7, 0.07, GK[(n++) % 7], Math.PI, a, 0, 0, 1); }
       ox = x; oz = z; var_ = true;
     }
@@ -191,9 +207,9 @@ if (cvTema === 'gokkusagi') {
       const yon = k > 0 ? 1 : -1, q = yer(i, -yon, YARI + 5.6, 1.6, 3); if (!q) continue;
       son = i; adet++;
       S.yer(q.x, q.z, q.ry, 1.15);
-      for (const sx of [-1, 1]) { S.ekle(cvG.sil5, sx * 1.15, 1.2, 0, 0.14, 2.4, 0.14, BEYAZ); const p = S.dunya(sx * 1.15, 0); bulut.push([p.x, -0.3, p.z, 0.5, 0.42, 0.5, R() * 6, BEYAZ]); }
-      S.ekle(cvG.kutu, 0, 3, -0.03, 3.5, 1.75, 0.2, BEYAZ); S.ekle(cvG.kutu, 0, 3, 0.04, 3.2, 1.45, 0.2, [0x4aa8ff, 0xff7fb5, 0x9a7cff][adet % 3]);
-      for (let c = 0; c < 3; c++) { const cx = yon * (-0.95 + c * 0.85); S.ekle(cvG.kutu, cx, 3.25, 0.17, 0.78, 0.22, 0.08, c === 2 ? SARI : BEYAZ, 0, 0, -yon * 0.75); S.ekle(cvG.kutu, cx, 2.75, 0.17, 0.78, 0.22, 0.08, c === 2 ? SARI : BEYAZ, 0, 0, yon * 0.75); }
+      for (const sx of [-1, 1]) { S.ekle(cvG.sil, sx * 1.15, 1.2, 0, 0.22, 2.4, 0.22, BEYAZ); /*PISTB*/ const p = S.dunya(sx * 1.15, 0); bulut.push([p.x, -0.3, p.z, 0.5, 0.42, 0.5, R() * 6, BEYAZ]); }
+      S.ekle(cvG.kutu, 0, 3, -0.06, 3.5, 1.75, 0.42, BEYAZ); S.ekle(cvG.kutu, 0, 3, 0.1, 3.2, 1.45, 0.24, [0x4aa8ff, 0xff7fb5, 0x9a7cff][adet % 3]); for (const sx of [-1, 1]) S.ekle(cvG.sil, sx * 1.75, 3, -0.06, 0.88, 0.42, 0.88, BEYAZ, Math.PI / 2, 0, 0); /*PISTB*/ // kalın, yuvarlak kenarlı tabela (karton levha değil)
+      for (let c = 0; c < 3; c++) { const cx = yon * (-0.95 + c * 0.85); S.ekle(cvG.kutu, cx, 3.25, 0.25, 0.78, 0.22, 0.1, c === 2 ? SARI : BEYAZ, 0, 0, -yon * 0.75); S.ekle(cvG.kutu, cx, 2.75, 0.25, 0.78, 0.22, 0.1, c === 2 ? SARI : BEYAZ, 0, 0, yon * 0.75); }
       golge.push([q.x, 0.012, q.z, 2.2, 1, 1.1, 0]);
     }
   }
@@ -255,8 +271,10 @@ if (cvTema === 'gokkusagi') {
         golge.push([x, 0.012, z, 0.9 * s, 1, 0.8 * s, 0]);
       }
     }
-    const sm = cvMalz(2, { emissive: 0x2c2429 });   // gölgede kalan yüzler de pastel kalsın
-    if (al.length) cok(A.geo(), sm, al); if (pl.length) cok(Pg.geo(), sm, pl); if (yl.length) cok(Y.geo(), sm, yl); if (cl.length) cok(C.geo(), sm, cl);
+    /*PISTB*/ // "vay" anı: Feza yaklaşınca atlar başını ona çevirir ve kuyruk sallar, bulut yavrusu sevinçle yükseğe zıplar, civciv dönüp hoplar
+    const sm = m => cvMalz(m, { emissive: 0x2c2429 });   // gölgede kalan yüzler de pastel kalsın
+    const atM = gkOdakMod(1.3, 0.4, -0.62, 0.3), ylM = gkOdakMod(9, 9, -9, 0.75), clM = gkOdakMod(0.45, -9, -9, 0.42);
+    if (al.length) cok(A.geo(), sm(atM), al); if (pl.length) cok(Pg.geo(), sm(atM), pl); if (yl.length) cok(Y.geo(), sm(ylM), yl); if (cl.length) cok(C.geo(), sm(clM), cl); /*/PISTB*/
   }
 
   // ───────── yol boyu: bulut öbekleri + bölgeye göre süsler ─────────

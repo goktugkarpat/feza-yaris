@@ -7,10 +7,15 @@
 'use strict';
 
 const krYer = {};   // odak yerleri (deneme ve kart resmi için)
-let krSelale = null, krGemi = null, krHale = null, krPapagan = null, krBulut = null;
+let krSelale = null, krGemi = null, krHale = null, krPapagan = null, krBulut = null, krAltin = null, krSevinc = 0;
 function cevreEkGuncelle(dt, t) {
+  if (krAltin) {   // Feza sandığın yanından geçerken altınlar sandıkta hoplar, ışıltı büyür
+    const d = Math.hypot(P.x - krAltin.userData.x, P.z - krAltin.userData.z), h = d < 45 ? 1 : 0;
+    krSevinc += (h - krSevinc) * Math.min(1, dt * (h ? 3 : 1.2));
+    krAltin.position.y = krSevinc * Math.abs(Math.sin(t * 7.0)) * 0.9;
+  }
   if (krGemi) { krGemi.rotation.z = Math.sin(t * 0.8) * 0.045; krGemi.rotation.x = Math.sin(t * 0.6 + 1) * 0.02; krGemi.position.y = Math.sin(t * 1.1) * 0.12 - 0.15; }
-  if (krHale) { const s = 1 + Math.sin(t * 2.2) * 0.08; krHale.scale.set(5.6 * s, 5.6 * s, 1); krHale.material.opacity = 0.5 + Math.sin(t * 2.2) * 0.12; }
+  if (krHale) { const s = 1 + Math.sin(t * 2.2) * 0.08 + krSevinc * (0.55 + Math.sin(t * 7.0) * 0.12); krHale.scale.set(5.6 * s, 5.6 * s, 1); krHale.material.opacity = 0.5 + Math.sin(t * 2.2) * 0.12 + krSevinc * 0.25; }
   if (krPapagan) krPapagan.rotation.y = -t * 0.28;
   if (krBulut) krBulut.rotation.y = t * 0.004;
   if (krSelale) krSelale.offset.y = t * 0.9;
@@ -54,12 +59,13 @@ if (cvTema === 'korsan') {
       e(cvG.sil5, 0, 3.0, 7.0, 0.13, 4.2, 0.13, AHSAP, 1.15);           // baş direği
       e(cvG.kureK, 0, 2.75, 6.25, 0.55, 0.55, 0.5, ALTIN);              // pruvada altın top süs
       const yelken = new T.SphereGeometry(1, 10, 8, Math.PI / 2 - 0.75, 1.5, Math.PI / 2 - 0.62, 1.24);
+      const YB = cvYapi(), ey = (g, x, y, z, sx, sy, sz, r, rx, ry) => YB.ekle(g, x, y, z, sx, sy, sz, r, rx || 0, ry || 0, 0, 0, 0, 0);   // yelkenler ayrı: güneşe ters açıda grileşmesin
       for (const [z, h, s] of [[1.4, 13, 1], [-1.9, 10.5, 0.82]]) {
         e(cvG.sil, 0, h / 2 + 2, z, 0.2, h, 0.2, AHSAP);                // direk
         const b = 0.6, sb = Math.sin(b), cb = Math.cos(b);   // serenler ve yelkenler yana çevrik: yandan bakınca da dolgun görünür
         e(cvG.sil, 0, h * 0.45 + 2.3, z, 0.12, 7.2 * s, 0.12, AHSAP2, 0, b, Math.PI / 2); e(cvG.sil, 0, h * 0.82 + 2.1, z, 0.1, 5.4 * s, 0.1, AHSAP2, 0, b, Math.PI / 2);
-        e(yelken, -1.3 * s * sb, h * 0.45 + 0.1, z - 1.3 * s * cb, 3.9 * s, 2.7 * s, 1.5 * s, KREM, 0, b);          // dolgun alt yelken
-        e(yelken, -1.0 * s * sb, h * 0.82 - 0.8, z - 1.0 * s * cb, 2.5 * s, 1.75 * s, 1.15 * s, KIRMIZI, 0, b);    // kırmızı üst yelken
+        ey(yelken, -1.3 * s * sb, h * 0.45 + 0.1, z - 1.3 * s * cb, 3.9 * s, 2.7 * s, 1.5 * s, KREM, 0, b);          // dolgun alt yelken
+        ey(yelken, -1.0 * s * sb, h * 0.82 - 0.8, z - 1.0 * s * cb, 2.5 * s, 1.75 * s, 1.15 * s, KIRMIZI, 0, b);    // kırmızı üst yelken
       }
       e(cvG.sil, 0, 12.6, 1.4, 0.75, 0.6, 0.75, 0x8f552c); e(cvG.sil, 0, 12.92, 1.4, 0.8, 0.12, 0.8, KIRMIZI);   // gözcü sepeti
       { // bayrak: lacivert zemin, gülen sarı yüz (dalgalanır)
@@ -75,7 +81,12 @@ if (cvTema === 'korsan') {
       for (const yan of [-1, 1]) for (const z of [1.4, -1.9]) { const a = cvG.kutu; e(a, yan * 1.5, 7.5, z - 0.6, 0.04, 11, 0.04, 0x54311a, 0, 0, -yan * 0.26); }   // halatlar
       const geo = B.geo(); krGemi = new T.Group(); krGemi.position.set(0, 0, 0);
       const m = new T.Mesh(geo, cvMalz(5, { side: T.DoubleSide, emissive: 0x14100a })); m.scale.setScalar(2.05); m.frustumCulled = false;
-      krGemi.add(m); const kab = new T.Group(); kab.position.set(p.x, 0, p.z); kab.rotation.y = p.ry - 1.0; kab.add(krGemi); scene.add(kab);
+      krGemi.add(m);
+      { const ym = cvMalz(0, { side: T.DoubleSide }), o = ym.onBeforeCompile;   // yelken bezi ışığı içinden geçirir: kendi renginde hafif parlar, gölgede de krem/kırmızı kalır
+        ym.onBeforeCompile = (sh, r) => { o.call(ym, sh, r); sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * 0.42;'); };
+        ym.customProgramCacheKey = () => 'krYelken';
+        const yk = new T.Mesh(YB.geo(), ym); yk.scale.setScalar(2.05); yk.frustumCulled = false; krGemi.add(yk); }
+      const kab = new T.Group(); kab.position.set(p.x, 0, p.z); kab.rotation.y = p.ry - 1.0; kab.add(krGemi); scene.add(kab);
       koyuSu.push([p.x, p.z, 17, 'koy']); krYer.gemi = [p.x, p.z, p.i];
       // gemiye uzanan ahşap iskele (kumdan suya)
       const ix = PX[p.i] - TZ[p.i] * (KUM - 6) * p.yan, iz = PZ[p.i] + TX[p.i] * (KUM - 6) * p.yan, dx = p.x - ix, dz = p.z - iz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz), boy = l - 12;
@@ -88,9 +99,18 @@ if (cvTema === 'korsan') {
   }
 
   // ───────── 2) hazine sandığı: kumda açık, içi altın; yumuşak ışıltı ─────────
-  { const p = yer(0.6, -1, YARI + 11, 5);
+  { const p = (() => {   // yolun tam ona doğru gittiği bir yerde, yoldan ~12 m: Feza yaklaşırken karşısında görür /*PISTC*/
+      let en = 0.4, bf = 0.6, bd = -1;
+      for (let i = Math.round(N * 0.2); i < N * 0.9; i += 2) for (const dis of [-1, 1]) {
+        const c = cvKenar(i, krDis(i) * dis, YARI + 12, 0.2), x = c.x, z = c.z;
+        if (yakin(x, z) < YARI + 9 || !cvBos(x, z, 6)) continue;
+        const j = (i - Math.round(60 / DS) + N) % N, dx = x - PX[j], dz = z - PZ[j], d = Math.hypot(dx, dz), a = Math.acos(clamp((dx * TX[j] + dz * TZ[j]) / d, -1, 1));
+        if (a < en) { en = a; bf = i / N; bd = dis; }
+      }
+      return yer(bf, bd, YARI + 12, 5);
+    })();
     if (p) {
-      S.yer(p.x, p.z, p.ry, 1.7);
+      S.yer(p.x, p.z, p.ry, 2.3);   /*PISTC*/ // biraz daha büyük: yarışta okunur
       S.ekle(cvG.kutuY, 0, 0.62, 0, 2.2, 1.25, 1.45, 0x8d5631);                       // gövde
       for (const x of [-0.75, 0.75]) S.ekle(cvG.kutuY, x, 0.62, 0, 0.18, 1.3, 1.5, 0xf2b730);   // altın kuşaklar
       S.ekle(cvG.kutuY, 0, 1.22, 0, 2.28, 0.14, 1.52, 0xf2b730);
@@ -104,14 +124,14 @@ if (cvTema === 'korsan') {
       S.ekle(cvG.sil, 2.0, 0.85, -0.6, 0.06, 1.7, 0.06, AHSAP, 0, 0, -0.25); S.ekle(cvG.kutuY, 2.28, 0.05, -0.6, 0.45, 0.6, 0.1, 0xb8c3cc, 0, 0.3, -0.25);
       S.yer(p.x, p.z, p.ry);
       // altın (ışıksız parlak malzeme, ayrı çizim) + yumuşak hale (küçük sprite) + pırıltılar
-      const A = cvYapi(); A.yer(p.x, p.z, p.ry, 1.7);
+      const A = cvYapi(); A.yer(p.x, p.z, p.ry, 2.3);
       for (let k = 0; k < 16; k++) { const x = -0.8 + (k % 6) * 0.32, z = -0.45 + Math.floor(k / 6) * 0.36; A.ekle(cvG.kureK, x, 1.28 + Math.sin(k * 1.7) * 0.06, z, 0.24, 0.13, 0.24, k % 3 ? 0xffd84a : 0xffe98a); }
       A.ekle(cvG.kureK, -0.2, 1.42, 0.0, 0.55, 0.22, 0.4, 0xffe066); A.ekle(cvG.kureK, 0.45, 1.4, -0.2, 0.45, 0.2, 0.35, 0xffd84a);
       A.ekle(cvG.okt, -0.55, 1.52, 0.1, 0.16, 0.2, 0.16, 0xff5f7a); A.ekle(cvG.okt, 0.3, 1.56, 0.25, 0.15, 0.19, 0.15, 0x5fd8ff); A.ekle(cvG.okt, 0.75, 1.5, -0.1, 0.14, 0.18, 0.14, 0x7ff08a);
       for (let k = 0; k < 9; k++) A.ekle(cvG.kureK, -0.9 + k * 0.22, 1.35 + Math.sin(k) * 0.05, 0.62 - Math.abs(k - 4) * 0.03, 0.07, 0.07, 0.07, 0xfff4c0);   // inci kolye
-      const am = new T.Mesh(A.geo(), new T.MeshBasicMaterial({ vertexColors: true })); am.frustumCulled = false; scene.add(am);
+      const am = new T.Mesh(A.geo(), new T.MeshBasicMaterial({ vertexColors: true })); am.frustumCulled = false; scene.add(am); krAltin = am; am.userData.x = p.x; am.userData.z = p.z;
       krHale = new T.Sprite(new T.SpriteMaterial({ map: tuvalDoku(128, 128, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(255,236,140,0.85)'); r.addColorStop(0.35, 'rgba(255,220,110,0.35)'); r.addColorStop(1, 'rgba(255,220,110,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
-      krHale.position.set(p.x, 2.6, p.z); scene.add(krHale);
+      krHale.position.set(p.x, 3.4, p.z); scene.add(krHale);
       for (let k = 0; k < 9; k++) { const a = k * 0.7, r = 0.6 + (k % 3) * 0.5; parilti.push([p.x + Math.cos(a) * r, 2.6 + (k % 4) * 0.55, p.z + Math.sin(a) * r, 0.14, 0.22, 0.14, a]); }
       golge.push([p.x, p.z, 3.4, 2.6, 0.32]); krYer.sandik = [p.x, p.z, p.i]; 
     }

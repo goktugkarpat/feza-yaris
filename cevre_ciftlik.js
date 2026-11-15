@@ -11,18 +11,25 @@ const cfYer = {};   // odak yerleri (deneme ve kart resmi için)
 let cfPervane = null, cfBulut = null;
 const cfOrdekler = [];   // [mesh, merkezX, merkezZ, yarıçap, açıBaşlangıç, hız, faz]
 
+let cfOrdekVt = -9, cfOrdekYk = false;   // "vay" anı: Feza göletin yanından geçince ördekler sırayla havalanıp kanat çırpar
 function cevreEkGuncelle(dt, t) {
   if (cfPervane) cfPervane.rotation.z = -t * 0.75;
   if (cfBulut) cfBulut.rotation.y = t * 0.004;
+  if (cfOrdekler.length) {
+    const q0 = cfOrdekler[0], yk = Math.hypot(q0[1] - cvOyuncu.value.x, q0[2] - cvOyuncu.value.y) < 72;   // yaklaşırken (gölet önümüzdeyken) havalanırlar
+    if (yk && !cfOrdekYk && t - cfOrdekVt > 12) cfOrdekVt = t;
+    cfOrdekYk = yk;
+  }
   for (let i = 0; i < cfOrdekler.length; i++) {
     const q = cfOrdekler[i], m = q[0], a = q[4] + t * q[5];
     const ca = Math.cos(a), sa = Math.sin(a);
+    const u = (t - cfOrdekVt - i * 0.12) / 2.4, h = u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0;
     m.position.x = q[1] + ca * q[3];
     m.position.z = q[2] + sa * q[3] * 0.76;
-    m.position.y = 0.09 + Math.sin(t * 2.6 + q[6]) * 0.055;
+    m.position.y = 0.09 + Math.sin(t * 2.6 + q[6]) * 0.055 + h * (2.4 + (i % 3) * 0.5);
     m.rotation.y = Math.atan2(-sa, ca * 0.76);
-    m.rotation.z = Math.sin(t * 3.2 + q[6]) * 0.055;
-    m.rotation.x = Math.cos(t * 2.6 + q[6]) * 0.035;
+    m.rotation.z = Math.sin(t * 3.2 + q[6]) * 0.055 + h * Math.sin(t * 22 + i) * 0.35;
+    m.rotation.x = Math.cos(t * 2.6 + q[6]) * 0.035 - h * 0.35;
   }
 }
 
@@ -183,7 +190,7 @@ if (cvTema === 'ciftlik') {
 
   // ───────── 2) açılış manzarası: kır yel değirmeni (f ~ 0.17, karşı yanda, daha büyük) ─────────
   {
-    const p = yer(0.17, -1, YARI + 18, 10, YARI + 14);
+    const p = yer(0.17, -1, YARI + 27, 10, YARI + 23);   /*PISTD*/ // kanat ucu yol kamerasının üstüne taşmasın
     if (p) {
       const sc = 1.22;
       S.yer(p.x, p.z, p.ry, sc);
@@ -205,11 +212,8 @@ if (cvTema === 'ciftlik') {
       P.ekle(cvG.sil, 0, 0, 0.25, 0.55, 0.45, 0.55, KIRMIZI, Math.PI / 2);
       for (let k = 0; k < 4; k++) {
         const a = k * Math.PI / 2, ca = Math.cos(a), sa = Math.sin(a);
-        P.ekle(cvG.kutuY, ca * 3.1, sa * 3.1, 0, 6.2, 0.24, 0.2, AHSAP, 0, 0, a);
-        P.ekle(cvG.kutuY, ca * 3.55 - sa * 0.55, sa * 3.55 + ca * 0.55, -0.05, 4.4, 1.1, 0.06, 0xfff5de, 0, 0, a);
-        for (let r = 1.6; r <= 5.4; r += 0.95) {
-          P.ekle(cvG.kutuY, ca * r - sa * 0.55, sa * r + ca * 0.55, 0.02, 0.08, 1.15, 0.08, AHSAP2, 0, 0, a);
-        }
+        P.ekle(cvG.kutuY, ca * 3.1, sa * 3.1, 0, 6.2, 0.4, 0.36, AHSAP, 0, 0, a);   /*PISTD*/ // kalın kol + dolgun yuvarlak yelken
+        P.ekle(cvG.kureY, ca * 3.7 - sa * 0.62, sa * 3.7 + ca * 0.62, -0.05, 2.35, 0.72, 0.3, 0xfff5de, 0, 0, a);
       }
       cfPervane = new T.Mesh(cfTonKontrast(P.geo(), 6.5), cfCilaMalz(0, 0.10, 0.25));
       const hub = S.dunya(0, 2.65);
@@ -278,8 +282,8 @@ if (cvTema === 'ciftlik') {
         if (k % 2 === 0) {
           for (let j = 0; j < 3; j++) {
             const ox = rx + (j - 1) * 0.32, oz = rz + (j % 2) * 0.25;
-            S.ekle(cvG.sil, ox, 0.7, oz, 0.06, 1.4, 0.06, 0x4f9c42);
-            S.ekle(cvG.sil, ox, 1.32, oz, 0.12, 0.35, 0.12, 0x6e4427);
+            S.ekle(cvG.kureY, ox, 0.7, oz, 0.13, 0.75, 0.13, 0x4f9c42);   /*PISTD*/
+            S.ekle(cvG.kureY, ox, 1.45, oz, 0.18, 0.32, 0.18, 0x6e4427);
           }
         }
       }
@@ -301,7 +305,7 @@ if (cvTema === 'ciftlik') {
       for (let k = 0; k < 6; k++) {
         const m = new T.Mesh(og, om);
         m.rotation.order = 'YXZ';
-        m.scale.setScalar(1.38 + (k % 2) * 0.2);
+        m.scale.setScalar(1.8 + (k % 2) * 0.25);   /*PISTD*/ // ördekler uzaktan da seçilsin
         scene.add(m);
         cfOrdekler.push([m, p.x, p.z, 1.9 + k * 0.78, k * 1.05, 0.36 + (k % 3) * 0.08, k * 1.4]);
       }
@@ -447,25 +451,25 @@ if (cvTema === 'ciftlik') {
       if (!p) continue;
       tarlalar.push([p.x, p.z, 13, 9, p.ry, 'bugday']);
       const ca = Math.cos(-p.ry), sa = Math.sin(-p.ry);
-      for (let gx = -9.5; gx <= 9.5; gx += 3.2) {
-        for (let gz = -6.0; gz <= 6.0; gz += 3.0) {
-          const jx = gx + (Rc() - 0.5) * 1.4, jz = gz + (Rc() - 0.5) * 1.2;
+      for (let gx = -9.0; gx <= 9.0; gx += 2.6) {   /*PISTD*/ // demetler sık ve birbirine değen: kalın bir tarla gibi
+        for (let gz = -5.6; gz <= 5.6; gz += 2.4) {
+          const jx = gx + (Rc() - 0.5) * 0.9, jz = gz + (Rc() - 0.5) * 0.8;
           const wx = p.x + jx * ca - jz * sa, wz = p.z + jx * sa + jz * ca;
           if (yakin(wx, wz) < YARI + 9.5) continue;
-          const s = 0.9 + Rc() * 0.35;
-          bugdayListe.push([wx, 0, wz, s, s, s, Rc() * 6.28, Rc() > 0.4 ? 0xf6cf52 : 0xe5b736]);
+          const s = 1.15 + Rc() * 0.3;
+          bugdayListe.push([wx, 0, wz, s, s, s, Rc() * 6.28, Rc() > 0.4 ? 0xffd75a : 0xf7c444]);
         }
       }
     }
     if (bugdayListe.length) {
-      const W = cvYapi();
-      const ofset = [[-0.22, 0.14, 0.08], [0.24, -0.1, -0.07], [0.0, 0.24, -0.05], [-0.12, -0.24, 0.06]];
+      const W = cvYapi();   /*PISTD*/ // ince çubuk yerine tombul, yuvarlak altın başak demeti
+      W.ekle(cvG.kureY, 0, 0.55, 0, 0.78, 0.72, 0.78, 0xf4ecd8, 0, 0, 0, 1);
+      const ofset = [[-0.34, 0.2, 0.16], [0.36, -0.14, -0.15], [0.02, 0.36, -0.1], [-0.14, -0.34, 0.12], [0.04, 0.0, 0.0]];
       for (let j = 0; j < ofset.length; j++) {
-        const ox = ofset[j][0], oz = ofset[j][1], eg = ofset[j][2], h = 1.35 + (j % 2) * 0.2;
-        W.ekle(cvG.sil, ox, h * 0.5, oz, 0.045, h, 0.045, 0xe8bd42, eg, 0, eg * 0.7, 1);
-        W.ekle(cvG.kureK, ox + eg * 0.4, h + 0.14, oz + eg * 0.3, 0.09, 0.24, 0.09, 0xffd858, eg, 0, eg * 0.7, 1);
+        const ox = ofset[j][0], oz = ofset[j][1], eg = ofset[j][2], h = 1.3 + (j % 2) * 0.18 + (j === 4 ? 0.2 : 0);
+        W.ekle(cvG.kureK, ox + eg * 0.5, h, oz + eg * 0.4, 0.2, 0.46, 0.2, 0xffffff, eg, 0, eg * 0.7, 1);
       }
-      cok(cvTon(W.geo()), cvMalz(cfBugdayHar), bugdayListe);
+      cok(cvTon(W.geo()), cvMalz(cfBugdayHar, { emissive: 0x6a4800, emissiveIntensity: 0.32 }), bugdayListe);   /*PISTD*/ // gölgede de sıcak altın kalsın
     }
   }
 

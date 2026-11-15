@@ -238,13 +238,13 @@ if (cvTema === 'seker') {
   };
   const lolipop = (x, z, ry, s) => {   // sarmal lolipop: çubuğu sabit, başı ortak dönen dokulu kopya
     const h = (3.6 + R() * 2.8) * s, r = (1.35 + R() * 0.8) * s; S.yer(0, 0, 0);
-    S.ekle(cvG.sil5, x, h / 2, z, 0.13 * s, h, 0.13 * s, BEYAZ, 0, 0, 0, 0, 0, 1);
+    S.ekle(cvG.sil, x, h / 2, z, 0.2 * s, h, 0.2 * s, BEYAZ, 0, 0, 0, 0, 0, 1); S.ekle(cvG.kureK, x, 0.1, z, 0.42 * s, 0.22 * s, 0.42 * s, 0xffd6e6);   /*PISTA: tombul sap + tabanı*/
     loli.push([x, h + r * 0.8, z, r, r, r, ry + (R() - 0.5) * 0.9, sec([0xffffff, 0xfff2a8, 0xcdf0ff, 0xd9ffd6, 0xffe0ee, 0xe9dcff])]);
     golge.push([x - 0.4, 0.012, z + 0.3, r * 1.1, 1, r * 0.8, -0.4]);
   };
   const topLoli = (x, z) => {   // top lolipop
     const h = 1.8 + R() * 1.6, r = 0.6 + R() * 0.35; S.yer(0, 0, 0);
-    S.ekle(cvG.sil5, x, h / 2, z, 0.09, h, 0.09, BEYAZ, 0, 0, 0, 0, 0, 1); S.ekle(cvG.kure, x, h + r * 0.8, z, r, r, r, sec(CANLI), 0, 0, 0, 0, 0, 1); S.ekle(cvG.kureK, x - r * 0.3, h + r * 1.25, z + r * 0.3, r * 0.3, r * 0.2, r * 0.3, BEYAZ, 0, 0, 0, 0, 0, 1);
+    S.ekle(cvG.sil, x, h / 2, z, 0.15, h, 0.15, BEYAZ, 0, 0, 0, 0, 0, 1);/*PISTA*/ S.ekle(cvG.kure, x, h + r * 0.8, z, r, r, r, sec(CANLI), 0, 0, 0, 0, 0, 1); S.ekle(cvG.kureK, x - r * 0.3, h + r * 1.25, z + r * 0.3, r * 0.3, r * 0.2, r * 0.3, BEYAZ, 0, 0, 0, 0, 0, 1);
     golge.push([x - 0.2, 0.012, z + 0.2, r * 1.1, 1, r * 0.9, -0.4]);
   };
 
@@ -303,7 +303,7 @@ if (cvTema === 'seker') {
       for (const g of [-14]) {
         skGizle = skBas(i + g); const q = yer(i + g, -sag, YARI + 5.3, 1.2, 2.2); if (!q) continue;
         S.yer(q.x, q.z, q.ry, 1.25);
-        for (let j = 0; j < 4; j++) S.ekle(cvG.sil5, 0, 0.28 + j * 0.56, 0, 0.13, 0.56, 0.13, j % 2 ? BEYAZ : KIRMIZI);
+        for (let j = 0; j < 4; j++) S.ekle(cvG.sil, 0, 0.28 + j * 0.56, 0, 0.19, 0.56, 0.19, j % 2 ? BEYAZ : KIRMIZI);/*PISTA*/
         S.ekle(skYK, 0, 2.95, -0.03, 2.9, 1.7, 0.16, BEYAZ); S.ekle(skYK, 0, 2.95, 0.03, 2.6, 1.4, 0.16, 0xff5c9a);
         S.ekle(skYK, -sag * 0.35, 2.95, 0.13, 1.15, 0.36, 0.08, BEYAZ); S.ekle(cvG.ucgen, sag * 0.62, 2.95, 0.13, 0.56, 0.8, 0.06, BEYAZ, 0, 0, -sag * Math.PI / 2);
         for (const sx of [-1, 1]) S.ekle(cvG.kureK, sx * 1.45, 3.8, 0, 0.17, 0.17, 0.17, SARI);
@@ -334,7 +334,7 @@ if (cvTema === 'seker') {
       const p = cvKenar(i, yan, YARI + 4.5), x = p.x, z = p.z;
       if (yakin(x, z) < YARI + 4.2 || !cvBos(x, z, 0.5)) { var_ = false; continue; }
       cvYasak.push([x, z, 0.7]);
-      for (let j = 0; j < 4; j++) S.ekle(cvG.sil5, x, 0.6 + j * 1.2, z, 0.12, 1.2, 0.12, j % 2 ? BEYAZ : (yan > 0 ? 0xff7fb0 : 0x45cfa0));
+      for (let j = 0; j < 4; j++) S.ekle(cvG.sil, x, 0.6 + j * 1.2, z, 0.19, 1.2, 0.19, j % 2 ? BEYAZ/*PISTA*/ : (yan > 0 ? 0xff7fb0 : 0x45cfa0));
       S.ekle(cvG.kureK, x, 4.95, z, 0.3, 0.3, 0.3, SARI);
       if (var_) {
         const dx = x - ox, dz = z - oz, ry = Math.atan2(dx, dz), l = Math.hypot(dx, dz) / 6;
@@ -380,7 +380,7 @@ if (cvTema === 'seker') {
       }
     }
     skGizle = false;
-    if (kl.length) cok(K.geo(), cvMalz(2), kl); if (al.length) cok(A.geo(), skCila(cvMalz(2), 0.45, 0.25), al); if (ml.length) cok(M.geo(), cvMalz(2), ml);   // jelibon ayıcık: parlak cam şeker
+    if (kl.length) cok(K.geo(), cvMalz(2), kl); if (al.length) cvVay(cok(A.geo(), skCila(cvMalz(2), 0.45, 0.25), al), al, 'hop', { h: 1.6 });/*PISTA*/ if (ml.length) cok(M.geo(), cvMalz(2), ml);   // jelibon ayıcık: parlak cam şeker
   }
 
   // ───────── yol boyu şekerler: bölgeye göre değişir ─────────

@@ -17,6 +17,7 @@ const cvGokIsik = new T.HemisphereLight(0xffffff, cvTema==='kiyi'?0xd1bda0:cvTem
 const gunes = new T.DirectionalLight(0xfff2d0, cvTema==='kar'?1.15:1.5); gunes.position.set(95, 120, -45); scene.add(gunes);
 
 const cvZ = { value: 0 };   // ortak zaman (gölgelendiriciler için)
+const cvVaylar = [], cvVayO = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };   /*PISTA*/ // "vay" anı tepkileri (aşağıda cvVay)
 const cvOyuncu = { value: new T.Vector2(0,0) };
 const cvHAREKET = [
   '',
@@ -78,7 +79,7 @@ const cvG = {
   kure: new T.SphereGeometry(1, 7, 5), kureK: new T.SphereGeometry(1, 6, 4), cicek: new T.ConeGeometry(1, 1, 6), sil3: new T.CylinderGeometry(1, 1, 1, 3, 1, true), ico: new T.IcosahedronGeometry(1, 1), ufak: new T.IcosahedronGeometry(1, 0), okt: new T.OctahedronGeometry(1, 0),
   sil: new T.CylinderGeometry(1, 1, 1, 10), sil5: new T.CylinderGeometry(1, 1, 1, 5, 1, true), govde: new T.CylinderGeometry(0.7, 1, 1, 6, 1, true), govdeK: new T.CylinderGeometry(0.8, 1, 1, 10),
   koni: new T.ConeGeometry(1, 1, 7), koni6: new T.ConeGeometry(1, 1, 6), ucgen: new T.ConeGeometry(1, 1, 3), yarim: new T.SphereGeometry(1, 16, 6, 0, 6.2832, 0, 1.5708), yarimK: new T.SphereGeometry(1, 8, 3, 0, 6.2832, 0, 1.5708),
-  daire: new T.CircleGeometry(1, 16), tac: new T.SphereGeometry(1, 8, 5), tacY: new T.SphereGeometry(1, 10, 7), kureY: new T.SphereGeometry(1, 8, 5), kutu: G.kutu
+  daire: new T.CircleGeometry(1, 16), tac: new T.SphereGeometry(1, 8, 5), tacY: new T.SphereGeometry(1, 10, 7), tacO: new T.SphereGeometry(1, 9, 6), /*PISTA: orman yakın ağaç tacı biraz hafif*/ kureY: new T.SphereGeometry(1, 8, 5), kutu: G.kutu
 };
 { // Yerdeki çiçeklerde görünmeyen alt yüzler çizilmez; üstteki kabarık taç yaprağı korunur.
   const g=cvG.okt.index?cvG.okt.toNonIndexed():cvG.okt,p=g.attributes.position,n=g.attributes.normal,pos=[],nor=[];
@@ -240,7 +241,7 @@ if(cvTema==='orman') {
     for (let k = 0; k <= say; k++) {
       const p = cvKenar(i0 + k * 13, yan, YARI + 4.5), x = p.x, z = p.z;
       if (yakin(x, z) < YARI + 3.4) { var_ = false; continue; }
-      S.ekle(cvG.sil5, x, 2.7, z, 0.1, 5.4, 0.1, 0xfff6e6); S.ekle(cvG.ufak, x, 5.55, z, 0.24, 0.24, 0.24, 0xffc93d);
+      S.ekle(cvG.sil, x, 2.7, z, 0.17, 5.4, 0.17, 0xfff6e6); S.ekle(cvG.kureK, x, 0.12, z, 0.36, 0.24, 0.36, 0xe6d3b0); S.ekle(cvG.ufak, x, 5.55, z, 0.32, 0.32, 0.32, 0xffc93d);   /*PISTA tombul direk*/
       if (var_) {
         const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ryI = Math.atan2(dx, dz), ryB = Math.atan2(-dz, dx);
         for (let j = 0; j < 8; j++) {
@@ -495,7 +496,7 @@ if(cvTema==='orman') {
     for (const s of [-1, 1]) { e(cvG.kureK, s * 0.18, 2.05, 0, 0.11, 0.46, 0.08, 0xffffff, 0, -s * 0.16, 1); e(cvG.kureK, s * 0.18, 2.05, 0.06, 0.055, 0.32, 0.03, 0xffa9c6, 0, -s * 0.16); e(cvG.ufak, s * 0.17, 1.5, 0.35, 0.065, 0.075, 0.05, SIYAH); e(cvG.kureK, s * 0.22, 0.1, 0.25, 0.17, 0.1, 0.27, 0xffffff, 0, 0, 1); e(cvG.ufak, s * 0.2, 1.33, 0.33, 0.1, 0.08, 0.06, 0xffc2d6); }
     e(cvG.ufak, 0, 1.38, 0.41, 0.06, 0.05, 0.05, 0xff7fa8); e(cvG.ufak, 0, 0.42, -0.45, 0.17, 0.17, 0.17, 0xffffff);
     e(cvG.kureK, -0.5, 0.82, 0.1, 0.1, 0.27, 0.1, 0xffffff, 0, 0.5, 1); e(cvG.kureK, 0.58, 1.22, 0.05, 0.1, 0.32, 0.1, 0xffffff, 0, -0.65, 1, 1);
-    cok(B.geo(), cvMalz(2), tavsan);
+    cvVay(cok(B.geo(), cvMalz(2), tavsan), tavsan, 'hop', { h: 1.5 });   /*PISTA*/
   }
   { // sincap
     const B = cvYapi(), e = (g, x, y, z, sx, sy, sz, r, rx, rz, kt, ke) => B.ekle(g, x, y, z, sx, sy, sz, r, rx || 0, 0, rz || 0, kt, 1, ke);
@@ -553,16 +554,17 @@ if(cvTema==='orman') {
     const cayir = i < 330, k = cayir ? cvI(0.1 + R() * 0.18) : (R() * N) | 0, b = cvBolge(k), yan = R() < 0.5 ? -1 : 1, uz = YARI + 4.2 + (cayir ? R() * 26 : R() * R() * 20), x = PX[k] - TZ[k] * uz * yan + (R() - 0.5) * 2, z = PZ[k] + TX[k] * uz * yan + (R() - 0.5) * 2;
     if (yakin(x, z) < YARI + 4.15 || !cvBos(x, z, cayir ? 0.2 : 0.9)) continue;
     const t = R(), s = 0.7 + R() * 0.6;
+    if ((cayir || t < 0.6) && !cayir && R() < 0.3) continue;   /*PISTA: orman içi çiçekler biraz seyrek (hafiflik)*/
     if (cayir || t < 0.6) cicek.push([x, 0, z, s, s * (0.8 + R() * 0.5), s, R() * 6, CICEK[(R() * 6) | 0]]);
     else if (t < 0.76) cali.push([x, 0.4, z, 0.9 + R() * 0.9, 0.65 + R() * 0.5, 0.9 + R() * 0.9, R() * 6, R() < 0.45 ? ACIK[(R() * 6) | 0] : YESIL[(R() * 4) | 0]]);
     else if (t < (b === 2 ? 0.97 : 0.88)) { const m = (b === 2 ? 1.1 : 0.7) + R() * (b === 2 ? 1.5 : 0.9); mantar.push([x, 0, z, m, m, m, R() * 6, [0xf2553d, 0xffb13d, 0xf2553d, 0xe85aa0, 0x9b7be8][(R() * (b === 2 ? 5 : 3)) | 0]]); }
     else kaya.push([x, 0.25, z, 0.6 + R() * 0.8, 0.5 + R() * 0.5, 0.6 + R() * 0.8, R() * 6, R() < 0.5 ? 0xb9bcc4 : 0xcfd2d8]);
   }
-  for (const l of [camF, yuvF]) for (let k = l.length - 1; k >= 0; k--) if (k % 2 === 1 && yakin(l[k][0], l[k][2]) > YARI + 36) l.splice(k, 1);   // cv3: arkada kalan, görünmeyen ağaçlar ayıklanır
+  for (const l of [camF, yuvF]) for (let k = l.length - 1; k >= 0; k--) if ((k % 2 === 1 && yakin(l[k][0], l[k][2]) > YARI + 36) || (k % 4 === 2 && yakin(l[k][0], l[k][2]) > YARI + 44)) l.splice(k, 1);   /*PISTA: orman hafiflesin, uzak ağaçlar biraz daha seyrek*/   // cv3: arkada kalan, görünmeyen ağaçlar ayıklanır
   const ruzgar = cvMalz(1);
   { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.1, 0, 0.42, 2.2, 0.42, 0x8a5a36); B.ekle(cvG.koni, 0, 3.3, 0, 2.35, 3.3, 2.35, 0xd0d0d0, 0, 0, 0, 1); B.ekle(cvG.koni, 0, 5.0, 0, 1.85, 2.9, 1.85, 0xe6e6e6, 0, 0.4, 0, 1); B.ekle(cvG.koni, 0, 6.6, 0, 1.3, 2.5, 1.3, 0xffffff, 0, 0.9, 0, 1); cok(cvTon(B.geo()), ruzgar, camN); }
   { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.0, 0, 0.42, 2.0, 0.42, 0x8a5a36); B.ekle(cvG.koni6, 0, 3.5, 0, 2.3, 3.8, 2.3, 0xd6d6d6, 0, 0, 0, 1); B.ekle(cvG.koni6, 0, 5.8, 0, 1.55, 3.0, 1.55, 0xf4f4f4, 0, 0.5, 0, 1); cok(cvTon(B.geo()), ruzgar, camF); }
-  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.6, 0, 0.5, 3.2, 0.5, 0x9a6a40); B.ekle(cvG.govde,.45,2.65,.18,.22,1.65,.22,0xad7946,0,0,-.55);B.ekle(cvG.govde,-.42,2.9,-.2,.19,1.5,.19,0xa87342,0,0,.6);B.ekle(cvG.tacY, 0.1, 5.0, 0, 2.45, 2.3, 2.45, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kure, 1.6, 3.95, 0.5, 1.65, 1.45, 1.65, 0xd9e1d5, 0, 0, 0, 1); B.ekle(cvG.kure, -1.4, 4.15, -0.8, 1.6, 1.4, 1.6, 0xe5eadc, 0, 1, 0, 1); B.ekle(cvG.kureK, -0.3, 6.35, 0.5, 1.25, 1.05, 1.25, 0xffffff, 0, 0, 0, 1); cok(cvTon(B.geo()), ruzgar, yuvN); }
+  { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.6, 0, 0.5, 3.2, 0.5, 0x9a6a40); B.ekle(cvG.govde,.45,2.65,.18,.22,1.65,.22,0xad7946,0,0,-.55);B.ekle(cvG.govde,-.42,2.9,-.2,.19,1.5,.19,0xa87342,0,0,.6);B.ekle(cvG.tacO, 0.1, 5.0, 0, 2.45, 2.3, 2.45, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kure, 1.6, 3.95, 0.5, 1.65, 1.45, 1.65, 0xd9e1d5, 0, 0, 0, 1); B.ekle(cvG.kure, -1.4, 4.15, -0.8, 1.6, 1.4, 1.6, 0xe5eadc, 0, 1, 0, 1); B.ekle(cvG.kureK, -0.3, 6.35, 0.5, 1.25, 1.05, 1.25, 0xffffff, 0, 0, 0, 1); cok(cvTon(B.geo()), ruzgar, yuvN); }
   { const B = cvYapi(); B.ekle(cvG.govde, 0, 1.4, 0, 0.5, 2.8, 0.5, 0x9a6a40); B.ekle(cvG.tac, 0, 4.4, 0, 2.5, 2.4, 2.5, 0xf6f6f6, 0, 0, 0, 1); cok(cvTon(B.geo()), ruzgar, yuvF); }
   { const B = cvYapi(); B.ekle(cvG.sil5, 0, 2.6, 0, 0.24, 5.2, 0.24, 0xf7f4ec); for (let k = 0; k < 3; k++) B.ekle(cvG.sil5, 0, 0.9 + k * 1.3, 0, 0.255, 0.18, 0.255, 0x4a4a4a, 0, k * 1.3); B.ekle(cvG.kure, 0, 6.3, 0, 1.7, 2.0, 1.7, 0xffffff, 0, 0, 0, 1); B.ekle(cvG.kureK, 0.95, 5.0, 0.3, 1.2, 1.3, 1.2, 0xe2e2e2, 0, 0, 0, 1); B.ekle(cvG.kureK, -0.85, 5.4, -0.4, 1.1, 1.2, 1.1, 0xececec, 0, 1, 0, 1); cok(cvTon(B.geo()), ruzgar, hus); }
   { const B = cvYapi(); B.ekle(cvG.sil3, 0, 0.3, 0, 0.038, 0.6, 0.038, 0x4caf50);B.ekle(cvG.petal,.13,.27,.06,.2,.045,.08,0x5bbf56,0,0,.42);for(let k=0;k<5;k++){const a=k/5*Math.PI*2;B.ekle(cvG.petal,Math.sin(a)*.25,.66,Math.cos(a)*.25,.23,.10,.22,0xffffff,0,0,0,1);}B.ekle(cvG.petal,0,.73,0,.17,.085,.17,0xffcf39);cok(B.geo(),cvMalz(0),cicek); }
@@ -681,7 +683,7 @@ if(cvTema==='orman') {
     S.yer(0,0,0);let ox=0,oz=0,var_=false,n=0;
     for(let k=0;k<=say;k++){
       const p=cvKenar(i0+k*13,yan,YARI+4.4),x=p.x,z=p.z;if(yakin(x,z)<YARI+3.5){var_=false;continue;}
-      cvYasak.push([x,z,.8]);S.ekle(cvG.sil5,x,2.7,z,.1,5.4,.1,kisin?0xb9d4e6:0xfff6e6);S.ekle(cvG.ufak,x,5.55,z,.24,.24,.24,0xffc93d);
+      cvYasak.push([x,z,.8]);S.ekle(cvG.sil,x,2.7,z,.17,5.4,.17,kisin?0xb9d4e6:0xfff6e6);S.ekle(cvG.kureK,x,.12,z,.36,.24,.36,kisin?0x8fb6d2:0xe6d3b0);S.ekle(cvG.ufak,x,5.55,z,.32,.32,.32,0xffc93d);/*PISTA tombul direk*/
       if(var_){const dx=x-ox,dz=z-oz,l=Math.hypot(dx,dz),ryI=Math.atan2(dx,dz),ryB=Math.atan2(-dz,dx);
         for(let j=0;j<8;j++){const u=(j+.5)/8,y=5.3-1.0*4*u*(1-u);S.ekle(cvG.kutu,ox+dx*u,y+.02,oz+dz*u,.04,.04,l/8+.3,0xffffff,0,ryI);S.ekle(cvG.ucgen,ox+dx*u,y-.42,oz+dz*u,.42,.85,.05,cvBAYRAK[n++%6],Math.PI,ryB,0,0,1);}}
       ox=x;oz=z;var_=true;
@@ -750,7 +752,7 @@ if(cvTema==='orman') {
       const B=cvYapi(),e=cvE(B);
       e(cvG.kure,0,.62,0,.27,.27,.45,0xffffff);e(cvG.kure,0,1.0,.3,.2,.2,.2,0xffffff);e(cvG.koni,0,.97,.56,.06,.2,.06,0xffa53d,0,0,Math.PI/2);e(cvG.kureK,0,.66,-.45,.14,.06,.2,0xb5bfcc);
       for(const s of [-1,1]){e(cvG.ufak,s*.1,1.06,.44,.04,.045,.03,0x2c3742);e(cvG.sil5,s*.1,.2,0,.025,.4,.025,0xffa53d);e(cvG.kureK,s*.27,.66,-.05,.07,.2,.36,0xb5bfcc,0,1);}
-      for(const a of cvHay[1]){a[3]*=1.25;a[4]*=1.25;a[5]*=1.25;}cok(B.geo(),cvMalz(2),cvHay[1].concat(cvHay[3]));
+      for(const a of cvHay[1]){a[3]*=1.25;a[4]*=1.25;a[5]*=1.25;}{const l=cvHay[1].concat(cvHay[3]);const im=cok(B.geo(),cvMalz(2),l);if(!kisin)cvVay(im,l,'uc',{h:1.2,yan:42,on0:18,on1:70,ara:1.5});}/*PISTA*/
     }
     { // uçan martılar
       const B=cvYapi(),kus=[];B.ekle(cvG.kure,0,0,0,.2,.2,.6,0xffffff);B.ekle(cvG.ufak,0,.08,.6,.16,.16,.18,0xffffff);B.ekle(cvG.koni,0,.06,.85,.06,.2,.06,0xffa53d,Math.PI/2);
@@ -787,7 +789,7 @@ if(cvTema==='orman') {
       const r=k%2?0xe8503c:0x3f8fe0;S.ekle(cvG.sil5,0,1.4,0,.07,2.8,.07,r);S.ekle(cvG.kutu,0,2.3,-.55,.05,.7,1.0,r,0,0,0,0,1);S.ekle(cvG.kutu,0,2.3,-.55,.06,.24,1.02,0xffffff,0,0,0,0,1);S.ekle(cvG.kureK,0,.1,0,.4,.2,.4,0xf4faff);}
     // köy yolunda fenerler
     for(let k=0;k<14;k+=2){const q=cvKenar(cvI(.095+k*.016),k%2?1:-1,YARI+4.2),x=q.x,z=q.z;if(yakin(x,z)<YARI+3.6||!cvBos(x,z,.6))continue;cvYasak.push([x,z,.9]);S.yer(x,z,q.ry);
-      S.ekle(cvG.sil5,0,1.6,0,.09,3.2,.09,0x5a4a44);S.ekle(cvG.kutu,0,3.1,.3,.09,.09,.8,0x5a4a44);S.ekle(cvG.kureK,0,2.75,.62,.26,.3,.26,0xffd97a);S.ekle(cvG.koni,0,3.03,.62,.36,.24,.36,0xffffff);}
+      S.ekle(cvG.sil,0,1.6,0,.14,3.2,.14,0x5a4a44);/*PISTA*/S.ekle(cvG.kutu,0,3.1,.3,.09,.09,.8,0x5a4a44);S.ekle(cvG.kureK,0,2.75,.62,.26,.3,.26,0xffd97a);S.ekle(cvG.koni,0,3.03,.62,.36,.24,.36,0xffffff);}
     // kızaklar
     for(let k=0;k<6;k++){const p=cvYer(cvI(.115+k*.045),k%2?1:-1,YARI+5.4,1.3);if(!p)continue;const r=[0xe8503c,0x3fb37a,0xffc23d][k%3];S.yer(p.x,p.z,p.ry+1.1);
       for(const x of [-.4,.4]){S.ekle(cvG.kutu,x,.1,0,.08,.1,1.9,0xcfd8e0);S.ekle(cvG.kutu,x,.28,-.5,.07,.3,.07,0x9a6a40);S.ekle(cvG.kutu,x,.28,.5,.07,.3,.07,0x9a6a40);S.ekle(cvG.kutu,x,.3,1.05,.08,.1,.5,0xcfd8e0,-.8);}
@@ -900,7 +902,7 @@ if(cvTema==='orman') {
     }
   }
   // Yol boyunca direkler ve bayraklar; kapıyı daraltan rastgele dekor yok.
-  for(let i=0;i<N;i+=24)for(const yan of [-1,1]){const p=cvKenar(i,yan,YARI+3.2);if(yakin(p.x,p.z)<YARI+2.8)continue;S.yer(p.x,p.z,p.ry);S.ekle(cvG.sil5,0,.56,0,.12,1.1,.12,kisin?0x967d66:0xf7f3dc);S.ekle(cvG.kureK,0,1.17,0,.16,.14,.16,kisin?0xeb8d67:0x61c8cf);}
+  for(let i=0;i<N;i+=24)for(const yan of [-1,1]){const p=cvKenar(i,yan,YARI+3.2);if(yakin(p.x,p.z)<YARI+2.8)continue;S.yer(p.x,p.z,p.ry);S.ekle(cvG.sil,0,.5,0,.2,1.0,.2,kisin?0x967d66:0xf7f3dc);/*PISTA*/S.ekle(cvG.kureK,0,1.06,0,.24,.2,.24,kisin?0xeb8d67:0x61c8cf);}
   for(let i=0;i<N;i+=9)for(const yan of [-1,1]){if((!kisin&&((i/9|0)%7===3||(i/9|0)%7===4))||(kisin&&((i/9|0)%9===3||(i/9|0)%9===4)))continue;const p=cvKenar(i+((R()*7)|0),yan,YARI+(kisin?6:6.5)+R()*(kisin?8:3));if(yakin(p.x,p.z)<YARI+(kisin?5:6)||!cvBos(p.x,p.z,2.7))continue;const s=.8+R()*.5;agaclar.push([p.x,0,p.z,s,s*(.85+R()*.35),s,R()*6.28,kisin?[0x4d9b89,0x4a948b,0x6fb3a6][i%3]:[0x46af75,0x64bf76,0x59b96f][i%3]]);cvYasak.push([p.x,p.z,2.0]);cvGolgeler.push([p.x-.5,.012,p.z+.3,2.2*s,1,1.4*s,-.4]);}
   if(kisin){
     const B=cvYapi();B.ekle(cvG.govdeK,0,.85,0,.28,1.7,.28,0x947552);
@@ -927,7 +929,7 @@ if(cvTema==='orman') {
     if(kisin){e(cvG.kure,0,.65,0,.65,.65,.60,0xffffff);e(cvG.kure,0,1.5,0,.45,.45,.43,0xffffff);B.ekle(cvG.koni,0,1.5,.49,.08,.35,.08,0xf1a34d,Math.PI/2);B.ekle(cvG.sil,0,2.0,0,.5,.11,.5,0x5e8197);B.ekle(cvG.sil,0,2.23,0,.31,.4,.31,0x6e92a5);B.ekle(cvG.sil,0,1.2,0,.45,.18,.45,0xffffff,0,0,0,1);B.ekle(cvG.kutu,.25,.96,.42,.18,.45,.07,0xffffff,0,0,0,1);for(let k=0;k<3;k++)e(cvG.ufak,0,.45+k*.23,.57,.055,.055,.04,0x58738b);for(const s of [-1,1]){B.ekle(cvG.kutu,s*.75,1.05,0,.55,.08,.08,0x947552,0,0,s*.45,0,1,s>0?1:0);e(cvG.ufak,s*.15,1.6,.4,.05,.06,.04,0x42647b);}}
     else{e(cvG.kure,0,.44,0,.62,.45,.80,0xffffff,1);e(cvG.kure,0,1.0,.5,.44,.42,.4,0xffffff,1);e(cvG.kureK,0,.9,.85,.28,.17,.14,0xffedda);for(const s of [-1,1]){e(cvG.kureK,s*.62,.25,0,.3,.1,.5,0xe8f6ef);e(cvG.ufak,s*.16,1.08,.85,.065,.08,.05,0x3c5864);e(cvG.kureK,s*.21,.95,.85,.08,.05,.04,0xf0b4af);}e(cvG.ufak,0,.99,.96,.08,.05,.05,0x506d77);e(cvG.kureK,0,.14,-.8,.40,.1,.30,0xcbdfe1);}
     if(kisin){for(let j=-2;j<=2;j++)e(cvG.ufak,j*.065,1.30+Math.abs(j)*.025,.41,.027,.027,.023,0x628095);for(const s of [-1,1])e(cvG.kureK,s*.29,1.42,.34,.065,.04,.025,0xeebcc2);}
-    cok(B.geo(),cvMalz(2),seyirci);
+    {const im=cok(B.geo(),cvMalz(2),seyirci);cvVay(im,seyirci,kisin?'hop':'salla',{h:kisin?1.2:1.0,sure:1.4});}   /*PISTA*/
   }
   // Hacimli, farklı doruklu arka plan. Kar pistinde dağ etekleri bile karla kaplıdır.
   if(kisin){
@@ -971,8 +973,63 @@ if(cvTema==='kar' && typeof HAVA === 'undefined' && !document.querySelector('scr
   const pts=new T.Points(g,m);pts.frustumCulled=false;scene.add(pts);
 }
 
+/*PISTA*/
+// "Vay" anı: Feza yaklaşınca önündeki seyircilerden biri kısa, sevimli bir tepki verir (yeni nesne yok; yalnız o kopyanın konumu oynar).
+// tip: 'hop' = zıplayıp kendi çevresinde döner · 'uc' = havalanıp süzülür ve geri konar · 'salla' = zıplar, sağa sola sallanır
+function cvVay(im, liste, tip, o) {
+  if (!im || !liste || !liste.length) return im;
+  o = o || {};
+  cvVaylar.push({ im: im, l: liste, tip: tip || 'hop', i: -1, son: -1, t: 0, ara: 0, bekle: 0, sure: o.sure || (tip === 'uc' ? 2.3 : 1.25), h: o.h || 1.3, yan: o.yan || 16, on0: o.on0 || 20, on1: o.on1 || 45, ara0: o.ara || 2.2 });
+  return im;
+}
+function cvVayGuncelle(dt) {
+  if (!cvVaylar.length || typeof P === 'undefined' || !P) return;
+  let hazir = false;
+  for (let n = 0; n < cvVaylar.length; n++) {
+    const v = cvVaylar[n];
+    if (v.i >= 0) {
+      v.t += dt; const p = v.l[v.i];
+      let k = v.t / v.sure; if (k > 1) k = 1;
+      let y = p[1], ry = p[6] || 0, rz = 0, sx = p[3], sy = p[4], sz = p[5], dx = 0, dz = 0;
+      const s = Math.sin(Math.PI * k);
+      if (v.tip === 'uc') {   // havalan, süzül, geri kon
+        const yuk = Math.pow(s, 0.6);
+        y += yuk * 4.2 * v.h; rz = Math.sin(v.t * 3.2) * 0.25 * yuk;
+        const ileri = Math.sin(Math.PI * 2 * k) * 1.6; dx = Math.sin(ry) * ileri; dz = Math.cos(ry) * ileri;
+        ry += Math.sin(Math.PI * 2 * k) * 0.6;
+      } else {
+        const ez = k * k * (3 - 2 * k), bas = k < 0.15 ? 0.22 * Math.sin(Math.PI * k / 0.15) : k > 0.85 ? 0.22 * Math.sin(Math.PI * (1 - k) / 0.15) : 0;   // çömel-kalk ve iniş (sonunda tam eski boyuna döner)
+        y += Math.max(0, Math.sin(Math.PI * (k - 0.12) / 0.76)) * v.h * (k > 0.12 && k < 0.88 ? 1 : 0);
+        const pop = 1 + 0.3 * Math.max(0, Math.sin(Math.PI * (k - 0.12) / 0.76)) * (k > 0.12 && k < 0.88 ? 1 : 0);   // havadayken biraz büyür: uzaktan da seçilsin
+        sy *= (1 - bas) * pop; sx *= (1 + bas * 0.6) * pop; sz *= (1 + bas * 0.6) * pop;
+        if (v.tip === 'salla') rz = Math.sin(k * Math.PI * 4) * 0.28 * s;
+        else ry += ez * Math.PI * 2;
+      }
+      kukla.position.set(p[0] + dx, y, p[2] + dz); kukla.scale.set(sx, sy, sz); kukla.rotation.set(0, ry, rz); kukla.updateMatrix();
+      v.im.setMatrixAt(v.i, kukla.matrix); v.im.instanceMatrix.needsUpdate = true;
+      if (k >= 1) { v.i = -1; v.bekle = v.ara0; }
+      continue;
+    }
+    if (v.bekle > 0) { v.bekle -= dt; continue; }
+    v.ara -= dt; if (v.ara > 0) continue;
+    v.ara = 0.2;
+    if (!hazir) { pist(P.yol, cvVayO); hazir = true; }
+    let en = -1, eu = 1e9;
+    for (let i = 0; i < v.l.length; i++) {
+      if (i === v.son) continue;
+      const q = v.l[i], ax = q[0] - P.x, az = q[2] - P.z, on = ax * cvVayO.tx + az * cvVayO.tz;
+      if (on < v.on0 || on > v.on1) continue;
+      const yn = Math.abs(ax * cvVayO.tz - az * cvVayO.tx);
+      if (yn > v.yan) continue;
+      if (on < eu) { eu = on; en = i; }
+    }
+    if (en >= 0) { v.i = en; v.son = en; v.t = 0; v.n = (v.n || 0) + 1; }
+  }
+}
+/*/PISTA*/
 function cevreGuncelle(dt, t) {
   cvZ.value = t;
+  cvVayGuncelle(dt);   /*PISTA*/
   cvOyuncu.value.set(P.x,P.z);
   if(cvTema==='kiyi'){cimDoku.offset.x=t*.0018;cimDoku.offset.y=t*.0008;if(cvSahilDoku)cvSahilDoku.offset.y=t*.012;}
   if(cvTel)cvTel.mesh.position.z=Math.sin(t*.2)*cvTel.g;if(cvKayan){cvKayan.rotation.y=t*.55;cvKayan.position.y=0.05+Math.abs(Math.sin(t*2.2))*0.05;}

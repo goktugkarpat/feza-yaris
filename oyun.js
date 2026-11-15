@@ -9,7 +9,7 @@ const SURUCU = [
   { tur: 'baba', renk: 0xff9a2e, renk2: 0x39424f, taban: 22.6 }
 ];
 // ───────── garaj: süs kataloğu, sahiplik, seçim, yıldız kavanozu, hediye kutuları (kayıt: localStorage['feza-yaris-garaj-v1']; kapalıysa bellekte) ─────────
-const OY_GARAJ_ANAHTAR = 'feza-yaris-garaj-v1', OY_GARAJ_TURLER = ['renk', 'teker', 'bayrak', 'iz', 'korna'], OY_KAVANOZ = 30;
+const OY_GARAJ_ANAHTAR = 'feza-yaris-garaj-v1', OY_GARAJ_TURLER = ['renk', 'teker', 'bayrak', 'iz', 'korna', 'sapka', 'kostum'], OY_KAVANOZ = 30;   /*GARAJ*/ // şapka + kostüm sonradan eklendi: eski kayıtta yoklar → kilitli gelir, kavanoz yeniden hediye verir
 const GARAJ = (() => {
   const katalog = {
     renk: [{ id: 'varsayilan' }, { id: 'mavi', renk: 0x3f8fe8, renk2: 0xcfe6ff }, { id: 'kirmizi', renk: 0xf2483a, renk2: 0xffd6cf }, { id: 'yesil', renk: 0x49c25a, renk2: 0xd6f5c8 },
@@ -18,9 +18,11 @@ const GARAJ = (() => {
     teker: [{ id: 'klasik' }, { id: 'yildiz' }, { id: 'cicek' }, { id: 'gokkusagi' }, { id: 'altin' }, { id: 'seker' }],
     bayrak: [{ id: 'yok' }, { id: 'yildiz' }, { id: 'kalp' }, { id: 'balon' }, { id: 'firildak' }, { id: 'pati' }],
     iz: [{ id: 'yok' }, { id: 'gokkusagi' }, { id: 'yildiz' }, { id: 'baloncuk' }, { id: 'kalp' }],
-    korna: [{ id: 'dat' }, { id: 'ordek' }, { id: 'tren' }, { id: 'zil' }, { id: 'fil' }]
+    korna: [{ id: 'dat' }, { id: 'ordek' }, { id: 'tren' }, { id: 'zil' }, { id: 'fil' }],
+    /*GARAJ*/ sapka: [{ id: 'yok' }, { id: 'tac' }, { id: 'kedi' }, { id: 'buyucu' }, { id: 'cicek' }, { id: 'kask' }, { id: 'korsan' }],
+    kostum: [{ id: 'yok' }, { id: 'kulak' }, { id: 'gozler' }, { id: 'boynuz' }, { id: 'celenk' }, { id: 'kanat' }] /*/GARAJ*/
   };
-  const ilk = () => ({ sahip: { renk: ['varsayilan', 'mavi'], teker: ['klasik'], bayrak: ['yok'], iz: ['yok'], korna: ['dat'] }, secili: { renk: 'varsayilan', teker: 'klasik', bayrak: 'yok', iz: 'yok', korna: 'dat' }, yildiz: 0, hediye: 0, anlatildi: false });
+  const ilk = () => ({ sahip: { renk: ['varsayilan', 'mavi'], teker: ['klasik'], bayrak: ['yok'], iz: ['yok'], korna: ['dat'], sapka: ['yok'], kostum: ['yok'] }, secili: { renk: 'varsayilan', teker: 'klasik', bayrak: 'yok', iz: 'yok', korna: 'dat', sapka: 'yok', kostum: 'yok' }, yildiz: 0, hediye: 0, anlatildi: false });   /*GARAJ*/
   const varMi = (tur, id) => !!katalog[tur] && katalog[tur].some(x => x.id === id);
   let v = ilk();
   const kaydet = () => { try { localStorage.setItem(OY_GARAJ_ANAHTAR, JSON.stringify(v)); } catch (e) { /* kayıt kapalı: bellekte sürer */ } };
@@ -52,7 +54,7 @@ const GARAJ = (() => {
     sec(tur, id) {
       if (!this.sahip(tur, id)) return false;
       v.secili[tur] = id; secim[tur] = id; kaydet(); susle();
-      if (tur === 'renk' && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];   // sıralama ekranındaki yüz resmi yeni boyayla yeniden çekilir
+      if ((tur === 'renk' || tur === 'sapka' || tur === 'kostum') /*GARAJ*/ && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];   // sıralama ekranındaki yüz resmi yeni boyayla yeniden çekilir
       OLAY.emit('garaj', { tur, id }); return true;
     },
     kavanoz() { kvn.oran = oran(); kvn.yildiz = v.yildiz; return kvn; },
@@ -71,7 +73,7 @@ const GARAJ = (() => {
       for (let i = 0; i < 9; i++) for (const t of OY_GARAJ_TURLER) {
         const x = katalog[t][i]; if (!x || v.sahip[t].includes(x.id)) continue;
         v.hediye--; v.sahip[t].push(x.id); v.secili[t] = x.id; secim[t] = x.id; kaydet(); susle();
-        if (t === 'renk' && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];
+        if ((t === 'renk' || t === 'sapka' || t === 'kostum') /*GARAJ*/ && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];
         const sonuc = { tur: t, id: x.id }; OLAY.emit('hediye', sonuc); return sonuc;
       }
       v.hediye = 0; kaydet(); return null;
@@ -690,9 +692,71 @@ function bitir() {
   $('kupa').className = s === 1 ? '' : s === 2 ? 'iki' : 'uc'; $('sonuc-sira').textContent = s; $('sonuc-yildiz-say').textContent = yildizSay;
 }
 
+/*UCUS*/
+// Yarış başı tanıtım uçuşu: her pistin bu oturumdaki ilk yarışında kamera yüksekten bütün pisti görür, pistin çevresinde
+// yavaşça süzülerek alçalır ve başlangıçta Feza'nın arkasındaki normal kameraya oturur. Dokununca kısa bir geçişle biter.
+// Yol pistin kendisinden hesaplanır (merkez + yarıçap); ?atla/?oto testlerinde çalışmaz, ?ucus ile her zaman çalışır.
+const UCUS_SURE = 5.2, UCUS_CIKIS = 0.85, UCUS_ACI = 1.15;
+const oyUcus = { on: false, t: 0, cik: -1, cx: 0, cz: 0, R0: 100, H0: 90, yon: 1, fov: 10 };
+const oyUcusP = new T.Vector3(), oyUcusB = new T.Vector3();
+const oyUcusEase = u => u * u * u * (u * (u * 6 - 15) + 10);   // başta ve sonda hız sıfır
+function oyUcusBasla() {
+  oyUcus.on = false; HUD.hud.classList.remove('ucus-gizli');
+  const zorla = Q.has('ucus');
+  if (!zorla && (Q.has('atla') || Q.has('oto'))) return;
+  let gor = ''; try { gor = sessionStorage.getItem('feza-yaris-ucus') || ''; } catch (_) { /* kayıt isteğe bağlı */ }
+  if (!zorla && gor.split(',').includes(PIST_TEMA)) return;   // bu pist bu oturumda zaten tanıtıldı
+  try { sessionStorage.setItem('feza-yaris-ucus', gor ? gor + ',' + PIST_TEMA : PIST_TEMA); } catch (_) { /* kayıt isteğe bağlı */ }
+  let mnx = 1e9, mxx = -1e9, mnz = 1e9, mxz = -1e9;
+  for (let i = 0; i < N; i++) { mnx = Math.min(mnx, PX[i]); mxx = Math.max(mxx, PX[i]); mnz = Math.min(mnz, PZ[i]); mxz = Math.max(mxz, PZ[i]); }
+  const R = Math.max(60, Math.hypot(mxx - mnx, mxz - mnz) * 0.5), dik = innerWidth < innerHeight;
+  oyUcus.cx = (mnx + mxx) / 2; oyUcus.cz = (mnz + mxz) / 2;
+  oyUcus.R0 = R * (dik ? 0.95 : 0.8); oyUcus.H0 = R * (dik ? 0.95 : 0.72) + 14;
+  // başlangıç çizgisinin merkezin hangi yanında kaldığına göre dönüş yönü: kamera arabaların gidiş yönünde süzülür
+  const o = pist(0), rx = o.x - oyUcus.cx, rz = o.z - oyUcus.cz;
+  oyUcus.yon = rx * o.tz - rz * o.tx >= 0 ? -1 : 1;
+  oyUcus.t = 0; oyUcus.cik = -1; oyUcus.on = true; HUD.hud.classList.add('ucus-gizli');
+}
+// t anındaki uçuş konumu (oyUcusP) ve bakış noktası (oyUcusB); son nokta = o anki normal giriş kamerası (kamH/kamB)
+function oyUcusYer(t) {
+  const U = oyUcus, e = oyUcusEase(clamp(t / UCUS_SURE, 0, 1));
+  const dx = kamH.x - U.cx, dz = kamH.z - U.cz, r1 = Math.hypot(dx, dz), a1 = Math.atan2(dz, dx);
+  const a = a1 - U.yon * UCUS_ACI * (1 - e), r = lerp(U.R0, r1, e), ev = 1 - Math.pow(1 - e, 1.3);   // ortada pistin üstünde süzülür, sonda başlangıç koridoruna iner
+  oyUcusP.set(U.cx + Math.cos(a) * r, lerp(U.H0, kamH.y, ev), U.cz + Math.sin(a) * r);
+  const eb = e * e * (3 - 2 * e);
+  oyUcusB.set(lerp(U.cx, kamB.x, eb), lerp(0, kamB.y, eb), lerp(U.cz, kamB.z, eb));
+  return 1 - e;
+}
+function oyUcusKam(gdt) {   // sahneGuncelle içinde, normal kamera hedefi hesaplandıktan sonra çağrılır; dönen değer = ek görüş açısı
+  const U = oyUcus;
+  if (durum !== 'giris' && durum !== 'sayim') { U.on = false; HUD.hud.classList.remove('ucus-gizli'); return 0; }
+  U.t += gdt;
+  if (U.cik < 0 && durum !== 'giris') U.cik = 0;   // dokunuldu: uçuş kısa bir geçişle biter
+  if (U.t > UCUS_SURE - 0.6 || U.cik >= 0) HUD.hud.classList.remove('ucus-gizli');
+  let w = oyUcusYer(U.t);
+  if (U.cik >= 0) {
+    U.cik += gdt; const e = oyUcusEase(Math.min(1, U.cik / UCUS_CIKIS));
+    kamH.lerpVectors(oyUcusP, kamH, e); kamB.lerpVectors(oyUcusB, kamB, e); w *= 1 - e;
+    if (e >= 1) U.on = false;
+  } else {
+    kamH.copy(oyUcusP); kamB.copy(oyUcusB);
+    if (U.t >= UCUS_SURE) U.on = false;
+  }
+  return w * U.fov;
+}
+OLAY.on('durum', d => { if (d === 'giris') oyUcusBasla(); });
+/*/UCUS*/
 // ───────── çizim ─────────
 const kamF = new T.Vector3(0, 0, 1), kamH = new T.Vector3(), kamB = new T.Vector3(), tmp = new T.Vector3(), oyBak = new T.Vector3(), oyO2 = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };
 let yT = 0, oyKamIlk = true, oyGeriEk = 1, oyKamY = 0, oyHopK = 0, oyGucKamK = 0, oyKanatK = 0, oyInisT = 0, oyKamYat = 0, oyBakYan = 0;
+/*TOREN*/
+// Bitiş töreni: kamera ~1,6 sn'de arabanın önüne-yanına döner, Feza'yı yakından ~2,5 sn gösterir; sonra sonuç paneli açılır (eşik OY_TOREN_SURE),
+// kamera yumuşakça panel kadrajına (Feza solda-üstte) açılır. Tören sırasında ekrana dokunmak töreni hemen bitirir.
+const OY_TOREN_SURE = 4.0;
+let oyTorenK = 0;
+OLAY.on('bitis', () => { oyTorenK = 0; });
+addEventListener('pointerdown', e => { if (durum === 'bitis' && oyBitisAsama < 2 && durumT > 0.6 && !mola && !dugmeMi(e)) durumT = Math.max(durumT, OY_TOREN_SURE); });
+/*/TOREN*/
 function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küçülür), gdt = gerçek kare süresi
   yT += dt;
   const bekliyor = durum === 'giris' || durum === 'sayim';
@@ -735,13 +799,21 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
     kamH.set(P.x + Math.cos(a) * r, dik ? 3.3 : 2.6, P.z + Math.sin(a) * r); kamB.set(P.x, 0.85, P.z); k = 3;
     oyRakipGoster(false);
   } else if (durum === 'bitis') {   // bir kez öne kayan kutlama kamerası; sonra yüzleri gösteren açık kadrajda durur
-    const u = clamp((durumT - 1.7) / 2.4, 0, 1), acil = u * u * (3 - 2 * u), r0 = dik ? 13 : 10.8, r1 = dik ? 11.2 : 8.7;
+    /*TOREN*/ // önce yakın tören kadrajı (aA), panel açılınca eski açık kadraja (oyTorenK)
+    const uA = clamp((durumT - 0.25) / 1.4, 0, 1), aA = uA * uA * (3 - 2 * uA);
+    oyTorenK += ((oyBitisAsama >= 2 ? 1 : 0) - oyTorenK) * oyUs(gdt, 1.8);
+    const tk = oyTorenK, acil = Math.max(aA, tk), r0 = dik ? 13 : 10.8, r1 = dik ? 11.2 : 8.7, rc = dik ? 8.8 : 6.0;
     // Doğrusal koridor, geniş bir yörüngeye çıkmadan sağ yandan geçer; enine uzaklık dar tutulur.
-    const ri = lerp(-r0 * 0.905, r1 * 0.62, acil), ry = lerp(-r0 * 0.13, dik ? -6.6 : -r1 * 0.785, acil), yatay = Math.hypot(ri, ry), cerceve = dik ? 0 : 1.6 * acil;
-    kamH.set(P.x + P.tx * ri + P.tz * ry, lerp(dik ? 6.8 : 5.4, dik ? 5.6 : 3.9, acil) + oyKamY * 0.55, P.z + P.tz * ri - P.tx * ry);
-    kamB.set(P.x + (P.tz * ri - P.tx * ry) / yatay * cerceve, lerp(1.45, 1.35, acil) + oyKamY * 0.65, P.z + (-P.tx * ri - P.tz * ry) / yatay * cerceve);
-    if (dik) { const c = 3.4 * acil / yatay; kamB.x += (P.tx * ri + P.tz * ry) * c; kamB.z += (P.tz * ri - P.tx * ry) * c; kamB.y = lerp(1.45, 0.25, acil) + oyKamY * 0.65; }   // dikeyde araba ekranın üst-ortasında (kupa altta)
-    fov = lerp(dik ? 78 : 62, dik ? 66 : 55, acil); k = lerp(5.5, 3.8, acil);
+    let ri = lerp(lerp(-r0 * 0.905, rc * 0.8, aA), r1 * 0.62, tk), ry = lerp(lerp(-r0 * 0.13, -rc * 0.6, aA), dik ? -6.6 : -r1 * 0.785, tk);
+    // Kamera hep yolun üstünde kalır (yanal konumu P.d - ry, kenardan ≥ 2 m içeride): yol kenarı direk/tabela/süs Feza'nın önüne girmez; eksik yan uzaklık ileriye eklenir.
+    const ryS = clamp(ry, P.d - (YARI - 2), P.d + (YARI - 2));
+    if (ryS !== ry) { ri = Math.sign(ri || 1) * Math.sqrt(ri * ri + ry * ry - ryS * ryS); ry = ryS; }
+    const yatay = Math.hypot(ri, ry), cerceve = dik ? 0 : 2.5 * tk;
+    kamH.set(P.x + P.tx * ri + P.tz * ry, lerp(lerp(dik ? 6.8 : 5.4, dik ? 4.4 : 3.4, aA), dik ? 6.4 : 4.9, tk) + oyKamY * 0.55, P.z + P.tz * ri - P.tx * ry);   // biraz yüksekten, hafif aşağı bakar
+    kamB.set(P.x + (P.tz * ri - P.tx * ry) / yatay * cerceve, lerp(lerp(1.45, 1.35, aA), 1.0, tk) + oyKamY * 0.65, P.z + (-P.tx * ri - P.tz * ry) / yatay * cerceve);
+    if (dik) { const c = 3.4 * tk / yatay; kamB.x += (P.tx * ri + P.tz * ry) * c; kamB.z += (P.tz * ri - P.tx * ry) * c; kamB.y = lerp(lerp(1.45, 1.4, aA), 0.25, tk) + oyKamY * 0.65; }   // dikeyde araba ekranın üst-ortasında (kupa altta)
+    fov = lerp(lerp(dik ? 78 : 62, dik ? 62 : 50, aA), dik ? 66 : 55, tk); k = lerp(5.5, 3.8, acil);
+    /*/TOREN*/
     // Yumuşak takibin geride kalmasını telafi et; hareket eden araba son kadrajın ortasından kaçmasın.
     const tahmin = P.v * acil * (gdt > 0 ? Math.min(1, dt / gdt) : 1);
     kamH.x += P.tx * tahmin / k; kamH.z += P.tz * tahmin / k;
@@ -764,6 +836,7 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
     k = durum === 'giris' ? 1.5 : durum === 'sayim' ? 3 : 9; fov += hizKam * 6.5 + oyHopK * 2.8 + kanatHop * 1.4;
     if (oyTurZum > 0) fov -= Math.sin((1 - oyTurZum / 0.7) * Math.PI) * 4.5;   // tur atıldı: minik zum
   }
+  if (oyUcus.on) { fov += oyUcusKam(gdt); k = 1e4; }   /*UCUS*/
   if (!oyKamIlk) { oyKamYat += (yatHedef - oyKamYat) * oyUs(gdt, 5.5); if (durum !== 'yaris' && Math.abs(oyKamYat) < 0.0002) oyKamYat = 0; }
   if (oyKamIlk) { oyKamIlk = false; camera.position.copy(kamH); oyBak.copy(kamB); }
   camera.position.lerp(kamH, oyUs(gdt, k)); oyBak.lerp(kamB, oyUs(gdt, k * 1.4)); camera.lookAt(oyBak);
@@ -789,7 +862,7 @@ function dongu(simdi) {
   if (kare > 120 && kareOrt > 21 && oran > 1) { if (++yavas > 90) { oran = Math.max(1, oran - 0.25); boyut(); yavas = 0; kare = 0; } } else yavas = Math.max(0, yavas - 1);
   let dt = ham * ZAMAN;
   durumT += dt;
-  if (durum === 'giris') { if ((durumT > 3.6 && !SES.konusuyor()) || durumT > 8) gec('sayim'); }
+  if (durum === 'giris') { if (((durumT > 3.6 && !SES.konusuyor()) || durumT > 8) && !(oyUcus.on && oyUcus.t < UCUS_SURE)) gec('sayim'); }   /*UCUS*/
   else if (durum === 'sayim') {
     HUD.isik.classList.remove('gizli');
     const n = durumT < 0.7 ? 0 : durumT < 1.5 ? 1 : durumT < 2.3 ? 2 : 3;
@@ -803,8 +876,8 @@ function dongu(simdi) {
     else {
       dt *= durumT < 1.1 ? 0.35 : Math.min(1, 0.35 + (durumT - 1.1) * 1.2);   // çizgiyi geçince kısa ağır çekim
       if (oyBitisAsama === 0 && durumT > 0.9) { oyBitisAsama = 1; SES.soyle(['bir', 'iki', 'uc'][oyBitisSira - 1]); }
-      if (oyBitisAsama === 1 && durumT > 3) { oyBitisAsama = 2; oyPortreCek(); $('sonuc').classList.remove('gizli'); OLAY.emit('sonuc'); }
-      if (oyBitisAsama === 2 && durumT > 7.5 && !SES.konusuyor()) { oyBitisAsama = 3; SES.soyle('tekrar'); }
+      if (oyBitisAsama === 1 && durumT > OY_TOREN_SURE) {   /*TOREN*/ oyBitisAsama = 2; oyPortreCek(); $('sonuc').classList.remove('gizli'); OLAY.emit('sonuc'); }
+      if (oyBitisAsama === 2 && durumT > 7.5 && !SES.konusuyor() && (typeof uiSonucAsama !== 'function' || uiSonucAsama() === 'son')) { oyBitisAsama = 3; SES.soyle('tekrar'); }   /*SONUC*/
     }
     const adim = Math.max(1, Math.ceil(dt / 0.034)), d1 = dt / adim, d0 = durum;   // hızlı zamanda da küçük adımlar
     for (let i = 0; i < adim && durum === d0; i++) yarisAdim(d1);

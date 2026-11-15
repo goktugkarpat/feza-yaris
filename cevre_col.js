@@ -4,6 +4,22 @@
    Yeni üst düzey adlar `cl` ile başlar. Hareketin tamamı gölgelendiricide (rüzgâr, zıplama, bayrak, pırıltı); kare başına matris güncellemesi yok. */
 'use strict';
 
+/*PISTB*/
+// "vay" anı (gölgelendiricide): Feza yaklaşınca seyirci başını ona çevirir (y0/z0'dan ötesi = baş), başını sallar, kuyruk sallar (z < kz), sevinçle zıplar (hop).
+// Ortak 2 numaralı hayvan hareketini (zıplama cvK.y, el sallama cvK.z) aynen içerir. Kare başına JS işi yok.
+function clOdakMod(y0, z0, kz, hop) {
+  cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3; vec2 cvD = cvP - instanceMatrix[3].xz; float cvU = length(cvD);\n'
+    + 'float cvYakin = 1.0 - smoothstep(8.0, 31.0, cvU); float cvO = 1.0 - smoothstep(7.0, 26.0, cvU);\n'
+    + 'float cvH = abs(sin(cvT * 3.4 + cvF)) * smoothstep(-0.3, 0.3, sin(cvT * 0.7 + cvF * 0.37));\n'
+    + 'vec3 cvAx = instanceMatrix[0].xyz, cvAz = instanceMatrix[2].xyz; float cvA = clamp(atan(dot(cvD, cvAx.xz) / dot(cvAx, cvAx), dot(cvD, cvAz.xz) / dot(cvAz, cvAz)), -1.25, 1.25) * cvO;\n'
+    + 'float cvW = smoothstep(' + y0.toFixed(3) + ', ' + (y0 + 0.35).toFixed(3) + ', position.y) * smoothstep(' + z0.toFixed(3) + ', ' + (z0 + 0.3).toFixed(3) + ', position.z); float cvC = cos(cvA * cvW), cvS = sin(cvA * cvW);\n'
+    + 'vec2 cvQ = transformed.xz - vec2(0.0, ' + z0.toFixed(3) + '); transformed.xz = vec2(cvQ.x * cvC + cvQ.y * cvS, -cvQ.x * cvS + cvQ.y * cvC) + vec2(0.0, ' + z0.toFixed(3) + ');\n'
+    + 'transformed.y += cvW * cvO * sin(cvT * 7.0 + cvF) * 0.06;\n'
+    + 'transformed.x += smoothstep(' + kz.toFixed(3) + ', ' + (kz - 0.3).toFixed(3) + ', position.z) * sin(cvT * 11.0 + cvF) * (0.03 + 0.18 * cvO);\n'
+    + 'transformed.y += cvK.y * (cvH * (0.10 + cvYakin * 0.25) + cvO * abs(sin(cvT * 5.5 + cvF)) * ' + hop.toFixed(3) + '); transformed.x += cvK.z * sin(cvT * 9.0 + cvF) * (0.035 + cvYakin * 0.2 + cvO * 0.14); transformed.y += cvK.z * cos(cvT * 9.0 + cvF) * (0.05 + cvO * 0.06);\n#endif');
+  return cvHAREKET.length - 1;
+}
+/*/PISTB*/
 let clKervan = null, clKervanYol = null, clKus = null;
 const clYK = (() => {   // yuvarlak köşeli, tombul kutu: köşeler yumuşak yuvarlanır, normaller yumuşak (karton gibi düz levha değil)
   const g = new T.BoxGeometry(1, 1, 1, 3, 3, 3), p = g.attributes.position, n = g.attributes.normal, r = 0.17, v = new T.Vector3(), c = new T.Vector3(), u = a => Math.abs(a) < 0.3 ? Math.sign(a) * 0.4 : a;   // ara çizgiler köşeye yakın: az üçgenle yuvarlak kenar
@@ -144,9 +160,9 @@ if (cvTema === 'col') {
   const ip = (i0, say, yan, adim) => {
     S.yer(0, 0, 0); let ox = 0, oz = 0, var_ = false, n = 0;
     for (let k = 0; k <= say; k++) {
-      const q = cvKenar(i0 + k * adim, yan, YARI + 4.5), x = q.x, z = q.z;
-      if (yakin(x, z) < YARI + 4.3 || !cvBos(x, z, 0.4)) { var_ = false; continue; }
-      s(clSil, x, 1.9, z, 0.09, 3.8, 0.09, KOYU); s(cvG.kureK, x, 3.85, z, 0.17, 0.17, 0.17, 0xffd166);
+      const q = cvKenar(i0 + k * adim, yan, YARI + 9), x = q.x, z = q.z;   /*PISTB*/ // yoldan uzak, tombul direk (ince kara çubuk değil)
+      if (yakin(x, z) < YARI + 8.6 || !cvBos(x, z, 0.4)) { var_ = false; continue; }
+      s(cvG.sil, x, 1.9, z, 0.17, 3.8, 0.17, AHSAP); s(cvG.kureK, x, 0.2, z, 0.34, 0.26, 0.34, KOYU); s(cvG.kureK, x, 3.92, z, 0.27, 0.27, 0.27, 0xffd166);
       if (var_) { const dx = x - ox, dz = z - oz, l = Math.hypot(dx, dz), ry = Math.atan2(dx, dz); s(cvG.kutu, (x + ox) / 2, 3.62, (z + oz) / 2, 0.04, 0.04, l, 0xfff0c8, 0, ry); for (let j = 1; j < 7; j++) { const u = j / 7; W.ekle(cvG.ucgen, ox + dx * u, 3.3, oz + dz * u, 0.3, 0.56, 0.035, KUMAS[n++ % 6], PI, ry + PI / 2, 0, 0, 0, 0.8); } }
       ox = x; oz = z; var_ = true;
     }
@@ -252,7 +268,7 @@ if (cvTema === 'col') {
     else if (tur === 2) { const n = 2 + ((R() * 2) | 0), c = MIRKET[(R() * 3) | 0]; for (let k = 0; k < n; k++) { const o = (k - (n - 1) / 2) * 0.72, kk = [1.25, 1.05, 0.72, 0.6][k] * (0.95 + R() * 0.1); mirket.push([x + Math.cos(ry) * o, 0, z - Math.sin(ry) * o, kk, kk, kk, ry + (R() - 0.5) * 0.5, c]); } golge.push([x, 0.012, z, 0.5 + n * 0.4, 1, 0.6, -ry]); }
     else { const k = 1.1 + R() * 0.45; kaplu.push([x, 0, z, k, k, k, ry, KAPLU[(R() * 4) | 0]]); golge.push([x, 0.012, z, 0.95 * k, 1, 0.95 * k, 0]); }
   }
-  const hayvan = (liste, kur) => { if (!liste.length) return; const B = cvYapi(); kur((g, x, y, z, sx, sy, sz, c, rx, ry, rz, kt, ke) => B.ekle(g, x, y, z, sx, sy, sz, c, rx, ry, rz, kt, 1, ke)); const g = B.geo(); g.computeBoundingBox(); cok(clTon(g, Math.max(1, g.boundingBox.max.y)), clCila(cvMalz(2), 0.09, 0.13), liste); };
+  const hayvan = (liste, kur, mod) => { if (!liste.length) return; const B = cvYapi(); kur((g, x, y, z, sx, sy, sz, c, rx, ry, rz, kt, ke) => B.ekle(g, x, y, z, sx, sy, sz, c, rx, ry, rz, kt, 1, ke)); const g = B.geo(); g.computeBoundingBox(); cok(clTon(g, Math.max(1, g.boundingBox.max.y)), clCila(cvMalz(mod || 2), 0.09, 0.13), liste); };   /*PISTB*/
   const GOZ = 0x2a2018;
   const deveKur = (e, yuk) => {
     for (const x of [-0.3, 0.3]) for (const z of [-0.55, 0.55]) { e(clSil, x, 0.6, z, 0.11, 1.2, 0.11, 0xffffff, 0, 0, 0, 1); e(cvG.ufak, x, 0.08, z + 0.03, 0.15, 0.09, 0.18, 0x9a6a3c); }
@@ -263,7 +279,9 @@ if (cvTema === 'col') {
     e(clSil, 0, 1.45, -0.98, 0.04, 0.6, 0.04, 0xffffff, -0.5, 0, 0, 1); e(cvG.ufak, 0, 1.18, -1.13, 0.08, 0.1, 0.08, 0x9a6a3c);
     if (yuk) { for (const x of [-1, 1]) { e(cvG.kutu, x * 0.62, 1.55, -0.1, 0.42, 0.55, 0.75, x > 0 ? 0x2fb7c9 : 0x8e6fe0, 0, 0, x * 0.12); e(cvG.kutu, x * 0.64, 1.56, -0.1, 0.44, 0.12, 0.77, 0xffd166, 0, 0, x * 0.12); e(cvG.kureK, x * 0.6, 1.3, 0.6, 0.2, 0.24, 0.2, 0xc9713f); } e(cvG.sil, 0, 2.45, -0.08, 0.3, 0.26, 0.3, 0xffc93c, 0, 0, PI / 2); }
   };
-  hayvan(deve, e => deveKur(e, false));
+  /*PISTB*/ // "vay" anı: Feza yaklaşınca develer başını ona çevirir, sevinçle başını sallar, kuyruk sallar ve hopluca zıplar (tamamı gölgelendiricide)
+  const clOdak = clOdakMod(1.55, 0.68, -0.85, 0.32);
+  hayvan(deve, e => deveKur(e, false), clOdak); /*/PISTB*/
   hayvan(tilki, e => {
     e(cvG.kureK, 0, 0.46, 0, 0.3, 0.44, 0.32, 0xffffff, 0, 0, 0, 1); e(cvG.kureK, 0, 0.43, 0.16, 0.2, 0.3, 0.2, 0xfff8ea); e(cvG.kure, 0, 1.02, 0.08, 0.31, 0.27, 0.29, 0xffffff, 0, 0, 0, 1);
     for (const x of [-1, 1]) { e(cvG.koni, x * 0.25, 1.5, 0.03, 0.17, 0.62, 0.08, 0xffffff, 0, 0, x * -0.32, 1, 0.12); e(cvG.koni, x * 0.25, 1.47, 0.07, 0.1, 0.44, 0.05, 0xffb9a6, 0, 0, x * -0.32, 0, 0.12); e(cvG.ufak, x * 0.125, 1.08, 0.32, 0.05, 0.06, 0.04, GOZ); e(cvG.ufak, x * 0.2, 0.96, 0.27, 0.07, 0.045, 0.03, 0xffb9a6); e(cvG.ufak, x * 0.16, 0.06, 0.2, 0.1, 0.06, 0.14, 0xfff8ea); }

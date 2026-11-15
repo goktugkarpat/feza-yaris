@@ -18,20 +18,25 @@ const daKaplumbagalar = [];
 let daBalikIM = null, daBalikObj = null;
 const daBalikVeri = [], daOkullar = [];
 
+let daVay = 0;   // "vay" anı: Feza balinanın altına yaklaşınca 0→1 (balina alçalır, yüzgeç sallar, mutlu yuvarlanır)
 function cevreEkGuncelle(dt, t) {
+  const ox = cvOyuncu.value.x, oz = cvOyuncu.value.y;
   if (daBalina) {
     const a = t * 0.105 + daBalinaFaz, rx = 88, rz = 62;
     const x = daBalinaMx + Math.cos(a) * rx;
     const z = daBalinaMz + Math.sin(a) * rz;
     const dx = -Math.sin(a) * rx, dz = Math.cos(a) * rz;
-    daBalina.position.set(x, 20.5 + Math.sin(t * 0.65) * 1.8, z);
+    const uz = Math.hypot(x - ox, z - oz);
+    daVay += ((uz < 55 ? 1 : 0) - daVay) * Math.min(1, dt * 1.6);
+    const v = daVay * daVay * (3 - 2 * daVay);
+    daBalina.position.set(x, 20.5 - v * 6.5 + Math.sin(t * 0.65) * 1.8, z);
     daBalina.rotation.y = Math.atan2(dx, dz);
     daBalina.rotation.x = -Math.cos(t * 0.65) * 0.085;
-    daBalina.rotation.z = -0.07 + Math.sin(t * 0.45) * 0.035;
-    if (daBalinaKuyruk) daBalinaKuyruk.rotation.x = Math.sin(t * 2.2) * 0.28;
-    const f = Math.sin(t * 1.6) * 0.18;
-    if (daBalinaSolYuzgec) daBalinaSolYuzgec.rotation.z = 0.24 + f;
-    if (daBalinaSagYuzgec) daBalinaSagYuzgec.rotation.z = -0.24 - f;
+    daBalina.rotation.z = -0.07 + Math.sin(t * 0.45) * 0.035 + v * Math.sin(t * 2.4) * 0.32;
+    if (daBalinaKuyruk) daBalinaKuyruk.rotation.x = Math.sin(t * (2.2 + v * 2.6)) * (0.28 + v * 0.2);
+    const f = Math.sin(t * (1.6 + v * 5.4)) * (0.18 + v * 0.42);
+    if (daBalinaSolYuzgec) daBalinaSolYuzgec.rotation.z = 0.24 + v * 0.3 + f;
+    if (daBalinaSagYuzgec) daBalinaSagYuzgec.rotation.z = -0.24 - v * 0.3 - f;
   }
   if (daYavruBalina) {
     const ab = t * 0.105 + daBalinaFaz - 0.15, rxb = 75, rzb = 53;
@@ -53,8 +58,15 @@ function cevreEkGuncelle(dt, t) {
     const ca = Math.cos(a), sa = Math.sin(a);
     k.mesh.position.set(k.cx + ca * k.rx, k.y0 + Math.sin(t * 1.4 + k.faz) * 0.45, k.cz + sa * k.rz);
     k.mesh.rotation.y = Math.atan2(-sa * k.rx * k.hiz, ca * k.rz * k.hiz);
+    // "vay": Feza yakından geçince kaplumbağa bir kez neşeyle takla atıp zıplar
+    const yk = Math.hypot(k.mesh.position.x - ox, k.mesh.position.z - oz) < 30;
+    if (yk && !k.yk) k.vt = t;
+    k.yk = yk;
+    const u = k.vt >= 0 ? (t - k.vt) / 1.3 : 2;
+    const tk = u < 1 ? u * u * (3 - 2 * u) : 0;
+    k.mesh.position.y += Math.sin(tk * Math.PI) * 2.2;
     k.mesh.rotation.x = -Math.cos(t * 1.4 + k.faz) * 0.055;
-    k.mesh.rotation.z = Math.sin(t * 1.8 + k.faz) * 0.065;
+    k.mesh.rotation.z = Math.sin(t * 1.8 + k.faz) * 0.065 + tk * Math.PI * 2;
   }
   if (daBalikIM && daBalikObj) {
     for (let i = 0; i < daBalikVeri.length; i++) {
@@ -416,7 +428,7 @@ if (cvTema === 'denizalti') {
       m.scale.setScalar(1.35 + (idx % 2) * 0.25);
       m.position.set(p.x, y0, p.z);
       scene.add(m);
-      daKaplumbagalar.push({ mesh: m, cx: p.x, cz: p.z, rx, rz, hiz, faz: idx * 1.4, y0 });
+      daKaplumbagalar.push({ mesh: m, cx: p.x, cz: p.z, rx, rz, hiz, faz: idx * 1.4, y0, vt: -1, yk: false });
     }
   }
 
@@ -493,13 +505,14 @@ if (cvTema === 'denizalti') {
   // ───────── 6) Salınan dev yosun ormanları (açılış manzarasında yola daha yakın ve gür) ─────────
   {
     const Y = cvYapi();
-    for (let k = 0; k < 3; k++) {
-      const ox = (k - 1) * 0.45, oz = (k % 2 ? 0.32 : -0.28), h = 4.8 + (k % 2) * 2.0;
-      Y.ekle(cvG.sil5, ox, h * 0.5, oz, 0.14, h, 0.14, 0xffffff, 0, 0, 0, 1);
-      for (let j = 1; j <= 4; j++) {
-        const yy = j * (h * 0.21), s = j % 2 ? 1 : -1;
-        Y.ekle(cvG.kureK, ox + s * 0.38, yy, oz, 0.44, 0.13, 0.24, 0xffffff, 0, j * 0.8, s * 0.35, 1);
+    for (let k = 0; k < 3; k++) {   /*PISTD*/ // ince çubuk yerine tombul, yuvarlak yapraklı yosun
+      const ox = (k - 1) * 0.55, oz = (k % 2 ? 0.36 : -0.3), h = 4.2 + (k % 2) * 1.6;
+      Y.ekle(cvG.kureY, ox, h * 0.5, oz, 0.3, h * 0.52, 0.3, 0xffffff, 0, 0, 0, 1);
+      for (let j = 1; j <= 3; j++) {
+        const yy = j * (h * 0.26), s = j % 2 ? 1 : -1;
+        Y.ekle(cvG.kureK, ox + s * 0.5, yy, oz, 0.62, 0.26, 0.4, 0xffffff, 0, j * 0.8, s * 0.4, 1);
       }
+      Y.ekle(cvG.kureK, ox, h + 0.1, oz, 0.36, 0.5, 0.36, 0xffffff, 0, 0, 0, 1);
     }
     const yListe = [];
     const yRenk = [0x2ec47a, 0x3ed984, 0x20a88e, 0x54e07e];
@@ -514,8 +527,8 @@ if (cvTema === 'denizalti') {
       daGolge.push([p.x, p.z, 2.0 * s, 1.7 * s, 0.22]);
     }
     // Pistin geri kalanı
-    for (let k = 0; k < 54; k++) {
-      const f = 0.25 + (k / 54) * 0.69;
+    for (let k = 0; k < 36; k++) {   /*PISTD*/ // daha az, daha dolgun
+      const f = 0.25 + (k / 36) * 0.69;
       const yan = (k % 3 === 0) ? -1 : 1;
       const p = yer(f, yan, YARI + 11.5 + (k % 5) * 4.2, 1.7);
       if (!p) continue;
@@ -741,7 +754,11 @@ if (cvTema === 'denizalti') {
       }
     }
     if (kabListe.length) {
-      cok(cvG.kureK, daParlakMalz(daKabarcikHar, 0.58, { transparent: true, opacity: 0.74 }), kabListe);
+      // Not: çıplak küre geometrisinde köşe rengi yoktu → kabarcıklar KARA nokta görünüyordu; renkli tek parça yapıyla düzeltildi
+      const KB = cvYapi(); KB.yer(0, 0, 0);
+      KB.ekle(cvG.kure, 0, 0, 0, 1, 1, 1, 0xffffff, 0, 0, 0, 1);
+      KB.ekle(cvG.ufak, -0.32, 0.36, 0.62, 0.26, 0.22, 0.12, 0xffffff);   // küçük parıltı lekesi
+      cok(KB.geo(), daParlakMalz(daKabarcikHar, 0.62, { transparent: true, opacity: 0.62, depthWrite: false }), kabListe);
     }
   }
 

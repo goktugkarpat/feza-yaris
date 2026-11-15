@@ -6,9 +6,15 @@
    Yeni üst düzey adlar `st` ile başlar. Bütün yerler yol verisinden hesaplanır. Hareket gölgelendiricide; kare başına yalnız uçan ejderhanın dönüşü. */
 'use strict';
 
-let stUcan = null;
+let stUcan = null, stPiril = null, stSevinc = 0;
 function cevreEkGuncelle(dt, t) {
   if (stUcan) stUcan.rotation.y = -t * 0.07;
+  if (stPiril) {   // Feza yakından geçerken Pırıl sevinçle zıplar, sağa sola sallanır (kare başına yalnız konum/dönüş)
+    const d = Math.hypot(P.x - stPiril.position.x, P.z - stPiril.position.z), h = d < 62 ? 1 : 0;
+    stSevinc += (h - stSevinc) * Math.min(1, dt * (h ? 3 : 1.2));
+    stPiril.position.y = stPiril.userData.y0 + stSevinc * Math.abs(Math.sin(t * 4.6)) * 2.4;
+    stPiril.rotation.y = Math.sin(t * 2.3) * 0.16 * stSevinc;
+  }
 }
 if (cvTema === 'sato') {
   scene.fog.color.set(0xf1f2dc); scene.fog.near = 320; scene.fog.far = 960;
@@ -142,10 +148,21 @@ if (cvTema === 'sato') {
     // tepeden yola inen yassı taş patika
     for (let k = 0; k < 14; k++) { const u = k / 13, z = A + 2.5 + u * (HR / SK - A - 3.5), x = Math.sin(u * 3) * 2.2, y = (tepeY(Math.hypot(x, z * 1.05) * SK, HR, HH) + 0.1) / SK; s(cvG.daire, x + (k % 2 - 0.5) * 0.6, y, z, 1.0, 0.8, 1, TAS[k % 3], -PI / 2 + Math.sin(PI * Math.min(1, z * SK / HR)) * HH * PI / 2 / HR); }
     // 2 · Pırıl: şatonun yanında, yola dönük oturur; yavaşça kanat çırpar, kuyruğunu sallar
-    { const k = 4.3, ox = 11, oz = 16.5, yy = tepeY(Math.hypot(ox, oz * 1.05) * SK, HR, HH) - 0.2, w = S.dunya(ox, oz), wx = w.x, wz = w.z;
-      S.yer(wx, wz, ry + 0.45, k); const Y0 = yy / k;
-      ejderKur((g, x, y, z, sx, sy, sz, c, rx, ry2, rz, kt, kz, ke) => S.ekle(g, x, y + Y0, z, sx, sy, sz, c, rx, ry2, rz, kt || 0, kz || 0, ke || 0), k, MOR, MORA, MORK, LIME, 1.5, 0.5);
-      golge.push([wx, yy + 0.05, wz, 2.6 * k * 0.6, 1, 2.2 * k * 0.6, 0]);
+    { // Pırıl yarıştan görünsün diye şatonun eteğinden alındı: bir virajın dışında, yol tam ona doğru giderken karşıda oturur /*PISTC*/
+      const k = 4.4; let pp = null, en = 0.5;   // yoldan ~35 m: yaklaşırken bütünüyle görünür, kadrajdan taşmaz
+      for (let i = Math.round(N * 0.14); i < N * 0.9; i += 2) for (const yan of [-1, 1]) {
+        const c = cvKenar(i, yan, 35, 0.5), x = c.x, z = c.z, cry = c.ry;
+        if (yakin(x, z) < 31 || !cvBos(x, z, 9)) continue;
+        const j = (i - Math.round(95 / DS) + N) % N, dx = x - PX[j], dz = z - PZ[j], d = Math.hypot(dx, dz), a = Math.acos(clamp((dx * TX[j] + dz * TZ[j]) / d, -1, 1));
+        if (a < en) { en = a; pp = { x, z, ry: cry }; }
+      }
+      if (pp) {
+        cvYasak.push([pp.x, pp.z, 10]); tepe.push([pp.x, -0.15, pp.z, 9, 1.4, 9, 0, 0x7fca5c]);
+        const B = cvYapi(); B.yer(0, 0, pp.ry, k);   // ayrı çizim: Feza geçerken sevinçle zıplar
+        ejderKur((g, x, y, z, sx, sy, sz, c, rx, ry2, rz, kt, kz, ke) => B.ekle(g, x, y, z, sx, sy, sz, c, rx, ry2, rz, kt || 0, kz || 0, ke || 0), k, MOR, MORA, MORK, LIME, 1.5, 0.5);
+        stPiril = new T.Mesh(B.geo(), cvMalz(stHar, { emissive: 0x0a0908 })); stPiril.position.set(pp.x, 1.2, pp.z); stPiril.userData.y0 = 1.2; stPiril.frustumCulled = false; scene.add(stPiril);
+        golge.push([pp.x, 1.3, pp.z, 2.6 * k * 0.6, 1, 2.2 * k * 0.6, 0]);
+      }
     }
     // birkaç yuvarlak ağaç tepenin eteğinde
     for (let k = 0; k < 9; k++) { const a = ry + PI * 0.55 + k * 0.5 + Rs() * 0.2, r = HR * (0.82 + Rs() * 0.25), x = sx0 + Math.sin(a) * r, z = sz0 + Math.cos(a) * r, b = 1.0 + Rs() * 0.5; if (yakin(x, z) < YARI + 11) continue; (k % 3 ? agac : servi).push([x, 0, z, b, b * (0.9 + Rs() * 0.3), b, Rs() * 6.28, [0x5cbf4e, 0x4fb04a, 0x6fcb58][k % 3]]); }

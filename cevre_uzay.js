@@ -260,7 +260,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
   };
   const direk = (x, z, renk) => {
     yer2(x, z, 0);
-    S.ekle(cvG.sil5, 0, 2.1, 0, 0.1, 4.2, 0.1, ACIK); S.ekle(cvG.sil, 0, 0.15, 0, 0.35, 0.3, 0.35, GRI); E.ekle(cvG.tac, 0, 4.4, 0, 0.42, 0.42, 0.42, renk, 0, 0, 0, 0, 0, 0.5); S.ekle(cvG.sil, 0, 4.05, 0, 0.3, 0.12, 0.3, GRI);
+    S.ekle(cvG.sil, 0, 2.1, 0, 0.17, 4.2, 0.17, ACIK);/*PISTA*/ S.ekle(cvG.sil, 0, 0.15, 0, 0.35, 0.3, 0.35, GRI); E.ekle(cvG.tac, 0, 4.4, 0, 0.42, 0.42, 0.42, renk, 0, 0, 0, 0, 0, 0.5); S.ekle(cvG.sil, 0, 4.05, 0, 0.3, 0.12, 0.3, GRI);
     hale.push([x, 0.03, z, 2.6, 1, 2.6, 0, renk]);
   };
   const kristal = (x, z, s) => {
@@ -281,14 +281,14 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     Y.ekle(cvG.tac, 0, y, 0, 3.2, 0.62, 3.2, 0xd9def2); Y.ekle(cvG.sil, 0, y - 0.05, 0, 3.3, 0.16, 3.3, 0xb58cff); Y.ekle(cvG.yarim, 0, y + 0.3, 0, 1.5, 1.35, 1.5, 0x7fe9ff); Y.ekle(cvG.sil, 0, y - 0.55, 0, 1.2, 0.3, 1.2, 0x8d89ad);
     for (let k = 0; k < 8; k++) { const a = k * 0.7854; Y.ekle(cvG.kureK, Math.sin(a) * 2.5, y - 0.2, Math.cos(a) * 2.5, 0.3, 0.3, 0.3, CANLI[k % 7]); }
   };
-  const tribun = p => {
+  const tribun = p => {   /*PISTA: tribün seyrekleşti (başlangıç sade)*/
     yer2(p.x, p.z, p.ry);
     for (let k = 0; k < 3; k++) {
       S.ekle(uzYK, 0, 0.3 * (k + 1), -k * 1.5, 13, 0.6 * (k + 1), 1.5, k % 2 ? 0xa9a5c6 : 0x8d89ad); E.ekle(uzYK, 0, 0.6 * (k + 1) - 0.1, -k * 1.5 + 0.76, 13, 0.14, 0.04, CANLI[k * 2 + 1]);
-      for (let x = -5.6; x <= 5.7; x += 1.4) { const v = S.dunya(x + (R() - 0.5) * 0.3, -k * 1.5), s = 0.74 + R() * 0.12; astro.push([v.x, 0.6 * (k + 1), v.z, s, s, s, p.ry + (R() - 0.5) * 0.5, CANLI[(R() * 7) | 0]]); }
+      for (let x = -5.25 + (k % 2) * 1.05; x <= 5.7; x += 2.1) { const v = S.dunya(x + (R() - 0.5) * 0.3, -k * 1.5), s = 0.74 + R() * 0.12; astro.push([v.x, 0.6 * (k + 1), v.z, s, s, s, p.ry + (R() - 0.5) * 0.5, CANLI[(R() * 7) | 0]]); }
     }
     S.ekle(uzYK, 0, 2.6, -3.1, 13, 5.2, 0.3, 0x5b56a8); for (let k = 0; k < 7; k++) E.ekle(cvG.okt, -5.4 + k * 1.8, 4.3, -2.9, 0.5, 0.5, 0.1, CANLI[k], 0, 0, 0, 0, 0, 1);
-    for (const x of [-6.6, 6.6]) { S.ekle(cvG.sil5, x, 3.2, -3.1, 0.12, 6.4, 0.12, BEYAZ); E.ekle(cvG.tac, x, 6.6, -3.1, 0.4, 0.4, 0.4, 0x4fd6ff); }
+    for (const x of [-6.6, 6.6]) { S.ekle(cvG.sil, x, 3.2, -3.1, 0.18, 6.4, 0.18, BEYAZ);/*PISTA*/ E.ekle(cvG.tac, x, 6.6, -3.1, 0.4, 0.4, 0.4, 0x4fd6ff); }
     iz(0, -1.5, 8, 4);
   };
   const tabela = (i, yon) => {   // viraj oku: yazısız, üç ışıklı ok
@@ -297,7 +297,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
       const k = (i + 5) % N, x = PX[k] - TZ[k] * (YARI + uz) * yan, z = PZ[k] + TX[k] * (YARI + uz) * yan;
       if (!yerVar(x, z, 1.8)) continue;
       cvYasak.push([x, z, 2.2]); yer2(x, z, Math.atan2(-TX[j], -TZ[j]));
-      for (const px of [-1.45, 1.45]) S.ekle(cvG.sil5, px, 1.0, 0, 0.1, 2.0, 0.1, ACIK);
+      for (const px of [-1.45, 1.45]) S.ekle(cvG.sil, px, 1.0, 0, 0.16, 2.0, 0.16, ACIK);/*PISTA*/
       S.ekle(uzYK, 0, 2.75, 0, 3.9, 1.7, 0.16, 0x2b2f78); S.ekle(uzYK, 0, 2.75, -0.03, 4.1, 1.9, 0.12, BEYAZ);
       for (let c = -1; c <= 1; c++) for (const u of [-1, 1]) E.ekle(cvG.kutu, c * 1.15 + yon * 0.1, 2.75 + u * 0.3, 0.1, 0.92, 0.24, 0.06, c === 0 ? 0xffe14d : 0x7fe9ff, 0, 0, -u * yon * 0.785);
       iz(0, 0, 2.2, 0.7); return;
@@ -464,7 +464,7 @@ function uzMalz(o) {   // seyirci malzemesi: ağır çekim ay zıplaması (cvK.y
     for (const x of [-0.21, 0.21]) { U.ekle(cvG.kureK, x, 1.3, 0.33, 0.17, 0.19, 0.12, 0xffffff, 0, 0, 0, 0, 1); U.ekle(cvG.kureK, x, 1.29, 0.42, 0.085, 0.1, 0.05, 0x23264a, 0, 0, 0, 0, 1); U.ekle(cvG.kutu, x * 1.1, 1.82, 0, 0.04, 0.4, 0.04, 0xdddddd, 0, 0, -x * 1.5, 1, 1); U.ekle(cvG.kureK, x * 1.5, 2.02, 0, 0.09, 0.09, 0.09, 0xffe14d, 0, 0, 0, 0, 1); }
     for (const x of [-1, 1]) { U.ekle(cvG.kutu, x * 0.06, 1.07, 0.41, 0.13, 0.045, 0.04, 0x23264a, 0, 0, x * 0.42, 0, 1); U.ekle(cvG.ufak, x * 0.33, 1.13, 0.33, 0.08, 0.05, 0.03, 0xff9ec8, 0, 0, 0, 0, 1); }   // gülen ağız, pembe yanak
     U.ekle(cvG.kureK, -0.42, 0.6, 0, 0.1, 0.26, 0.1, 0xeeeeee, 0, 0, 0.5, 1, 1); U.ekle(cvG.kureK, 0.5, 0.95, 0, 0.1, 0.3, 0.1, 0xeeeeee, 0, 0, -0.7, 1, 1, 0.7); U.ekle(cvG.kureK, 0.7, 1.2, 0, 0.11, 0.11, 0.11, 0xffffff, 0, 0, 0, 1, 1, 1);
-    cok(U.geo(), uzMalz(), uzayli);
+    cvVay(cok(U.geo(), uzMalz(), uzayli), uzayli, 'hop', { h: 2.2, sure: 1.6 });   /*PISTA*/ // ay çekiminde yüksek, ağır çekim takla
   }
 
   { // boşlukta ağır ağır süzülen iki astronot (ipli, sırt çantalı); yolun yanında ve yüksekte, yolu örtmez

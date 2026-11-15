@@ -7,8 +7,10 @@
 'use strict';
 
 let lpYildiz = null;
+const lpCos = { value: 0 };   // 0..1: Feza atlıkarıncanın yanından geçerken atlar coşkuyla zıplar, ampuller dalga gibi yanar
 function cevreEkGuncelle(dt, t) {
   if (lpYildiz) lpYildiz.position.set(camera.position.x, 0, camera.position.z);   // yıldızlar kamerayla gelir (sonsuz uzak görünür)
+  if (lpKarincaYer) { const d = Math.hypot(P.x - lpKarincaYer.x, P.z - lpKarincaYer.z), h = d < 70 ? 1 : 0; lpCos.value += (h - lpCos.value) * Math.min(1, dt * (h ? 2.5 : 1)); }
 }
 // Dönen parçaların malzemesi: cvK.y = 1 → eksen çevresinde döner; 2 → döner ve asılı kalır (dolap kabinleri) ya da direğinde iner çıkar (atlıkarınca atları).
 // cvK.x = parçanın açısı (kabin askısı / at evresi), cvK.z = kabin askısının yarıçapı. eksen 'xy' (dönme dolap) ya da 'xz' (atlıkarınca).
@@ -16,10 +18,10 @@ function lpDonKod(eksen, hiz, isik) {
   const rot = 'float lpU = cvT * ' + hiz.toFixed(3) + '; mat2 lpM = mat2(cos(lpU), sin(lpU), -sin(lpU), cos(lpU));\n';
   const v = eksen === 'xy'
     ? 'if (cvK.y > 0.5 && cvK.y < 1.5) transformed.xy = lpM * transformed.xy;\nelse if (cvK.y > 1.5) { vec2 lpA = vec2(cos(cvK.x), sin(cvK.x)) * cvK.z; transformed.xy += lpM * lpA - lpA; }'
-    : 'if (cvK.y > 1.5) transformed.y += sin(cvT * 2.0 + cvK.x) * 0.38;\nif (cvK.y > 0.5) transformed.xz = lpM * transformed.xz;';
+    : 'if (cvK.y > 1.5) transformed.y += sin(cvT * 2.0 + cvK.x) * 0.38 + lpCos * (abs(sin(cvT * 5.5 + cvK.x)) * 1.1 - 0.3);\nif (cvK.y > 0.5) transformed.xz = lpM * transformed.xz;';
   return {
     n: '#include <beginnormal_vertex>\n{ ' + rot + (eksen === 'xy' ? 'if (cvK.y > 0.5 && cvK.y < 1.5) objectNormal.xy = lpM * objectNormal.xy;' : 'if (cvK.y > 0.5) objectNormal.xz = lpM * objectNormal.xz;') + ' }',
-    b: '#include <begin_vertex>\n{ ' + rot + v + (isik ? '\nvColor *= 0.64 + 0.52 * smoothstep(-0.4, 0.8, sin(cvT * 2.6 - cvK.x * 2.0));' : '') + ' }'
+    b: '#include <begin_vertex>\n{ ' + rot + v + (isik ? '\nvColor *= 0.64 + 0.52 * smoothstep(-0.4, 0.8, sin(cvT * 2.6 - cvK.x * 2.0))' + (eksen === 'xz' ? ' + lpCos * 0.75 * smoothstep(0.55, 1.0, sin(cvT * 9.0 - cvK.x * 0.7854))' : '') + ';' : '') + ' }'
   };
 }
 function lpCila(m, par, kenar) {   // gece neon/pastel kenar parıltısı: doygun renklere canlı kenar ışıması + temiz vurgu (ek ışık / çizim yok)
@@ -50,8 +52,8 @@ function lpDonMalz(eksen, hiz, isik, o) {
   const m = isik ? new T.MeshBasicMaterial({ vertexColors: true }) : new T.MeshLambertMaterial(Object.assign({ color: 0xffffff, vertexColors: true }, o || {}));
   m.onBeforeCompile = sh => {
     const k = lpDonKod(eksen, hiz, isik);
-    sh.uniforms.cvT = cvZ;
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float cvT;\nattribute vec3 cvK;')
+    sh.uniforms.cvT = cvZ; sh.uniforms.lpCos = lpCos;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float cvT;\nuniform float lpCos;\nattribute vec3 cvK;')
       .replace('#include <beginnormal_vertex>', k.n).replace('#include <begin_vertex>', k.b);
     if (isik) sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>', 'vColor = color;');
   };
@@ -181,7 +183,7 @@ if (cvTema === 'lunapark') {
   const ampul = new T.SphereGeometry(1, 6, 4), yuv = new T.CylinderGeometry(1, 1, 1, 40);
 
   // en boş iç alan noktası (dönme dolap için)
-  const enBos = (x0, x1, z0, z1) => { let en = null, d = -1; for (let x = x0; x <= x1; x += 4) for (let z = z0; z <= z1; z += 4) { const y = yakin(x, z); if (y > d && cvBos(x, z, 20)) { d = y; en = [x, z]; } } return { x: en[0], z: en[1], d }; };
+  const enBos = (x0, x1, z0, z1, hedef) => { let en = null, d = -1e9, ey = 0; for (let x = x0; x <= x1; x += 4) for (let z = z0; z <= z1; z += 4) { const y = yakin(x, z), p = hedef ? -Math.abs(y - hedef) : y; if (p > d && cvBos(x, z, 20)) { d = p; ey = y; en = [x, z]; } } return { x: en[0], z: en[1], d: ey }; };   // hedef: yoldan istenen uzaklık /*PISTC*/
   let mx = 0, mz = 0; for (let i = 0; i < N; i++) { mx += PX[i] / N; mz += PZ[i] / N; }
 
   // ── 1) BÜYÜK DÖNME DOLAP (iç alanda, başlangıca dönük) ──
@@ -232,7 +234,16 @@ if (cvTema === 'lunapark') {
 
   // ── 2) ATLIKARINCA (sol yarıda, kendi çevresinde döner, atlar iner çıkar) ──
   {
-    const yer = enBos(mx - 130, mx - 30, mz - 50, mz + 50), RR = 7;
+    const yer = (() => {   // yolun tam ona doğru gittiği bir virajın dışında, yoldan ~30 m: Feza geçerken atların zıpladığı görünsün /*PISTC*/
+      let en = 0.45, y = null;
+      for (let i = Math.round(N * 0.15); i < N * 0.88; i += 2) for (const yan of [-1, 1]) {
+        const c = cvKenar(i, yan, 30), x = c.x, z = c.z;
+        if (yakin(x, z) < YARI + 22 || !cvBos(x, z, 20)) continue;
+        const j = (i - Math.round(85 / DS) + N) % N, dx = x - PX[j], dz = z - PZ[j], d = Math.hypot(dx, dz), a = Math.acos(clamp((dx * TX[j] + dz * TZ[j]) / d, -1, 1));
+        if (a < en) { en = a; y = { x, z, d: yakin(x, z) }; }
+      }
+      return y || enBos(mx - 130, mx - 30, mz - 50, mz + 50);
+    })(), RR = 7;
     cvYasak.push([yer.x, yer.z, 11]);
     const K = cvYapi(), KE = cvYapi(); K.yer(0, 0, 0); KE.yer(0, 0, 0);
     // sabit taban (dönmez): basamak + turkuaz etek
@@ -389,7 +400,7 @@ if (cvTema === 'lunapark') {
     const PAT = 5, NP = 72, say = PAT * NP, p = new Float32Array(say * 3), yon = new Float32Array(say * 3), ev = new Float32Array(say * 2), c = new Float32Array(say * 3);
     const RENK = [[1, 0.78, 0.2], [1, 0.35, 0.65], [0.25, 0.9, 0.9], [1, 0.55, 0.85], [0.7, 0.5, 1]];
     for (let k = 0; k < PAT; k++) {
-      const ileri = 75 + k * 14 + R() * 10, yan = 40 + ((k * 37) % 45), cx = PX[0] + TX[0] * ileri - TZ[0] * yan, cz = PZ[0] + TZ[0] * ileri + TX[0] * yan, cy = 52 + (k % 3) * 9;
+      const ileri = 120 + k * 18 + R() * 10, yan = 22 + ((k * 37) % 30), cx = PX[0] + TX[0] * ileri - TZ[0] * yan, cz = PZ[0] + TZ[0] * ileri + TX[0] * yan, cy = 27 + (k % 3) * 5;   /*PISTC*/ // alçak ve önde: yarışta kameranın görüş alanında kalır
       const q = RENK[k % 5], q2 = RENK[(k + 2) % 5];
       for (let j = 0; j < NP; j++) {
         const i = k * NP + j, u = (j + 0.5) / NP, th = Math.acos(1 - 2 * u), ph = j * 2.39996;

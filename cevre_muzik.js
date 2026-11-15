@@ -14,10 +14,25 @@ const mzSol = [];     // { m, y0, f }
 const mzSarkac = [];  // { m, f }
 const mzPlak = [];    // { m, kol, ry0, f, yon }
 
+let mzVayT = -9, mzVayX = 0, mzVayZ = 0;   // "vay" anı: Feza dev davulun yanından geçince davul GÜM diye vurulur, yakındaki notalar zıplar
 function cevreEkGuncelle(dt, t) {
   if (mzBulut) mzBulut.rotation.y = t * 0.004;
+  const ox = cvOyuncu.value.x, oz = cvOyuncu.value.y;
   for (let i = 0; i < mzDavul.length; i++) {
     const d = mzDavul[i];
+    const yk = Math.hypot(d.g.position.x - ox, d.g.position.z - oz) < 52;   // davul önümüzdeyken vurulsun
+    if (yk && !d.yk) { d.vt = t; mzVayT = t; mzVayX = d.g.position.x; mzVayZ = d.g.position.z; }
+    d.yk = yk;
+    const u = (t - d.vt) / 1.1;
+    if (u >= 0 && u < 1) {   // büyük vuruş: iki baget birden iner, davul zıplar ve esner
+      const h = Math.sin(u * Math.PI), vur = Math.max(0, Math.sin(u * Math.PI * 3));
+      d.g.position.y = d.y0 + h * 2.2;
+      d.g.scale.set(d.s * (1 + vur * 0.16), d.s * (1 - vur * 0.12 + h * 0.08), d.s * (1 + vur * 0.16));
+      d.head.scale.y = 1 + vur * 1.4;
+      d.b1.rotation.z = -0.19 + (1 - vur) * 0.7;
+      d.b2.rotation.z = -0.19 + (1 - vur) * 0.7;
+      continue;
+    }
     const s1 = Math.sin(t * 4.4 + d.f);
     const hit1 = s1 > 0 ? s1 : 0;
     const hit2 = s1 < 0 ? -s1 : 0;
@@ -31,13 +46,18 @@ function cevreEkGuncelle(dt, t) {
   }
   for (let i = 0; i < mzNota.length; i++) {
     const n = mzNota[i];
-    n.m.position.y = n.y0 + Math.sin(t * 1.9 + n.f) * 0.85;
+    let zp = 0;
+    const u = (t - mzVayT - 0.15) / 1.2;
+    if (u > 0 && u < 1 && Math.hypot(n.m.position.x - mzVayX, n.m.position.z - mzVayZ) < 90) zp = Math.abs(Math.sin(u * Math.PI * 2)) * (1 - u) * 4.5;
+    n.m.position.y = n.y0 + Math.sin(t * 1.9 + n.f) * 0.85 + zp;
     n.m.rotation.y = n.f + t * 0.55;
     n.m.rotation.z = Math.sin(t * 1.3 + n.f) * 0.14;
   }
   for (let i = 0; i < mzSol.length; i++) {
     const g = mzSol[i];
-    g.m.position.y = g.y0 + Math.sin(t * 1.4 + g.f) * 0.72;
+    const ug = (t - mzVayT - 0.25) / 1.2;
+    const zg = ug > 0 && ug < 1 && Math.hypot(g.m.position.x - mzVayX, g.m.position.z - mzVayZ) < 90 ? Math.abs(Math.sin(ug * Math.PI * 2)) * (1 - ug) * 3.5 : 0;
+    g.m.position.y = g.y0 + Math.sin(t * 1.4 + g.f) * 0.72 + zg;
     g.m.rotation.y = g.f + Math.sin(t * 0.7 + g.f) * 0.45 + t * 0.24;
   }
   for (let i = 0; i < mzSarkac.length; i++) {
@@ -272,7 +292,7 @@ if (cvTema === 'muzik') {
       g.add(b2);
 
       scene.add(g);
-      mzDavul.push({ g, head, b1, b2, y0: 0, f: k * 1.15, s: sc });
+      mzDavul.push({ g, head, b1, b2, y0: 0, f: k * 1.15, s: sc, vt: -9, yk: false });
       golge.push([p.x, p.z, 3.6 * sc, 3.6 * sc, 0.28]);
       if (!k) mzYer.davul = [p.x, p.z, p.i];
     }
@@ -417,42 +437,43 @@ if (cvTema === 'muzik') {
     const solGeo = G.geo();
     const solMat = cvMalz(0, { emissive: 0xd98c00, emissiveIntensity: 0.34 });
 
-    for (let k = 0; k < 8; k++) {
-      const f = 0.06 + k * 0.118;
+    for (let k = 0; k < 5; k++) {   /*PISTD*/ // daha az, daha büyük sol anahtarı
+      const f = 0.12 + k * 0.19;
       const p = cvKenar(cvI(f), (k % 2 ? 1 : -1) * mzDis(cvI(f)), YARI + 10.5 + (k % 3) * 3.5);
       if (yakin(p.x, p.z) < YARI + 7.5) continue;
       const m = new T.Mesh(solGeo, solMat);
       const y0 = 7.6 + (k % 3) * 1.5;
       m.position.set(p.x, y0, p.z);
-      m.scale.setScalar(1.55 + (k % 2) * 0.35);
+      m.scale.setScalar(2.1 + (k % 2) * 0.3);
       scene.add(m);
       mzSol.push({ m, y0, f: k * 1.1 });
       golge.push([p.x, p.z, 2.6, 2.6, 0.16]);
     }
 
     const N4 = cvYapi();
-    N4.ekle(cvG.kure, -0.55, -1.2, 0, 0.9, 0.68, 0.68, 0xffffff, 0, 0, 0.35);
-    N4.ekle(cvG.sil, 0.14, 0.4, 0, 0.18, 3.3, 0.18, 0xffffff);
+    N4.ekle(cvG.kureY, -0.55, -1.2, 0, 1.0, 0.76, 0.76, 0xffffff, 0, 0, 0.35);   /*PISTD*/
+    N4.ekle(cvG.sil, 0.2, 0.4, 0, 0.26, 3.3, 0.26, 0xffffff);
+    N4.ekle(cvG.kureY, 0.2, 2.05, 0, 0.27, 0.27, 0.27, 0xffffff);
     const n4Geo = N4.geo();
 
     const N8 = cvYapi();
-    N8.ekle(cvG.kure, -0.85, -1.2, 0, 0.84, 0.64, 0.64, 0xffffff, 0, 0, 0.35);
-    N8.ekle(cvG.kure, 0.78, -0.9, 0, 0.84, 0.64, 0.64, 0xffffff, 0, 0, 0.35);
-    N8.ekle(cvG.sil, -0.22, 0.4, 0, 0.17, 3.2, 0.17, 0xffffff);
-    N8.ekle(cvG.sil, 1.4, 0.7, 0, 0.17, 3.2, 0.17, 0xffffff);
-    N8.ekle(cvG.kutuY, 0.6, 2.1, 0, 1.9, 0.42, 0.22, 0xffffff, 0, 0, 0.18);
+    N8.ekle(cvG.kureY, -0.85, -1.2, 0, 0.94, 0.72, 0.72, 0xffffff, 0, 0, 0.35);   /*PISTD*/
+    N8.ekle(cvG.kureY, 0.78, -0.9, 0, 0.94, 0.72, 0.72, 0xffffff, 0, 0, 0.35);
+    N8.ekle(cvG.sil, -0.12, 0.4, 0, 0.25, 3.2, 0.25, 0xffffff);
+    N8.ekle(cvG.sil, 1.5, 0.7, 0, 0.25, 3.2, 0.25, 0xffffff);
+    N8.ekle(cvG.kutuY, 0.7, 2.1, 0, 1.95, 0.55, 0.4, 0xffffff, 0, 0, 0.18);
     const n8Geo = N8.geo();
 
     const notaMatleri = GOKKUSAGI.map(c => new T.MeshLambertMaterial({ color: c, emissive: c, emissiveIntensity: 0.26 }));
-    for (let k = 0; k < 20; k++) {
-      const f = 0.04 + k * 0.046;
-      const p = cvKenar(cvI(f), (k % 2 ? -1 : 1) * mzDis(cvI(f)), YARI + 9.2 + (k % 4) * 2.8);
-      if (yakin(p.x, p.z) < YARI + 6.8) continue;
+    for (let k = 0; k < 10; k++) {   /*PISTD*/ // 20 küçük yerine 10 büyük nota
+      const f = 0.07 + k * 0.094;
+      const p = cvKenar(cvI(f), (k % 2 ? -1 : 1) * mzDis(cvI(f)), YARI + 11 + (k % 3) * 2.5);
+      if (yakin(p.x, p.z) < YARI + 9) continue;
       const geo = k % 2 ? n8Geo : n4Geo;
       const m = new T.Mesh(geo, notaMatleri[k % notaMatleri.length]);
-      const y0 = 5.6 + (k % 3) * 1.65;
+      const y0 = 6.4 + (k % 3) * 1.4;
       m.position.set(p.x, y0, p.z);
-      m.scale.setScalar(1.45 + (k % 3) * 0.25);
+      m.scale.setScalar(2.3 + (k % 3) * 0.3);
       scene.add(m);
       mzNota.push({ m, y0, f: k * 0.85 });
     }
@@ -468,14 +489,14 @@ if (cvTema === 'muzik') {
       c.setXYZ(i, Math.min(1, c.getX(i) * f), Math.min(1, c.getY(i) * f), Math.min(1, c.getZ(i) * f));
     }
     const tepeler = [];
-    const tepeRenk = [0x665ec4, 0x826ed8, 0x52b092, 0x9b6ed2];
+    const tepeRenk = [0x7b6cf0, 0x9d7df6, 0x4fcf9c, 0xc27ae8];   /*PISTD*/
     for (let k = 0; k < 20; k++) {
       const a = k / 20 * Math.PI * 2 + 0.15;
       const r = 265 + (k % 4) * 52;
       const x = mx + Math.cos(a) * r, z = mz + Math.sin(a) * r * 0.88;
       if (yakin(x, z) < 125) continue;
-      const s = 24 + (k % 4) * 11;
-      tepeler.push([x, -1, z, s * 1.48, s * 0.68, s, k * 0.7, tepeRenk[k % tepeRenk.length]]);
+      const s = 34 + (k % 4) * 13;   /*PISTD*/
+      tepeler.push([x, -1, z, s * 1.48, s * 0.82, s, k * 0.7, tepeRenk[k % tepeRenk.length]]);
     }
     for (let k = 0; k < 6; k++) {
       const x = mx + (Rm() - 0.5) * 175, z = mz + (Rm() - 0.5) * 125, s = 12 + Rm() * 8;
@@ -516,16 +537,16 @@ if (cvTema === 'muzik') {
   // Yol kenarı renkli zil-çiçekler (InstancedMesh)
   {
     const Z = cvYapi();
-    Z.ekle(cvG.sil, 0, 0.68, 0, 0.09, 1.36, 0.09, 0x4eb578);
-    Z.ekle(cvG.koni, 0, 1.5, 0, 0.54, 0.58, 0.54, 0xffffff, Math.PI, 0, 0, 1);
-    Z.ekle(cvG.kureK, 0, 1.2, 0, 0.18, 0.18, 0.18, ALTIN);
+    Z.ekle(cvG.kureY, 0, 0.7, 0, 0.2, 0.75, 0.2, 0x4eb578);   /*PISTD*/ // tombul sap + yuvarlak çan
+    Z.ekle(cvG.yarim, 0, 1.25, 0, 0.66, 0.7, 0.66, 0xffffff, Math.PI, 0, 0, 1);
+    Z.ekle(cvG.kureY, 0, 1.0, 0, 0.26, 0.26, 0.26, ALTIN);
     const ziller = [];
-    for (let k = 0; k < 90; k++) {
-      const f = 0.04 + (k / 90) * 0.92;
+    for (let k = 0; k < 40; k++) {   /*PISTD*/
+      const f = 0.04 + (k / 40) * 0.92;
       const i = cvI(f), yan = (k % 2 ? 1 : -1) * mzDis(i);
-      const p = cvKenar(i, yan, YARI + 4.5 + (k % 3) * 2.1);
-      if (yakin(p.x, p.z) < YARI + 4.2 || !cvBos(p.x, p.z, 1.2)) continue;
-      const s = 1.05 + (k % 3) * 0.22;
+      const p = cvKenar(i, yan, YARI + 10 + (k % 3) * 2.4);
+      if (yakin(p.x, p.z) < YARI + 9 || !cvBos(p.x, p.z, 1.4)) continue;
+      const s = 1.35 + (k % 3) * 0.25;
       ziller.push([p.x, 0, p.z, s, s, s, k * 0.9, GOKKUSAGI[k % GOKKUSAGI.length]]);
     }
     if (ziller.length) cok(Z.geo(), cvMalz(0), ziller);

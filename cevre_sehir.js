@@ -5,6 +5,22 @@
    Pistin ortasındaki boş alanda oyuncak tren kendi yuvarlak rayında döner. Yeni üst düzey adlar `sh` ile başlar. Hiçbir koordinat elle verilmez: hepsi yol verisinden. */
 'use strict';
 let shDolap = null, shAtli = null, shTren = null, shHava = null, shBulut = null;
+/*PISTB*/
+// "vay" anı (gölgelendiricide): Feza yaklaşınca seyirci başını ona çevirir (y0/z0'dan ötesi = baş), başını sallar, kuyruk sallar (z < kz), sevinçle zıplar (hop).
+// Ortak 2 numaralı hayvan hareketini (zıplama cvK.y, el sallama cvK.z) aynen içerir. Kare başına JS işi yok.
+function shOdakMod(y0, z0, kz, hop) {
+  cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3; vec2 cvD = cvP - instanceMatrix[3].xz; float cvU = length(cvD);\n'
+    + 'float cvYakin = 1.0 - smoothstep(8.0, 31.0, cvU); float cvO = 1.0 - smoothstep(7.0, 26.0, cvU);\n'
+    + 'float cvH = abs(sin(cvT * 3.4 + cvF)) * smoothstep(-0.3, 0.3, sin(cvT * 0.7 + cvF * 0.37));\n'
+    + 'vec3 cvAx = instanceMatrix[0].xyz, cvAz = instanceMatrix[2].xyz; float cvA = clamp(atan(dot(cvD, cvAx.xz) / dot(cvAx, cvAx), dot(cvD, cvAz.xz) / dot(cvAz, cvAz)), -1.25, 1.25) * cvO;\n'
+    + 'float cvW = smoothstep(' + y0.toFixed(3) + ', ' + (y0 + 0.35).toFixed(3) + ', position.y) * smoothstep(' + z0.toFixed(3) + ', ' + (z0 + 0.3).toFixed(3) + ', position.z); float cvC = cos(cvA * cvW), cvS = sin(cvA * cvW);\n'
+    + 'vec2 cvQ = transformed.xz - vec2(0.0, ' + z0.toFixed(3) + '); transformed.xz = vec2(cvQ.x * cvC + cvQ.y * cvS, -cvQ.x * cvS + cvQ.y * cvC) + vec2(0.0, ' + z0.toFixed(3) + ');\n'
+    + 'transformed.y += cvW * cvO * sin(cvT * 7.0 + cvF) * 0.06;\n'
+    + 'transformed.x += smoothstep(' + kz.toFixed(3) + ', ' + (kz - 0.3).toFixed(3) + ', position.z) * sin(cvT * 11.0 + cvF) * (0.03 + 0.18 * cvO);\n'
+    + 'transformed.y += cvK.y * (cvH * (0.10 + cvYakin * 0.25) + cvO * abs(sin(cvT * 5.5 + cvF)) * ' + hop.toFixed(3) + '); transformed.x += cvK.z * sin(cvT * 9.0 + cvF) * (0.035 + cvYakin * 0.2 + cvO * 0.14); transformed.y += cvK.z * cos(cvT * 9.0 + cvF) * (0.05 + cvO * 0.06);\n#endif');
+  return cvHAREKET.length - 1;
+}
+/*/PISTB*/
 function cevreEkGuncelle(dt, t) {
   if (shDolap) shDolap.rotation.z = t * 0.22;     // dönme dolap yavaş döner
   if (shAtli) shAtli.rotation.y = t * 0.7;        // atlıkarınca
@@ -339,9 +355,9 @@ if (cvTema === 'sehir') {
       for (const g of [-14]) {
         const q = yer(i + g + N, -sag, YARI + 6.3, 1.9, 2.2); if (!q) continue;
         S.yer(q.x, q.z, q.ry, 1.25);
-        for (let j = 0; j < 4; j++) S.ekle(cvG.sil5, 0, 0.28 + j * 0.56, 0, 0.13, 0.56, 0.13, j % 2 ? BEYAZ : KIRMIZI);
-        S.ekle(cvG.kutu, 0, 2.95, -0.03, 2.9, 1.7, 0.16, SARI); S.ekle(cvG.kutu, 0, 2.95, 0.03, 2.6, 1.4, 0.16, c);
-        S.ekle(cvG.kutu, -sag * 0.35, 2.95, 0.13, 1.15, 0.36, 0.08, BEYAZ); S.ekle(cvG.ucgen, sag * 0.62, 2.95, 0.13, 0.56, 0.8, 0.06, BEYAZ, 0, 0, -sag * PI / 2);
+        for (let j = 0; j < 4; j++) S.ekle(cvG.sil, 0, 0.28 + j * 0.56, 0, 0.21, 0.56, 0.21, j % 2 ? BEYAZ : KIRMIZI); /*PISTB*/
+        S.ekle(cvG.kutu, 0, 2.95, -0.08, 2.9, 1.7, 0.4, SARI); S.ekle(cvG.kutu, 0, 2.95, 0.08, 2.6, 1.4, 0.22, c); for (const sx of [-1, 1]) S.ekle(cvG.sil, sx * 1.45, 2.95, -0.08, 0.85, 0.4, 0.85, SARI, PI / 2, 0, 0); /*PISTB*/ // kalın, yuvarlak uçlu tabela
+        S.ekle(cvG.kutu, -sag * 0.35, 2.95, 0.21, 1.15, 0.36, 0.1, BEYAZ); S.ekle(cvG.ucgen, sag * 0.62, 2.95, 0.21, 0.56, 0.8, 0.06, BEYAZ, 0, 0, -sag * PI / 2);
       }
     }
   }
@@ -400,7 +416,8 @@ if (cvTema === 'sehir') {
         golge.push([x, 0.014, z, 0.85 * s, 1, 0.7 * s, 0]);
       }
     }
-    if (al.length) cok(A.geo(), cvMalz(2), al); if (rl.length) cok(Rb.geo(), cvMalz(2), rl); if (bl.length) cok(Bb.geo(), cvMalz(2), bl); if (ol.length) cok(O.geo(), cvMalz(2), ol);
+    /*PISTB*/ // "vay" anı: Feza yaklaşınca oyuncaklar ona döner; ayı kocaman el sallar, robot ve bebek döner, ördek kuyruk sallayıp hoplar
+    if (al.length) cok(A.geo(), cvMalz(shOdakMod(1.1, -9, -9, 0.3)), al); if (rl.length) cok(Rb.geo(), cvMalz(shOdakMod(1.25, -9, -9, 0.3)), rl); if (bl.length) cok(Bb.geo(), cvMalz(shOdakMod(1.3, -9, -9, 0.3)), bl); if (ol.length) cok(O.geo(), cvMalz(shOdakMod(0.9, 0.0, -0.45, 0.4)), ol); /*/PISTB*/
   }
 
   // ───────── yol boyu dolgu: bölgeye göre evler, apartmanlar, lolipop ağaçlar, balonlar ─────────
