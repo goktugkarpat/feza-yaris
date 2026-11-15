@@ -8,13 +8,14 @@ let gkBulut = null, gkKus = null, gkHava = null;
 /*PISTB*/
 // "vay" anı (gölgelendiricide): Feza yaklaşınca seyirci başını ona çevirir (y0/z0'dan ötesi = baş), başını sallar, kuyruk sallar (z < kz), sevinçle zıplar (hop).
 // Ortak 2 numaralı hayvan hareketini (zıplama cvK.y, el sallama cvK.z) aynen içerir. Kare başına JS işi yok.
-function gkOdakMod(y0, z0, kz, hop) {
+function gkOdakMod(y0, z0, kz, hop, pz) {   /*D-PIST*/ // pz: dönüş ekseni (verilmezse z0); civciv bütün gövdesiyle kendi ekseninde döner, uzak eksende savrulup yere yatmış gibi görünmez
+  const zp = (pz === undefined ? z0 : pz).toFixed(3);   /*D-PIST*/
   cvHAREKET.push('#ifdef USE_INSTANCING\nfloat cvF = instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3; vec2 cvD = cvP - instanceMatrix[3].xz; float cvU = length(cvD);\n'
     + 'float cvYakin = 1.0 - smoothstep(8.0, 31.0, cvU); float cvO = 1.0 - smoothstep(7.0, 26.0, cvU);\n'
     + 'float cvH = abs(sin(cvT * 3.4 + cvF)) * smoothstep(-0.3, 0.3, sin(cvT * 0.7 + cvF * 0.37));\n'
     + 'vec3 cvAx = instanceMatrix[0].xyz, cvAz = instanceMatrix[2].xyz; float cvA = clamp(atan(dot(cvD, cvAx.xz) / dot(cvAx, cvAx), dot(cvD, cvAz.xz) / dot(cvAz, cvAz)), -1.25, 1.25) * cvO;\n'
     + 'float cvW = smoothstep(' + y0.toFixed(3) + ', ' + (y0 + 0.35).toFixed(3) + ', position.y) * smoothstep(' + z0.toFixed(3) + ', ' + (z0 + 0.3).toFixed(3) + ', position.z); float cvC = cos(cvA * cvW), cvS = sin(cvA * cvW);\n'
-    + 'vec2 cvQ = transformed.xz - vec2(0.0, ' + z0.toFixed(3) + '); transformed.xz = vec2(cvQ.x * cvC + cvQ.y * cvS, -cvQ.x * cvS + cvQ.y * cvC) + vec2(0.0, ' + z0.toFixed(3) + ');\n'
+    + 'vec2 cvQ = transformed.xz - vec2(0.0, ' + zp + '); transformed.xz = vec2(cvQ.x * cvC + cvQ.y * cvS, -cvQ.x * cvS + cvQ.y * cvC) + vec2(0.0, ' + zp + ');\n'   /*D-PIST*/
     + 'transformed.y += cvW * cvO * sin(cvT * 7.0 + cvF) * 0.06;\n'
     + 'transformed.x += smoothstep(' + kz.toFixed(3) + ', ' + (kz - 0.3).toFixed(3) + ', position.z) * sin(cvT * 11.0 + cvF) * (0.03 + 0.18 * cvO);\n'
     + 'transformed.y += cvK.y * (cvH * (0.10 + cvYakin * 0.25) + cvO * abs(sin(cvT * 5.5 + cvF)) * ' + hop.toFixed(3) + '); transformed.x += cvK.z * sin(cvT * 9.0 + cvF) * (0.035 + cvYakin * 0.2 + cvO * 0.14); transformed.y += cvK.z * cos(cvT * 9.0 + cvF) * (0.05 + cvO * 0.06);\n#endif');
@@ -273,7 +274,7 @@ if (cvTema === 'gokkusagi') {
     }
     /*PISTB*/ // "vay" anı: Feza yaklaşınca atlar başını ona çevirir ve kuyruk sallar, bulut yavrusu sevinçle yükseğe zıplar, civciv dönüp hoplar
     const sm = m => cvMalz(m, { emissive: 0x2c2429 });   // gölgede kalan yüzler de pastel kalsın
-    const atM = gkOdakMod(1.3, 0.4, -0.62, 0.3), ylM = gkOdakMod(9, 9, -9, 0.75), clM = gkOdakMod(0.45, -9, -9, 0.42);
+    const atM = gkOdakMod(1.3, 0.4, -0.62, 0.3), ylM = gkOdakMod(9, 9, -9, 0.75), clM = gkOdakMod(-9, -9, -9, 0.42, 0);   /*D-PIST*/ // civciv: bütün gövde kendi ortasında döner (önce 9 m geride bir eksende savruluyordu)
     if (al.length) cok(A.geo(), sm(atM), al); if (pl.length) cok(Pg.geo(), sm(atM), pl); if (yl.length) cok(Y.geo(), sm(ylM), yl); if (cl.length) cok(C.geo(), sm(clM), cl); /*/PISTB*/
   }
 
@@ -433,10 +434,11 @@ if (cvTema === 'gokkusagi') {
     for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + R() * 0.4, r = 150 + R() * 300, s = 0.8 + R() * 1.0; gb.push([Math.cos(a) * r, 100 + R() * 60, Math.sin(a) * r, s, s * 0.9, s, R() * 6, [0xf9eff4, 0xffd2e6, 0xffebd6, 0xdae6ff][i % 4]]); }
     gkBulut = cok(g, new T.MeshBasicMaterial({ vertexColors: true, fog: false }), gb); gkBulut.position.set(mx, 0, mz);
     const B = cvYapi(), kus = [];
-    B.ekle(cvG.kure, 0, 0, 0, 0.2, 0.2, 0.6, BEYAZ); B.ekle(cvG.ufak, 0, 0.08, 0.6, 0.16, 0.16, 0.18, BEYAZ); B.ekle(cvG.koni, 0, 0.06, 0.85, 0.06, 0.2, 0.06, 0xffa53d, Math.PI / 2); for (const sx of [-1, 1]) { B.ekle(cvG.kureK, sx * 0.11, 0.15, 0.68, 0.045, 0.05, 0.04, KOYU); B.ekle(cvG.kureK, sx * 0.13, 0.04, 0.66, 0.05, 0.035, 0.03, PEMBE); }
-    for (const sx of [-1, 1]) { B.ekle(cvG.kutu, sx * 0.55, 0.05, 0.05, 0.9, 0.05, 0.5, 0xfff2f8); B.ekle(cvG.kutu, sx * 1.3, 0.05, -0.05, 0.7, 0.05, 0.32, 0xffa9cf); }
-    B.ekle(cvG.kutu, 0, 0.02, -0.7, 0.3, 0.04, 0.4, 0xffa9cf);
-    for (let i = 0; i < 7; i++) { const a = (i < 7 ? 0.4 + (i % 4) * 0.13 + (i > 3 ? 0.07 : 0) : 3.5 + (i - 7) * 0.17) + R() * 0.04, r = (i < 7 ? 100 + (i > 3 ? 9 : 0) : 62) + (i % 3) * 7, s = 2.2 + R() * 0.8; kus.push([Math.cos(a) * r, 30 + (i % 4) * 4 + R() * 4, Math.sin(a) * r, s, s, s, Math.atan2(Math.sin(a), -Math.cos(a))]); }
+    /*D-PIST*/ // tombul kuş: yuvarlak gövde ve baş, yumuşak oval kanatlar (ince levha değil)
+    B.ekle(cvG.kure, 0, 0, 0, 0.36, 0.32, 0.62, BEYAZ); B.ekle(cvG.kure, 0, 0.16, 0.58, 0.27, 0.26, 0.27, BEYAZ); B.ekle(cvG.koni, 0, 0.12, 0.92, 0.08, 0.22, 0.08, 0xffa53d, Math.PI / 2); for (const sx of [-1, 1]) { B.ekle(cvG.kureK, sx * 0.14, 0.24, 0.78, 0.06, 0.07, 0.05, KOYU); B.ekle(cvG.kureK, sx * 0.19, 0.1, 0.74, 0.07, 0.05, 0.04, PEMBE); }
+    for (const sx of [-1, 1]) { B.ekle(cvG.kure, sx * 0.62, 0.08, 0.05, 0.55, 0.13, 0.36, 0xfff2f8); B.ekle(cvG.kure, sx * 1.15, 0.08, -0.02, 0.36, 0.11, 0.25, 0xffa9cf); }
+    B.ekle(cvG.kure, 0, 0.04, -0.66, 0.22, 0.09, 0.3, 0xffa9cf);
+    for (let i = 0; i < 7; i++) { const a = (i < 7 ? 0.4 + (i % 4) * 0.13 + (i > 3 ? 0.07 : 0) : 3.5 + (i - 7) * 0.17) + R() * 0.04, r = (i < 7 ? 236 + (i > 3 ? 9 : 0) : 62) + (i % 3) * 7, s = 2.8 + R() * 0.8; kus.push([Math.cos(a) * r, 24 + (i % 4) * 2 + R() * 3, Math.sin(a) * r, s, s, s, Math.atan2(Math.sin(a), -Math.cos(a))]); }   /*D-PIST*/ // pistin dışında (pist en çok ~145 m), uzakta ve alçakta süzülür: üstten geçmez, göstergelerin altında kalır
     gkKus = cok(B.geo(), cvMalz(3), kus); gkKus.position.set(mx, 0, mz);
     const H = cvYapi(), yon = a => Math.atan2(Math.sin(a), -Math.cos(a));
     {   // zeplin
@@ -445,11 +447,11 @@ if (cvTema === 'gokkusagi') {
       H.ekle(cvG.kutu, 0, y - 5.3, 1, 2, 1.5, 5, 0xfff3d6); H.ekle(cvG.kutu, 0, y - 5.2, 1, 2.05, 0.5, 4, MAVI);
       H.ekle(cvG.kutu, 0, y, -11.3, 0.3, 7.5, 3.6, 0x6c78ff); H.ekle(cvG.kutu, 0, y, -11.3, 7.5, 0.3, 3.6, 0x6c78ff);
     }
-    [[2.7, 125, 30, 0xff5c6c], [4.6, 150, 36, 0x4db8ff]].forEach(u => {   // uçak + gökkuşağı izi
+    [[2.7, 225, 30, 0xff5c6c], [4.6, 245, 33, 0x4db8ff]].forEach(u => {   // uçak + gökkuşağı izi /*D-PIST*/ pistin dışında, uzakta tur atar (göstergelerin üstünden geçmez)
       const y = u[2]; H.yer(Math.cos(u[0]) * u[1], Math.sin(u[0]) * u[1], yon(u[0]), 1.6);
       H.ekle(cvG.kure, 0, y, 0, 0.9, 0.9, 3.2, u[3]); H.ekle(cvG.kutu, 0, y + 0.2, 0.5, 8, 0.16, 1.4, SARI); H.ekle(cvG.kutu, 0, y + 0.1, -2.8, 2.8, 0.12, 0.8, SARI); H.ekle(cvG.kutu, 0, y + 0.7, -2.8, 0.14, 1.3, 0.8, u[3]);
       H.ekle(cvG.kureK, 0, y, 3.1, 0.4, 0.4, 0.4, BEYAZ); H.ekle(cvG.kutu, 0, y, 3.45, 2.6, 0.14, 0.1, KOYU); H.ekle(cvG.kureK, 0, y + 0.7, 0.5, 0.55, 0.5, 0.85, MAVI);
-      for (let k = 0; k < 7; k++) H.ekle(cvG.kutu, (k - 3) * 0.24, y, -13, 0.24, 0.06, 19, GK[k]);
+      for (let k = 0; k < 7; k++) H.ekle(cvG.kutu, (k - 3) * 0.24, y, -13, 0.26, 0.26, 19, GK[k]);   /*D-PIST*/ // iz kalın, yumuşak şerit (ince çubuk değil)
     });
     gkHava = new T.Mesh(H.geo(), cvMalz(0)); gkHava.frustumCulled = false; gkHava.position.set(mx, 0, mz); scene.add(gkHava);
   }

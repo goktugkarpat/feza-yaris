@@ -214,7 +214,7 @@ if (cvTema === 'sato') {
   { // ufukta ikinci, küçük şato: başlangıç düzlüğünün tam karşısında, yüksek bir tepede (pusun içinde; kart resminde de görünür)
     let en = null; for (const u of [240, 270, 210, 300]) for (const yn of [0, -0.25, 0.25, -0.5, 0.5]) { const x = PX[0] + (TX[0] + TZ[0] * yn) * u, z = PZ[0] + (TZ[0] - TX[0] * yn) * u; const d = yakin(x, z); if (d > 120 && !icinde(x, z) && (!en || Math.abs(yn) < Math.abs(en.yn) - 0.01)) en = { x, z, yn }; if (en && en.yn === 0) break; }
     if (en) {
-      const HR2 = 66, HH2 = 22, k = 2.3, ry = Math.atan2(PX[0] - en.x, PZ[0] - en.z), Y2 = (HH2 - 0.5) / k;
+      const HR2 = 90, HH2 = 22, k = 2.3, ry = Math.atan2(PX[0] - en.x, PZ[0] - en.z), Y2 = (tepeY(21, HR2, HH2) - 0.3 - 0.35) / k;   /*D-PIST*/ // daha yayvan tepe; şato, köşe kulelerinin durduğu yerdeki tepe yüksekliğine oturur (havada durmaz)
       tepe.push([en.x, -0.3, en.z, HR2, HH2, HR2, 0, 0x8fd27a]); cvYasak.push([en.x, en.z, HR2]);
       S.yer(en.x, en.z, ry, k);
       for (const [x1, z1, x2, z2] of [[-7, 5, 7, 5], [7, 5, 7, -5], [7, -5, -7, -5], [-7, -5, -7, 5]]) { const L = Math.hypot(x2 - x1, z2 - z1), a = Math.atan2(x2 - x1, z2 - z1); s(yuvarlak, (x1 + x2) / 2, Y2 + 2.6, (z1 + z2) / 2, 2, 6, L, TAS[1], 0, a); }

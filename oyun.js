@@ -299,12 +299,14 @@ function oyPortreCek() {
       const k = a.tur + '|' + a.tip; if (oyPortre[k] || !a.arKafa) continue;
       const ana = a.g.parent, pos = a.g.position.clone(), q = a.g.quaternion.clone(), gor = a.g.visible;
       s.add(a.g); a.g.position.set(0, 0, 0); a.g.quaternion.identity(); a.g.visible = true; a.g.updateMatrixWorld(true);
+      const dGor = a.arDireksiyon ? a.arDireksiyon.visible : false; if (a.arDireksiyon) a.arDireksiyon.visible = false;   /*D-ARAYUZ*/ // direksiyon portrede çenenin önüne girmesin
       kutu.setFromObject(a.arKafa); kutu.getCenter(m); const r = Math.max(0.2, kutu.getSize(b).length() * 0.5);
       kam.position.set(m.x + r * 0.55, m.y + r * 0.45, m.z + r * 2.75); kam.lookAt(m.x, m.y - r * 0.08, m.z); kam.near = r * 1.7; kam.updateProjectionMatrix();   // yüzün önündeki araba süsü (ör. tek boynuzlu at başı) kesilir
       renderer.render(s, kam);
       const c = document.createElement('canvas'); c.width = c.height = C;
       c.getContext('2d').drawImage(canvas, 0, canvas.height - S * pr, S * pr, S * pr, 0, 0, C, C);
       oyPortre[k] = c.toDataURL('image/png');
+      if (a.arDireksiyon) a.arDireksiyon.visible = dGor;   /*D-ARAYUZ*/
       if (ana) ana.add(a.g); else s.remove(a.g);
       a.g.position.copy(pos); a.g.quaternion.copy(q); a.g.visible = gor;
     }
@@ -791,11 +793,11 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   }
   if (durum === 'baslik') {
     // Açılış: kamera Feza'nın arabasının ön-yanında yakın durur, yavaşça salınır.
-    const a = 1.25 + Math.sin(yT * 0.3) * 0.42, r = dik ? 9.2 : 7.6, ri = r * Math.cos(a), ry = Math.min(6.4, r * Math.sin(a));
-    kamH.set(P.x + P.tx * ri - P.tz * ry, dik ? 4 : 3.1, P.z + P.tz * ri + P.tx * ry); kamB.set(P.x, dik ? -0.6 : 0.1, P.z); k = 2.5;   // açılış: araba logonun altında, yeşil düğmenin üstünde
+    const a = dik ? 1.02 + Math.sin(yT * 0.3) * 0.3 : 1.25 + Math.sin(yT * 0.3) * 0.42, r = dik ? 8.5 : 7.6, ri = r * Math.cos(a), ry = Math.min(6.4, r * Math.sin(a));   /*D-ARAYUZ*/ // dikeyde hep önden-yandan: arka demirler yüzü kapatmaz
+    kamH.set(P.x + P.tx * ri - P.tz * ry, dik ? 3.3 : 3.1, P.z + P.tz * ri + P.tx * ry); kamB.set(P.x, dik ? 1.5 : 0.1, P.z); k = 2.5;   // açılış: araba logonun altında, yeşil düğmenin üstünde /*D-ARAYUZ*/ dikeyde araba ekranın ortasında
   } else if (durum === 'garaj') {
     // Garaj: kamera arabanın çevresinde yakın ve yavaş döner; görüntü yukarı kaydırılır (aşağıda), araba ekranın üst-ortasında kalır.
-    const a = oyGarajAci0 + yT * 0.24, r = dik ? 7.6 : 6.1;
+    const a = oyGarajAci0 + yT * 0.24, r = dik ? 7.6 : 6.7;   /*D-GARAJ*/ // biraz geriden: şapka üst kenara değmez
     kamH.set(P.x + Math.cos(a) * r, dik ? 3.3 : 2.6, P.z + Math.sin(a) * r); kamB.set(P.x, 0.85, P.z); k = 3;
     oyRakipGoster(false);
   } else if (durum === 'bitis') {   // bir kez öne kayan kutlama kamerası; sonra yüzleri gösteren açık kadrajda durur
@@ -846,7 +848,7 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
   if (gk || oyGarajK > 0) {
     const once = oyGarajK; oyGarajK += (gk - oyGarajK) * oyUs(gdt, 5); if (!gk && oyGarajK < 0.004) oyGarajK = 0;
     if (oyGarajK === 0) { camera.clearViewOffset(); oyGarajW = 0; }
-    else if (Math.abs(oyGarajK - once) > 0.0005 || oyGarajW !== innerWidth || oyGarajH !== innerHeight) { oyGarajW = innerWidth; oyGarajH = innerHeight; camera.setViewOffset(oyGarajW, oyGarajH, 0, Math.round(oyGarajH * 0.2 * oyGarajK), oyGarajW, oyGarajH); }
+    else if (Math.abs(oyGarajK - once) > 0.0005 || oyGarajW !== innerWidth || oyGarajH !== innerHeight) { oyGarajW = innerWidth; oyGarajH = innerHeight; camera.setViewOffset(oyGarajW, oyGarajH, 0, Math.round(oyGarajH * 0.07 * oyGarajK) /*D-GARAJ*/, oyGarajW, oyGarajH); }
   }
   if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * oyUs(gdt, 5); camera.updateProjectionMatrix(); }
 }

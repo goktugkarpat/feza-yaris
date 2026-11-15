@@ -857,8 +857,11 @@ function uiSnGec(a) {
     const o = uiSnKvO, kap = uiSonucKv.firstElementChild;
     uiKvAyar(kap, o.once); uiSonucKv.classList.remove('gizli');
     uiSnSonra(uiKvUcur, 750);   // panel küçülüp kavanoz yerine oturunca yıldızlar uçar
-    uiSnSonra(() => { uiKvAyar(kap, o.hediye > 0 ? 1 : o.sonra); uiZipla(uiSonucKv, 1.14, 520, -3); }, 1650);
-    uiSnSonra(() => uiSnGec(uiGjBekleyen() > 0 ? 'hediye' : 'son'), 3300);
+    /*D-ARAYUZ*/ // kavanoz her düşen yıldızla biraz dolar (uçuşla aynı anda), dolu hâli ~2 sn görünür kalır; kurallar aynı, yalnız gösterim
+    const hedef = o.hediye > 0 ? 1 : o.sonra, n = uiKvUcan.length;
+    for (let i = 0; i < n; i++) uiSnSonra(() => uiKvAyar(kap, o.once + (hedef - o.once) * (i + 1) / n), 750 + i * 130 + 820);
+    uiSnSonra(() => { uiKvAyar(kap, hedef); uiZipla(uiSonucKv, 1.14, 520, -3); }, 750 + n * 130 + 900);
+    uiSnSonra(() => uiSnGec(uiGjBekleyen() > 0 ? 'hediye' : 'son'), 4500);   /*/D-ARAYUZ*/
   } else if (a === 'hediye') {
     uiKvTemizle();
     uiSnSonra(() => { uiSonucKv.classList.add('gizli'); uiHediyeGoster('sonuc'); if (uiHd.className === 'gizli') uiSnGec('son'); }, 500);   // panel gidince kutu tek başına

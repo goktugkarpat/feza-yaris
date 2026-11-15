@@ -1229,7 +1229,7 @@ OLAY.on('yildiz', y => { if (psGucTur() === 'miknatis') { const i = YILDIZ.index
 
 // ───────── olaylar ─────────
 const psKenarA = cvTema === 'kar' || cvTema === 'gokkusagi' || cvTema === 'seker' ? 0.75 : 0.5, psYanSon = psTema.isik > 0.5, psHopR = new Float32Array(12), psO = { x: 0, z: 0, tx: 0, tz: 1, k: 0 };
-let psBitisT = 0, psBitisSay = 0;
+let psBitisT = 0, psBitisSay = 0, psYildizSon = 1;   /*D-ARAYUZ*/
 let psTozYan = 1, psDurum = 'baslik', psRoketT = 0, psHopOnce = 0, psTozSay = 0, psPirilSay = 0, psCizgiHazir = false;
 OLAY.on('durum', d => { psDurum = d; if (d !== 'yaris') psRoketT = 0; });
 OLAY.on('roket', sure => { psRoketT = Math.max(psRoketT, sure || 1.3); });
@@ -1264,9 +1264,11 @@ function pistGuncelle(dt, t) {
   okDoku.offset.y = -((t * 1.65) % 1); okMat.opacity = 0.88 + Math.sin(t * 7.5) * 0.12; psOkZeminMat.color.setScalar(psYanSon ? 0.88 + Math.sin(t * 5.5) * 0.14 : 0.94 + Math.sin(t * 7.5) * 0.08);
   if (psYanSon) bantMat.emissiveIntensity = psTema.isik * (0.9 + Math.sin(t * 3.4) * 0.38);   // Ay Pisti: ışıklı bantlar hafifçe yanıp söner
   // yıldızlar: döner, süzülür; toplanınca büyüyüp yükselerek kaybolur
+  psYildizSon += ((psDurum === 'bitis' ? 0 : 1) - psYildizSon) * Math.min(1, dt * (psDurum === 'bitis' ? 4 : 8));   /*D-ARAYUZ*/ // bitiş töreninde yoldaki yıldızlar yumuşakça küçülüp kaybolur (yalnız görüntü)
+  const ysK = psYildizSon < 0.002 ? 0 : psYildizSon;   /*D-ARAYUZ*/
   for (let i = 0; i < YILDIZ.length; i++) {
     const y = YILDIZ[i], u = y.var ? 0 : clamp((0.3 - y.pat) / 0.3, 0, 1), gor = y.var || y.pat > 0;
-    const yuk = 1.55 + Math.sin(t * 2.4 + i * 0.9) * 0.24 + u * 2.4, b = gor ? 0.7 * (1 + Math.sin(t * 5.2 + i) * 0.05 + u * 0.7) * (1 - u * u) : 0;
+    const yuk = 1.55 + Math.sin(t * 2.4 + i * 0.9) * 0.24 + u * 2.4, b = gor ? 0.7 * (1 + Math.sin(t * 5.2 + i) * 0.05 + u * 0.7) * (1 - u * u) * ysK : 0;   /*D-ARAYUZ*/
     if (psMikY[i] && (y.var || y.pat <= 0)) psMikY[i] = 0;
     if (psMikY[i]) {   // mıknatıs gücü: toplanan yıldız küçülerek arabaya uçar, ardında nane-altın pırıltı bırakır
       const e = u * u * (3 - 2 * u), mx = lerp(y.x, P.x, e), my = lerp(1.55, 1.0, e) + Math.sin(u * Math.PI) * 0.9, mz = lerp(y.z, P.z, e);
@@ -1275,8 +1277,8 @@ function pistGuncelle(dt, t) {
     } else { kukla.position.set(y.x, yuk, y.z); kukla.rotation.set(Math.sin(t * 2.1 + i) * 0.12, t * 2.6 + i * 0.7 + u * 9, Math.cos(t * 1.9 + i * 1.3) * 0.08); kukla.scale.setScalar(Math.max(0.0001, b)); }
     kukla.updateMatrix(); yildizIM.setMatrixAt(i, kukla.matrix);
     // Her turdaki yeni yıldız yolu aynı nesneleri taşır; hale de yıldızla birlikte yer değiştirir.
-    kukla.position.set(y.x, 0.075 + rampaYukseklik(y.s, y.d), y.z); kukla.rotation.set(0, 0, 0); kukla.scale.setScalar(y.var ? 0.92 - (yuk - 1.55) * 0.5 : 0.0001); kukla.updateMatrix(); psGolgeIM.setMatrixAt(i, kukla.matrix);
-    psHale.pos[i * 3] = y.x; psHale.pos[i * 3 + 1] = yuk; psHale.pos[i * 3 + 2] = y.z; psHale.boy[i] = y.var ? 3.4 + Math.sin(t * 5.2 + i) * 0.35 : 0;
+    kukla.position.set(y.x, 0.075 + rampaYukseklik(y.s, y.d), y.z); kukla.rotation.set(0, 0, 0); kukla.scale.setScalar(y.var && ysK > 0 ? (0.92 - (yuk - 1.55) * 0.5) * ysK : 0.0001); kukla.updateMatrix(); psGolgeIM.setMatrixAt(i, kukla.matrix);   /*D-ARAYUZ*/
+    psHale.pos[i * 3] = y.x; psHale.pos[i * 3 + 1] = yuk; psHale.pos[i * 3 + 2] = y.z; psHale.boy[i] = y.var ? (3.4 + Math.sin(t * 5.2 + i) * 0.35) * ysK : 0;   /*D-ARAYUZ*/
   }
   yildizIM.instanceMatrix.needsUpdate = true; psGolgeIM.instanceMatrix.needsUpdate = true; psHale.geo.attributes.position.needsUpdate = true; psHale.geo.attributes.aBoy.needsUpdate = true;
   // balonlar hafifçe sallanır

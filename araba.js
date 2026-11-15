@@ -1002,9 +1002,9 @@ function arTrenGovde(y, ek, renk, renk2, alt, tkr, h) {   // buharlı tren (öne
   arKat(y, arK, komur, 0, 1.05, 1.69, 0.51, 0.51, 0.13);
   for (const bz of [0.64, 1.04, 1.44]) arKat(y, arInceHalka, pirinc, 0, 1.05, bz, 0.53, 0.53, 0.6); // pirinç kazan kuşakları
   // büyük pirinç buhar kubbesi
-  arKat(y, arK, pirinc, 0, 1.53, 0.8, 0.24, 0.2, 0.24);   /*ARABA*/ // daha basık: sıralama portresinde yüzün önüne girmez
-  arKat(y, arInceHalka, renk2, 0, 1.49, 0.8, 0.25, 0.25, 0.55, PI / 2);
-  arKat(y, arM, altin, 0, 1.73, 0.8, 0.075, 0.05, 0.075);
+  arKat(y, arK, pirinc, 0, 1.46, 0.8, 0.26, 0.13, 0.26);   /*ARABA*/ /*D-ARAYUZ*/ // daha da basık: sıralama portresinde çenenin önüne girmez
+  arKat(y, arInceHalka, renk2, 0, 1.47, 0.8, 0.27, 0.27, 0.45, PI / 2);   /*D-ARAYUZ*/
+  arKat(y, arM, altin, 0, 1.6, 0.8, 0.06, 0.04, 0.06);   /*D-ARAYUZ*/
   // çan askısı (yoke) ve sallanan pirinç çan (arabaYerlestir ile hıza ve sevince göre sallanır)
   arKat(y, arCamurluk, pirinc, 0, 1.52, 1.14, 0.17, 0.22, 0.45);
   const canGr = new T.Group(), cy = arYapi();
@@ -1731,22 +1731,32 @@ function arSusSapka(a, id) {
       arKat(y, arHalka, 0xffd23e, 0, 0, 0, 0.11, 0.1, 0.12); arKat(y, arK, 0x9fe3ff, 0, 0, 0.004, 0.105, 0.09, 0.035); arKat(y, arM, 0xffffff, 0.035, 0.03, 0.035, 0.03, 0.024, 0.012);
       y.taban = null;
     }
-  } else if (id === 'korsan') {
-    const kara = 0x2c2f45, alt = 0xffd23e;
-    arKat(y, arK, kara, 0, 0.06, 0, 0.36, 0.18, 0.34);
-    arKat(y, arSac, kara, 0, 0.0, 0.0, 0.74, 0.46, 0.17);                                   // önden yarım ay: iki ucu yana uzanan korsan şapkası
-    arKat(y, arSac, alt, 0, -0.01, 0.0, 0.79, 0.51, 0.13);                                 // altın kenar: siyahın çevresinde ince çerçeve
-    for (const x of [-1, 1]) arKat(y, arM, alt, x * 0.72, 0.02, 0.0, 0.07);
-    arKat(y, arSil, 0xffffff, 0, 0.2, 0.17, 0.12, 0.03, 0.12, PI / 2);                      // beyaz yıldızlı rozet
-    arKat(y, arYildizGeo, 0xff5a4a, 0, 0.2, 0.185, 0.075, 0.075, 0.075);
-    arKat(y, arTomb, 0xff6b8a, -0.2, 0.42, -0.08, 0.06, 0.22, 0.05, -0.4, 0, 0.5);         // pembe tüy
+  } else if (id === 'korsan') {   /*D-GARAJ*/ // üç köşeli korsan şapkası: tombul lacivert tepe + üç yanda yukarı kalkık kenar (altın şeritli), önde rozet
+    const kara = 0x262a48, kara2 = 0x323862, alt = 0xffd23e, th = 0.28;
+    arKat(y, arSac, kara, 0, -0.02, 0, 0.5, 0.4, 0.52);
+    for (let i = 0; i < 3; i++) {
+      const an = i / 3 * PI * 2, on = i === 0, d = on ? 0.42 : 0.38, h = on ? 0.23 : 0.2, l = 0.72;
+      arTaban(y, Math.sin(an) * d, 0.02, Math.cos(an) * d, 0, an, 0);
+      arKat(y, arTomb, kara2, 0, h, 0, l, h, 0.065, th);                                    // kalkık kenar, dışa yatık
+      arKat(y, arTomb, alt, 0, h + h * Math.cos(th), h * Math.sin(th), l + 0.02, 0.045, 0.085, th);   // altın şerit
+      if (on) {                                                                               // önde beyaz rozet + kırmızı kalp
+        arKat(y, arSil, 0xffffff, 0, h - 0.075 * Math.sin(th), 0.075 * Math.cos(th), 0.15, 0.03, 0.15, th + PI / 2);
+        arKat(y, arK, 0xff4d6d, -0.045, h + 0.025 - 0.095 * Math.sin(th), 0.095 * Math.cos(th), 0.06, 0.06, 0.03, th);
+        arKat(y, arK, 0xff4d6d, 0.045, h + 0.025 - 0.095 * Math.sin(th), 0.095 * Math.cos(th), 0.06, 0.06, 0.03, th);
+        arKat(y, arKoniGeo, 0xff4d6d, 0, h + 0.04 - 0.095 * Math.sin(th), 0.095 * Math.cos(th), 0.098, 0.12, 0.03, th + PI, 0, 0);
+      }
+      y.taban = null;
+      const ka = an + PI / 3; arKat(y, arM, alt, Math.sin(ka) * 0.84, 0.43, Math.cos(ka) * 0.84, 0.095);   // köşelerde altın top
+    }
+    gr.position.y = 0.3; gr.rotation.x = -0.1;   // başa oturur, az yatık (yandan da üç köşe seçilir)
+    /*/D-GARAJ*/
   } else if (id === 'kedi') {
-    const pembe = 0xff9fc6, ic = 0xffd9e6;
+    const pembe = 0xff9fc6, ic = 0xff5c9a;   /*D-GARAJ*/ // kulaklar büyük, dik; içi koyu pembe (yandan ve önden seçilsin)
     arKat(y, arSac, pembe, 0, -0.02, 0, 0.52, 0.38, 0.54);                                 // başın üstünde küçük bere (yüz açık)
     arKat(y, arHalka, 0xffffff, 0, 0.0, 0, 0.52, 0.52, 0.45, PI / 2);
     for (const x of [-1, 1]) {
-      arKat(y, arKoniGeo, pembe, x * 0.27, 0.2, 0.0, 0.15, 0.3, 0.09, 0, 0, -x * 0.4);
-      arKat(y, arKoniGeo, ic, x * 0.265, 0.22, 0.05, 0.09, 0.2, 0.05, 0, 0, -x * 0.4);
+      arKat(y, arKoniGeo, pembe, x * 0.25, 0.18, 0.0, 0.19, 0.44, 0.13, 0, 0, -x * 0.28);
+      arKat(y, arKoniGeo, ic, x * 0.255, 0.21, 0.085, 0.12, 0.31, 0.06, 0, 0, -x * 0.28);
     }
   } else {   // cicek: saçın çevresinde çiçek tacı (yeşil dal + altı çiçek)
     gr.position.set(0, 0.2, -0.06); gr.rotation.x = -0.45;
