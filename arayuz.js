@@ -707,6 +707,7 @@ function uiYeniden(el, sinif) { if (!el) return; el.classList.remove(sinif); voi
 function uiGarajBaslikAyar() {
   const hazir = uiGarajVar() && typeof oyGarajAc === 'function';
   uiEl('garaj-kose').classList.toggle('gizli', !hazir);
+  uiGjAc.classList.toggle('gizli', !hazir);   /*SECIM*/ // süsle düğmesi araba adımında
   if (!hazir) return;
   const bekleyen = uiGjBekleyen() > 0;
   uiGjAc.classList.toggle('gj-hediye', bekleyen);
@@ -773,33 +774,77 @@ function uiGjElIpucu() {
   }, 1300);
 }
 // Hediye kutusu (sonuç ekranında ve garajda aynı): zıplar → dokununca (ya da 6 sn sonra kendiliğinden) açılır → içinden süsün resmi çıkar.
-function uiHediyeKapat() { clearTimeout(uiHdZ); uiHdZ = 0; uiHd.className = 'gizli'; }
+/*SECIM*/ // Kutu tek yerde ve bir kez açılır: yarış sonunda (bekleyen eski kutu: süsleme açılınca). Açılınca süsün resmi ~1,5 sn büyük görünür,
+// sonra Feza'nın 3B arabasına doğru uçar ve takılır (GARAJ.susle + 'garaj' olayı: araba zıplar, korna/süs sesi). Yazı yok, ikinci düğme yok.
+let uiHdTakilacak = null, uiHdUcus = null;
+const uiHdPiril = document.createElement('div'); uiHdPiril.className = 'hd-piril gizli'; uiHdPiril.setAttribute('aria-hidden', 'true'); document.body.appendChild(uiHdPiril);
+function uiArabaNokta() {   // Feza'nın arabasının (başının) ekrandaki yeri; yalnız kutu açılınca bir kez hesaplanır
+  try {
+    if (typeof P === 'undefined' || !P.g || typeof camera === 'undefined') return null;
+    const v = new T.Vector3(); P.g.getWorldPosition(v); v.y += 1.4; v.project(camera);
+    if (!(v.z < 1) || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1) return null;
+    return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
+  } catch (_) { return null; }
+}
+function uiHdTak() {   // ertelenen süs 3B arabaya takılır (bir kez)
+  const r = uiHdTakilacak; uiHdTakilacak = null;
+  if (!r) return;
+  try { if (uiGarajVar() && typeof GARAJ.susle === 'function') GARAJ.susle(); OLAY.emit('garaj', { tur: r.tur, id: r.id }); } catch (_) { /* takma isteğe bağlı */ }
+}
+function uiHediyeKapat() { clearTimeout(uiHdZ); uiHdZ = 0; if (uiHdUcus) { uiHdUcus.cancel(); uiHdUcus = null; } uiHdTak(); uiHd.className = 'gizli'; uiHdPiril.classList.add('gizli'); }
+/*/SECIM*/
 function uiHediyeGoster(yer) {
   if (!(uiGjBekleyen() > 0)) return;
   clearTimeout(uiHdZ);
   uiHd.dataset.yer = yer; uiHd.className = 'hd-bekle';
   uiHdKutu.classList.remove('gizli'); uiHdSus.classList.add('gizli'); uiHdGaraj.classList.add('gizli');
   uiSoyle('hediye_var');
-  uiHdZ = setTimeout(uiHediyeAc, 6000);
+  uiHdZ = setTimeout(uiHediyeAc, 5000);
 }
 function uiHediyeAc() {
   clearTimeout(uiHdZ);
   if (uiHd.className !== 'hd-bekle') return;
   let r = null;
-  try { r = GARAJ.hediyeAc(); } catch (_) { r = null; }
+  uiHdTak();   /*SECIM*/ // önceki süs yarım kaldıysa önce o takılır
+  try { r = GARAJ.hediyeAc(true); } catch (_) { r = null; }   /*SECIM*/ // takma, süs arabaya uçunca
   if (!r || !r.tur) { uiHediyeKapat(); uiGarajBaslikAyar(); return; }
+  uiHdTakilacak = r;   /*SECIM*/
   const yer = uiHd.dataset.yer, girdi = uiGjGirdiler(r.tur).find(x => x.id === r.id);
   uiHd.className = 'hd-aciliyor';
   uiHdSus.innerHTML = '<i class="hd-isin"></i><div class="hd-kart">' + uiSusCiz(r.tur, r.id, girdi) + '</div>';
   uiHdZ = setTimeout(() => {
     uiHd.className = 'hd-acik';
-    uiHdKutu.classList.add('gizli'); uiHdSus.classList.remove('gizli'); uiHdGaraj.classList.toggle('gizli', yer !== 'sonuc' || typeof oyGarajAc !== 'function');
+    uiHdKutu.classList.add('gizli'); uiHdSus.classList.remove('gizli'); uiHdGaraj.classList.add('gizli');   /*SECIM*/ // süs zaten takılıyor: garaj düğmesi yok
     uiSoyle('hediye_acildi'); uiGarajBaslikAyar();
     if (uiSonucKv.firstElementChild) uiKvAyar(uiSonucKv.firstElementChild, uiKvOran());
     if (yer === 'garaj') uiGarajKartlar(r.tur);
-    uiHdZ = setTimeout(() => { if (uiGjBekleyen() > 0) uiHediyeGoster(yer); else if (yer === 'garaj') uiHediyeKapat(); else if (yer === 'sonuc') uiSnHediyeBitti(); }, yer === 'garaj' ? 2800 : 3600);   /*SONUC*/
+    uiHdZ = setTimeout(() => uiHdUcur(r, yer), 1600);   /*SECIM*/ // ~1,5 sn büyük ve net, sonra arabaya uçar
   }, 700);
 }
+/*SECIM*/
+function uiHdUcur(r, yer) {   // süsün resmi Feza'nın arabasına uçar, küçülür; varınca takılır, pırıltı + (iz/korna) küçük simge arabanın yanında bir an
+  const kart = uiHdSus.querySelector('.hd-kart'), n = uiArabaNokta();
+  const bitir = () => {
+    uiHdUcus = null; uiHdTak();
+    const isin = uiHdSus.querySelector('.hd-isin'); if (isin) isin.remove();
+    if (kart) kart.style.opacity = '0';
+    if (n) {
+      uiHdPiril.innerHTML = (r.tur === 'iz' || r.tur === 'korna') ? uiSusCiz(r.tur, r.id, uiGjGirdiler(r.tur).find(x => x.id === r.id)) : '';
+      uiHdPiril.style.left = Math.round(n[0]) + 'px'; uiHdPiril.style.top = Math.round(n[1]) + 'px';
+      uiHdPiril.classList.remove('gizli'); uiYeniden(uiHdPiril, 'hd-piril-oyna');
+    }
+    uiHdZ = setTimeout(() => {
+      uiHdPiril.classList.add('gizli');
+      if (uiGjBekleyen() > 0) uiHediyeGoster(yer); else if (yer === 'garaj') uiHediyeKapat(); else { uiHd.className = 'gizli'; if (yer === 'sonuc') uiSnHediyeBitti(); }
+    }, 1500);
+  };
+  if (!kart || !n || !kart.animate) { bitir(); return; }
+  const a = kart.getBoundingClientRect(), dx = n[0] - (a.left + a.width / 2), dy = n[1] - (a.top + a.height / 2);
+  uiHdUcus = kart.animate([{ transform: 'none', opacity: 1 }, { transform: 'translate(' + uiF(dx * .45) + 'px,' + uiF(dy * .45 - 60) + 'px) scale(.7)', opacity: 1, offset: .5 },
+    { transform: 'translate(' + uiF(dx) + 'px,' + uiF(dy) + 'px) scale(.22)', opacity: .9 }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
+  uiHdUcus.onfinish = bitir;
+}
+/*/SECIM*/
 // Sonuç ekranı: toplanan yıldızlar sayaçtan kavanoza uçar, kavanoz dolar; dolduysa içinden hediye kutusu çıkar.
 const uiKvUcan = [];
 for (let i = 0; i < 7; i++) {
@@ -843,11 +888,7 @@ function uiSnYeniKur() {   // son adım: hediyeden çıkan süs(ler) + garaj dü
     try { d.innerHTML = uiSusCiz(r.tur, r.id, uiGjGirdiler(r.tur).find(x => x.id === r.id)); } catch (_) { d.innerHTML = uiKutuCiz(); }
     uiSnYeni.appendChild(d);
   }
-  if (uiSnSus.length && typeof oyGarajAc === 'function') {
-    const b = document.createElement('button'); b.className = 'sn-garaj'; b.setAttribute('aria-label', 'Garaj'); b.innerHTML = uiGarajResim();
-    b.addEventListener('click', () => { if (typeof YARIS === 'undefined') return; uiHediyeKapat(); YARIS.basligaDon(); oyGarajAc(); });
-    uiSnYeni.appendChild(b);
-  }
+  /*SECIM*/ // garaj düğmesi kaldırıldı: süs arabaya zaten takıldı (küçük resmi burada hatırlatma olarak kalır)
 }
 function uiSnGec(a) {
   if (uiSnAsama === a) return;
@@ -926,6 +967,59 @@ OLAY.on('durum', d => {
   } else uiGjElDur(false);
   if (d === 'baslik') uiGarajBaslikAyar();
 });
+/*SECIM*/
+// Araba adımında renk: Feza'nın açtığı renkler damla olarak arabanın altında; dokununca araba o anda boyanır (GARAJ.sec → 'garaj' olayı: zıplama + ses).
+// Her araba kendi rengini hatırlar; şeritteki kartlar ve üstteki küçük araba simgesi de kayıtlı renkte çizilir. Yalnız olaylarda çalışır (kare başına iş yok).
+const uiSecRenk = uiEl('sec-renkler');
+function uiSusleyeGit() {   // sonuç ekranındaki hediye → garaj: araba adımına dönüp süsleme panelini açar (kapatınca araba adımı, ▶ ile yarış)
+  if (typeof oyGarajAc !== 'function' || typeof YARIS === 'undefined') return;
+  uiHediyeKapat(); YARIS.basligaDon(); oyEkranAc('araba'); oyGarajAc();
+}
+function uiArabaRenkleri(id, t) {   // [gövde, süs] rengi: arabanın kayıtlı boyası ya da kendi rengi
+  let r = null;
+  try { if (uiGarajVar() && typeof GARAJ.arabaSecili === 'function') { const k = GARAJ.arabaSecili(id, 'renk'); r = uiGjGirdiler('renk').find(x => x.id === k && x.renk !== undefined) || null; } } catch (_) { r = null; }
+  return r ? [uiRenk(r.renk, '#f2553f'), uiRenk(r.renk2, '#ffd23f')] : [uiRenk(t && t.renk, '#f2553f'), uiRenk(t && t.renk2, '#ffd23f')];
+}
+function uiArabaKartRenk() {   // şeritteki her araba kendi kayıtlı renginde
+  if (typeof ARABA_TIPLERI === 'undefined') return;
+  uiArabaSec.querySelectorAll('.araba-kart').forEach(b => {
+    const t = ARABA_TIPLERI.find(x => x && x.id === b.dataset.araba), c = uiArabaRenkleri(b.dataset.araba, t), k = c.join();
+    if (b.dataset.rk === k || !b.firstElementChild) return;
+    b.dataset.rk = k; b.firstElementChild.outerHTML = uiArabaCiz(String(b.dataset.araba), c[0], c[1]);
+  });
+  try { const id = oyAraba(), t = ARABA_TIPLERI.find(x => x && x.id === id); uiSec.style.setProperty('--ar', uiArabaRenkleri(id, t)[0]); } catch (_) { /* süs */ }
+}
+function uiSecRenkIsaretle() {
+  if (!uiGarajVar()) return;
+  const s = GARAJ.secili('renk');
+  uiSecRenk.querySelectorAll('.sec-renk').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === s ? 'true' : 'false'));
+}
+function uiSecRenkKur() {
+  const hazir = uiGarajVar() && typeof GARAJ.secili === 'function';
+  uiSecRenk.classList.toggle('gizli', !hazir);
+  if (!hazir) return;
+  let a = ''; try { a = oyAraba(); } catch (_) { /* yedek */ }
+  const gir = uiGjGirdiler('renk').filter(x => GARAJ.sahip('renk', x.id)), k = gir.map(x => x.id).join() + '|' + a;
+  if (uiSecRenk.dataset.k !== k) {   // yalnız açık renkler ya da araba (kendi rengi simgesi) değişince yeniden çizilir
+    uiSecRenk.dataset.k = k; uiSecRenk.textContent = ''; uiSecRenk.style.setProperty('--rn', gir.length);
+    gir.forEach((x, i) => {
+      const b = document.createElement('button'); b.className = 'sec-renk'; b.dataset.id = x.id; b.style.setProperty('--i', i);
+      b.setAttribute('aria-label', 'Renk ' + x.id); b.innerHTML = uiSusCiz('renk', x.id, x) + UI_ONAY;
+      b.addEventListener('click', () => {
+        let oldu = false; try { oldu = GARAJ.sec('renk', x.id) !== false; } catch (_) { oldu = false; }
+        if (!oldu) return;
+        uiSecRenkIsaretle(); uiYeniden(b, 'gj-piril'); uiZipla(b.firstElementChild, 1.25, 420, -6);
+      });
+      uiSecRenk.appendChild(b);
+    });
+  }
+  uiSecRenkIsaretle();
+}
+OLAY.on('ekran', ad => { if (ad === 'araba') { uiSecRenkKur(); uiArabaKartRenk(); uiGarajBaslikAyar(); } });
+OLAY.on('araba', () => { uiSecRenkKur(); uiArabaKartRenk(); });
+OLAY.on('garaj', o => { if (o && o.tur === 'renk') { uiSecRenkIsaretle(); uiArabaKartRenk(); } });
+OLAY.on('hediye', () => { uiSecRenkKur(); uiArabaKartRenk(); });
+/*/SECIM*/
 // kurulum: resimler bir kez yerleştirilir; düğmeler bağlanır
 (function uiGarajKur() {
   uiGjAc.querySelector('.gj-resim').innerHTML = uiGarajResim(); uiGjAc.querySelector('.gj-kutucuk').innerHTML = uiKutuCiz();
@@ -939,10 +1033,7 @@ OLAY.on('durum', d => {
   uiGjAc.addEventListener('click', () => { if (typeof oyGarajAc === 'function') oyGarajAc(); });
   uiEl('garaj-kapat').addEventListener('click', () => { uiHediyeKapat(); if (typeof oyGarajKapat === 'function') oyGarajKapat(); });
   uiHdKutu.addEventListener('click', uiHediyeAc);
-  uiHdGaraj.addEventListener('click', () => {
-    if (typeof oyGarajAc !== 'function' || typeof YARIS === 'undefined') return;
-    uiHediyeKapat(); YARIS.basligaDon(); oyGarajAc();
-  });
+  uiHdGaraj.addEventListener('click', uiSusleyeGit);   /*SECIM*/
   // oyun.js bu dosyadan sonra yüklenir: düğmenin görünürlüğü bütün betikler hazır olunca belirlenir
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uiGarajBaslikAyar); else uiGarajBaslikAyar();
 })();

@@ -862,3 +862,36 @@ body.ui-mola #ui-guc .ui-guc-halka{animation-play-state:paused}
 #garaj-turler{gap:clamp(8px,1.4vw,20px)}
 @media (orientation:portrait){#garaj{--gt:clamp(64px,10.8vw,98px)}#garaj-turler{gap:clamp(6px,1.4vw,14px)}}
 /*/GARAJ*/
+/*SECIM*/ /* araba adımı: döner tablanın altında renk damlaları, ▶'nin yanında/altında süsle (garaj) düğmesi. 1180×820 … 768×1024 üst üste binmeden. */
+#secim[data-adim=araba]{grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"ust ust" "sayfa ileri" "renk susle" "serit serit";--rb:clamp(72px,10vh,84px);--sb:clamp(96px,12.6vh,110px)}
+#secim[data-adim=araba] #sec-sahne{margin-bottom:8px}
+#sec-renkler{grid-area:renk;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;min-width:0;animation:sec-gel .34s cubic-bezier(.2,.8,.3,1)}
+#sec-renkler.gizli{display:none}
+.sec-renk{position:relative;flex:none;width:var(--rb);height:var(--rb);padding:0;margin:0;border-radius:50%;box-sizing:border-box;background:linear-gradient(#fff,#eaf2fb);border:4px solid var(--lac);
+  box-shadow:0 4px 0 rgba(15,35,70,.3),inset 0 -4px 0 rgba(23,51,92,.07);display:grid;place-items:center;cursor:pointer;
+  transition:transform .16s cubic-bezier(.3,1.5,.5,1),box-shadow .16s;animation:ui-pop-gel .3s cubic-bezier(.3,1.5,.5,1) calc(var(--i,0)*.03s) backwards}
+.sec-renk>svg{display:block;width:80%;height:80%;pointer-events:none}
+.sec-renk:active{transform:scale(.93)}
+.sec-renk[aria-pressed=true]{background:linear-gradient(#fffbe0,#ffe58a);box-shadow:0 0 0 4px #ff9d1e,0 5px 0 4px rgba(23,51,92,.22),0 0 16px 3px rgba(255,196,46,.55);transform:translateY(-4px) scale(1.06);z-index:1}
+.sec-renk[aria-pressed=true] .gj-onay{display:block;width:30px;height:30px;right:-8px;bottom:-8px}
+.sec-renk::after{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95) 0 20%,rgba(255,226,122,.85) 21% 40%,rgba(255,226,122,0) 62%);opacity:0;transform:scale(.3);pointer-events:none}
+.sec-renk.gj-piril::after{animation:gj-piril .55s ease-out}
+#secim #garaj-ac{grid-area:susle;justify-self:center;align-self:center;width:var(--sb);height:var(--sb);padding:8px;border-radius:30px;animation:ui-pop-gel .4s cubic-bezier(.3,1.5,.5,1) .15s backwards}
+#secim #garaj-ac.gizli{display:none}
+#secim #garaj-ac.gj-hediye::after{border-radius:38px}
+@media (orientation:portrait){
+  #secim[data-adim=araba]{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto auto;
+    grid-template-areas:"ust ust ust" "sayfa sayfa sayfa" "renk renk renk" "serit serit serit" ". ileri susle";--rb:72px;--sb:clamp(100px,12vw,116px)}
+  #sec-renkler{gap:6px}
+  #secim #garaj-ac{justify-self:start;margin-left:clamp(18px,4vw,36px)}
+}
+@media (max-height:560px) and (orientation:landscape){#secim[data-adim=araba]{--rb:52px;--sb:70px}#secim #garaj-ac{border-radius:20px;padding:5px}.sec-renk{border-width:3px}}
+@media (prefers-reduced-motion:reduce){#sec-renkler,.sec-renk,#secim #garaj-ac{animation:none!important}}
+/* hediye: süs arabaya konunca o noktada pırıltı (iz/korna ise süsün küçük resmi bir an arabanın yanında) */
+.hd-piril{position:fixed;z-index:8;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;display:grid;place-items:center;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.95) 0 14%,rgba(255,226,122,.85) 15% 34%,rgba(255,226,122,0) 62%);border-radius:50%;opacity:0}
+.hd-piril.gizli{display:none}
+.hd-piril svg{display:block;width:64%;height:64%;filter:drop-shadow(0 3px 0 rgba(15,35,70,.35))}
+.hd-piril.hd-piril-oyna{animation:hd-piril 1.4s ease-out forwards}
+@keyframes hd-piril{0%{opacity:0;transform:scale(.3)}18%{opacity:1;transform:scale(1.25)}70%{opacity:1;transform:scale(1) translateY(-10px)}100%{opacity:0;transform:scale(.9) translateY(-24px)}}
+/*/SECIM*/

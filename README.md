@@ -32,13 +32,14 @@ Seçim ekranında araba bir platformun üstünde döner; Feza içinde oturur.
 
 ## Garaj ve yıldız kavanozu
 
-Başlık ekranındaki **garaj** düğmesi Feza'nın arabasını süslediği yere açılır. Yedi çeşit süs vardır: araba boyası, teker, bayrak,
+Araba seçim ekranında dönen arabanın altında Feza'nın açtığı **renk damlaları** durur: birine dokununca araba hemen boyanır.
+Aynı ekrandaki **süsle** düğmesi diğer süsleri açar. Her araba kendi rengini ve süslerini hatırlar; şapka Feza'nındır, her arabada aynı kalır. Yedi çeşit süs vardır: araba boyası, teker, bayrak,
 arabanın arkasında bıraktığı iz (gökkuşağı, yıldız, baloncuk, kalp), korna sesi (ördek, tren, zil, fil …), Feza'nın **şapkası**
 (taç, büyücü şapkası, kask, korsan şapkası, kedi kulaklı bere, çiçek tacı) ve arabanın **kostümü** (ayıcık kulakları, kocaman gözler
 ve gülüş, tek boynuz, çiçek çelengi, melek kanatları). Toplam 43 süs.
 
 Her yarışta toplanan yıldızlar bitişte **yıldız kavanozuna** uçar. Kavanoz dolunca içinden bir **hediye kutusu** çıkar; kutuya dokununca
-yeni bir süs açılır ve hemen arabaya takılır. Bütün süsler açıldıktan sonra kavanoz dolu kalır, yeni kutu çıkmaz.
+çıkan süsün resmi büyükçe görünür, sonra Feza'nın gözü önünde arabaya ya da başına takılır. Bütün süsler açıldıktan sonra kavanoz dolu kalır, yeni kutu çıkmaz.
 
 ## Sürpriz balonlar
 

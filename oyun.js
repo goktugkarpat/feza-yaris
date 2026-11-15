@@ -10,6 +10,9 @@ const SURUCU = [
 ];
 // ───────── garaj: süs kataloğu, sahiplik, seçim, yıldız kavanozu, hediye kutuları (kayıt: localStorage['feza-yaris-garaj-v1']; kapalıysa bellekte) ─────────
 const OY_GARAJ_ANAHTAR = 'feza-yaris-garaj-v1', OY_GARAJ_TURLER = ['renk', 'teker', 'bayrak', 'iz', 'korna', 'sapka', 'kostum'], OY_KAVANOZ = 30;   /*GARAJ*/ // şapka + kostüm sonradan eklendi: eski kayıtta yoklar → kilitli gelir, kavanoz yeniden hediye verir
+/*SECIM*/ // Her araba kendi görünüşünü hatırlar (kayıtta `arabalar: {<araba>: {renk, teker, bayrak, iz, korna, kostum}}`); şapka Feza'nın kendisinde (genel, `secili.sapka`).
+// Hiç süslenmemiş araba: renk = kendi rengi ('varsayilan'), diğerleri = eski genel seçim (`secili`). İlk dokunuşta o arabanın bütün görünüşü kendi kaydına alınır.
+const OY_GARAJ_ARABA_TURLER = ['renk', 'teker', 'bayrak', 'iz', 'korna', 'kostum']; /*/SECIM*/
 const GARAJ = (() => {
   const katalog = {
     renk: [{ id: 'varsayilan' }, { id: 'mavi', renk: 0x3f8fe8, renk2: 0xcfe6ff }, { id: 'kirmizi', renk: 0xf2483a, renk2: 0xffd6cf }, { id: 'yesil', renk: 0x49c25a, renk2: 0xd6f5c8 },
@@ -22,9 +25,25 @@ const GARAJ = (() => {
     /*GARAJ*/ sapka: [{ id: 'yok' }, { id: 'tac' }, { id: 'kedi' }, { id: 'buyucu' }, { id: 'cicek' }, { id: 'kask' }, { id: 'korsan' }],
     kostum: [{ id: 'yok' }, { id: 'kulak' }, { id: 'gozler' }, { id: 'boynuz' }, { id: 'celenk' }, { id: 'kanat' }] /*/GARAJ*/
   };
-  const ilk = () => ({ sahip: { renk: ['varsayilan', 'mavi'], teker: ['klasik'], bayrak: ['yok'], iz: ['yok'], korna: ['dat'], sapka: ['yok'], kostum: ['yok'] }, secili: { renk: 'varsayilan', teker: 'klasik', bayrak: 'yok', iz: 'yok', korna: 'dat', sapka: 'yok', kostum: 'yok' }, yildiz: 0, hediye: 0, anlatildi: false });   /*GARAJ*/
+  const ilk = () => ({ sahip: { renk: ['varsayilan', 'mavi'], teker: ['klasik'], bayrak: ['yok'], iz: ['yok'], korna: ['dat'], sapka: ['yok'], kostum: ['yok'] }, secili: { renk: 'varsayilan', teker: 'klasik', bayrak: 'yok', iz: 'yok', korna: 'dat', sapka: 'yok', kostum: 'yok' }, yildiz: 0, hediye: 0, anlatildi: false, arabalar: {} });   /*GARAJ*/ /*SECIM*/ // arabalar: araba başına süsler
   const varMi = (tur, id) => !!katalog[tur] && katalog[tur].some(x => x.id === id);
   let v = ilk();
+  /*SECIM*/
+  const arabaVarMi = a => (typeof ARABA_TIPLERI !== 'undefined' && Array.isArray(ARABA_TIPLERI) ? ARABA_TIPLERI.some(x => x && x.id === a) : /^[a-z0-9_]{1,24}$/.test(a));
+  const aid = () => { try { return typeof oyArabaId === 'string' ? oyArabaId : ''; } catch (e) { return ''; } };   // oyArabaId aşağıda tanımlı; o hazır olmadan çağrılırsa genel seçim
+  const deger = (a, t) => {   // a arabası için t türünün süsü
+    if (t === 'sapka' || !a) return v.secili[t];
+    const o = v.arabalar[a]; if (o && o[t] && v.sahip[t].includes(o[t])) return o[t];
+    return t === 'renk' ? 'varsayilan' : v.secili[t];
+  };
+  const ayarla = (t, id) => {   // seçili arabaya (şapka: Feza'ya) takar
+    const a = aid();
+    if (t === 'sapka' || !a) { v.secili[t] = id; return; }
+    const o = v.arabalar[a] || (v.arabalar[a] = {});
+    for (const x of OY_GARAJ_ARABA_TURLER) if (!o[x]) o[x] = deger(a, x);
+    o[t] = id;
+  };
+  /*/SECIM*/
   const kaydet = () => { try { localStorage.setItem(OY_GARAJ_ANAHTAR, JSON.stringify(v)); } catch (e) { /* kayıt kapalı: bellekte sürer */ } };
   const mod = Q.get('garaj');
   if (mod === 'sifir') kaydet();
@@ -36,24 +55,31 @@ const GARAJ = (() => {
           if (k.sahip && Array.isArray(k.sahip[t])) for (const id of k.sahip[t]) if (varMi(t, id) && !v.sahip[t].includes(id)) v.sahip[t].push(id);
           if (k.secili && v.sahip[t].includes(k.secili[t])) v.secili[t] = k.secili[t];
         }
+        /*SECIM*/ if (k.arabalar && typeof k.arabalar === 'object') for (const a of Object.keys(k.arabalar)) {   // yalnız bilinen arabalar ve sahip olunan süsler
+          const s = k.arabalar[a]; if (!s || typeof s !== 'object' || !arabaVarMi(a)) continue;
+          const o = {}; for (const t of OY_GARAJ_ARABA_TURLER) if (v.sahip[t].includes(s[t])) o[t] = s[t];
+          v.arabalar[a] = o;
+        } /*/SECIM*/
         if (k.yildiz > 0) v.yildiz = Math.min(OY_KAVANOZ, Math.floor(k.yildiz)); if (k.hediye > 0) v.hediye = Math.min(24, Math.floor(k.hediye)); v.anlatildi = !!k.anlatildi;
       }
     } catch (e) { /* kayıt yok/kapalı */ }
     if (mod === 'hepsi') for (const t of OY_GARAJ_TURLER) for (const x of katalog[t]) if (!v.sahip[t].includes(x.id)) v.sahip[t].push(x.id);   // yalnız deneme; kaydedilmez (bir süs seçilene kadar)
   }
   const secim = Object.assign({}, v.secili);   // hep aynı nesne (çağıran değiştirmesin)
+  const doldur = () => { const a = aid(); for (const t of OY_GARAJ_TURLER) secim[t] = deger(a, t); return secim; };   /*SECIM*/
   const kilitli = () => { let n = 0; for (const t of OY_GARAJ_TURLER) n += katalog[t].length - v.sahip[t].length; return n; };
   const oran = () => (v.hediye > 0 && v.yildiz === 0 ? 1 : v.yildiz / OY_KAVANOZ);   // dolan kavanoz, kutu açılana kadar dolu görünür
   const kvn = { oran: 0, yildiz: 0, kapasite: OY_KAVANOZ }, olayK = { once: 0, sonra: 0, hediye: 0, eklenen: 0 };
-  const susle = () => { if (typeof arabaSusle === 'function') { try { arabaSusle(P, secim); } catch (e) { console.error(e); } } };
+  const susle = () => { doldur(); /*SECIM*/ if (typeof arabaSusle === 'function') { try { arabaSusle(P, secim); } catch (e) { console.error(e); } } };
   return {
     katalog, turler: OY_GARAJ_TURLER,
     sahip(tur, id) { return !!v.sahip[tur] && v.sahip[tur].includes(id); },
-    secili(tur) { return v.secili[tur]; },
-    secim() { for (const t of OY_GARAJ_TURLER) secim[t] = v.secili[t]; return secim; },
+    secili(tur) { return deger(aid(), tur); },   /*SECIM*/ // seçili arabanın süsü (şapka genel)
+    secim() { return doldur(); },
+    arabaSecili(a, tur) { return deger(a, tur); },   /*SECIM*/ // başka bir arabanın kayıtlı süsü (kart resimleri için)
     sec(tur, id) {
       if (!this.sahip(tur, id)) return false;
-      v.secili[tur] = id; secim[tur] = id; kaydet(); susle();
+      ayarla(tur, id); kaydet(); susle();   /*SECIM*/
       if ((tur === 'renk' || tur === 'sapka' || tur === 'kostum') /*GARAJ*/ && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];   // sıralama ekranındaki yüz resmi yeni boyayla yeniden çekilir
       OLAY.emit('garaj', { tur, id }); return true;
     },
@@ -68,11 +94,12 @@ const GARAJ = (() => {
       OLAY.emit('kavanoz', olayK); return olayK;
     },
     hediyeBekleyen() { return v.hediye; },
-    hediyeAc() {   // bekleyen kutu varsa kilitli süslerden birini açar (kategoriler sırayla: teker, bayrak, iz, korna, boya …) ve seçili yapar
+    hediyeAc(ertele) {   // bekleyen kutu varsa kilitli süslerden birini açar (kategoriler sırayla: teker, bayrak, iz, korna, boya …) ve seçili yapar
+      /*SECIM*/ // ertele: kayıt hemen yapılır ama 3B arabaya takma (susle) arayüzün gösteriminden sonra (süs uçup arabaya konunca) yapılır
       if (v.hediye <= 0) return null;
       for (let i = 0; i < 9; i++) for (const t of OY_GARAJ_TURLER) {
         const x = katalog[t][i]; if (!x || v.sahip[t].includes(x.id)) continue;
-        v.hediye--; v.sahip[t].push(x.id); v.secili[t] = x.id; secim[t] = x.id; kaydet(); susle();
+        v.hediye--; v.sahip[t].push(x.id); ayarla(t, x.id); kaydet(); if (!ertele) susle();   /*SECIM*/ // yeni süs hemen seçili arabaya (şapka Feza'ya) takılır
         if ((t === 'renk' || t === 'sapka' || t === 'kostum') /*GARAJ*/ && typeof oyPortre !== 'undefined') delete oyPortre[P.tur + '|' + P.tip];
         const sonuc = { tur: t, id: x.id }; OLAY.emit('hediye', sonuc); return sonuc;
       }
