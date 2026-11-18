@@ -6,6 +6,8 @@ simgelerle ve anlatıcının sesiyle anlatılır.
 
 **Oyna:** https://goktugkarpat.github.io/feza-yaris/
 
+![Pist seçimi](ekran/pistler.jpg)
+
 ## Pistler
 
 1. **Orman Yolu** — Yuvarlak ağaçlar, ahşap köprü, dere. Yarışın ortasında hafif bir yağmur yağar; sonra güneş açar ve gökkuşağı çıkar.
@@ -20,26 +22,29 @@ simgelerle ve anlatıcının sesiyle anlatılır.
 10. **Şato ve Ejderha Vadisi** — Yeşil tepelerde kuleli bir şato, bayraklar ve sevimli ejderhalar.
 11. **Gece Lunaparkı** — Yıldızlı bir gecede ışıl ışıl dönme dolap ve renkli lunapark ışıkları.
 12. **Korsan Adası** — Turkuaz deniz, palmiyeli ada, hazine sandıkları ve korsan gemileri.
-13. **Mercan Sualtı** — Deniz tabanında mercan sarayı, başımızın üstünde süzülen gülen balina ve yavrusu, balık sürüleri ve kaplumbağalar.
+13. **Mercan Sualtı** — Mercan sarayı, başımızın üstünde süzülen gülen balina ve yavrusu, balık sürüleri ve kaplumbağalar.
 14. **Neşeli Çiftlik** — Kırmızı ahır, dönen yel değirmeni, buğday tarlaları, gölette ördekler; inekler, koyunlar ve tavuklar.
 15. **Müzik Diyarı** — Dev piyano sahnesi, gökkuşağı ksilofon kemerleri, titreşen davullar ve havada süzülen notalar.
 
-## Arabalar
+| | |
+|---|---|
+| ![Orman Yolu](ekran/orman.jpg) | ![Karlı Dağlar](ekran/kar.jpg) |
+| ![Ay Yolu](ekran/ay.jpg) | ![Mercan Sualtı](ekran/sualti.jpg) |
+
+## Arabalar ve garaj
 
 On beş araba seçilebilir: kart, yarış arabası, cip, roket, dondurma arabası, tek boynuzlu at, itfaiye, ejderha, uçak, korsan gemisi,
-polis arabası, kedi araba, tren, traktör ve uçan daire.
-Seçim ekranında araba bir platformun üstünde döner; Feza içinde oturur.
+polis arabası, kedi araba, tren, traktör ve uçan daire. Seçim ekranında araba bir platformun üstünde döner; Feza içinde oturur.
 
-## Garaj ve yıldız kavanozu
+![Araba seçimi](ekran/araba.jpg)
 
-Araba seçim ekranında dönen arabanın altında Feza'nın açtığı **renk damlaları** durur: birine dokununca araba hemen boyanır.
-Aynı ekrandaki **süsle** düğmesi diğer süsleri açar. Her araba kendi rengini ve süslerini hatırlar; şapka Feza'nındır, her arabada aynı kalır. Yedi çeşit süs vardır: araba boyası, teker, bayrak,
-arabanın arkasında bıraktığı iz (gökkuşağı, yıldız, baloncuk, kalp), korna sesi (ördek, tren, zil, fil …), Feza'nın **şapkası**
-(taç, büyücü şapkası, kask, korsan şapkası, kedi kulaklı bere, çiçek tacı) ve arabanın **kostümü** (ayıcık kulakları, kocaman gözler
-ve gülüş, tek boynuz, çiçek çelengi, melek kanatları). Toplam 43 süs.
+Dönen arabanın altında Feza'nın açtığı **renk damlaları** durur: birine dokununca araba hemen boyanır. **Süsle** düğmesi diğer süsleri açar.
+Yedi çeşit süs vardır (toplam 43): boya, teker, bayrak, arabanın bıraktığı iz (gökkuşağı, yıldız, baloncuk, kalp), korna sesi (ördek, tren, zil, fil …),
+Feza'nın **şapkası** (taç, büyücü şapkası, kask, korsan şapkası, kedi kulaklı bere, çiçek tacı) ve arabanın **kostümü** (ayıcık kulakları,
+kocaman gözler ve gülüş, tek boynuz, çiçek çelengi, melek kanatları). Her araba kendi rengini ve süslerini hatırlar; şapka her arabada aynı kalır.
 
-Her yarışta toplanan yıldızlar bitişte **yıldız kavanozuna** uçar. Kavanoz dolunca içinden bir **hediye kutusu** çıkar; kutuya dokununca
-çıkan süsün resmi büyükçe görünür, sonra Feza'nın gözü önünde arabaya ya da başına takılır. Bütün süsler açıldıktan sonra kavanoz dolu kalır, yeni kutu çıkmaz.
+Her yarışta toplanan yıldızlar bitişte **yıldız kavanozuna** uçar. Kavanoz dolunca bir **hediye kutusu** çıkar; kutuya dokununca yeni süs
+büyükçe görünür, sonra arabaya ya da Feza'nın başına takılır. Bütün süsler açılınca kavanoz dolu kalır.
 
 ## Sürpriz balonlar
 
@@ -68,13 +73,11 @@ Gücün ne kadar kaldığı ekranın üstünde küçülen renkli bir halkayla g�
 5. Yıldızları topla: her üç yıldızda kısa bir roket ödülü gelir. Kaçan yıldız seriyi bozmaz.
 6. Yoldaki rampalardan zıpla, sürpriz balonların içinden geç.
 
-Her pistin ilk yarışında kamera önce pistin üstünden kısa bir tanıtım uçuşu yapar (dokununca hemen biter). Yolda Feza yaklaşınca
-pistin sakinleri tepki verir: dinozor yavruları başını çevirir, balina yüzgeç sallar, ördekler havalanır, Pırıl sevinçle zıplar.
+Her pistin ilk yarışında kamera önce pistin üstünden kısa bir tanıtım uçuşu yapar (dokununca biter). Feza yaklaşınca pistin sakinleri
+tepki verir: dinozor yavruları başını çevirir, balina yüzgeç sallar, ördekler havalanır, Pırıl sevinçle zıplar.
 
-Ekranda sıra (kupa), tur (bayraklar), yıldız sayısı ve küçük bir harita görünür. Bitiş çizgisinde kamera Feza'ya döner: Feza kollarını
-kaldırıp sevinir, birinciyse altın kupayı kaldırır. Ardından sırayla sıralama, yıldız kavanozu ve (kavanoz dolduysa) hediye kutusu gelir;
-ev simgesi yarış yeri seçimine döndürür. Her pist için en iyi yıldız sayısı ve en iyi derece (kartta altın, gümüş ya da bronz kupa) hatırlanır.
-
+Ekranda sıra (kupa), tur (bayraklar), yıldız sayısı ve küçük bir harita görünür. Bitişte Feza kollarını kaldırıp sevinir, birinciyse altın kupayı
+kaldırır; ardından sıralama, yıldız kavanozu ve (doluysa) hediye kutusu gelir. Her pist için en iyi yıldız sayısı ve derece (kartta kupa) hatırlanır.
 Klavyede ok tuşları ya da A/D ile de sürülebilir.
 
 ## Ebeveyn için notlar
@@ -83,8 +86,10 @@ Klavyede ok tuşları ya da A/D ile de sürülebilir.
 - Ekranda okumayı gerektiren yazı yoktur. Anlatıcı (doğal Türkçe kadın sesi) kısa cümlelerle eşlik eder.
 - Bütün pistler ve arabalar baştan açıktır; kilitli olan yalnız garajdaki süslerdir ve onlar da yarıştıkça açılır.
 - Oyun yalnız yıldız rekorlarını, garajdaki süsleri ve son seçilen pist ile arabayı tarayıcıda saklar; kişisel veri toplamaz.
-- Hedef: M1 iPad'de saniyede 60 kare. Adresin sonuna `?fps` eklenirse sağ altta küçük bir kare hızı göstergesi çıkar (yeşil iyi, sarı orta, kırmızı yavaş).
+- Hedef: M1 iPad'de saniyede 60 kare. Adresin sonuna `?fps` eklenirse sağ altta küçük bir kare hızı göstergesi çıkar.
 
 ## Yapım
 
-Göktuğ Karpat ve Claude.
+Bu oyun, Feza'nın babası **Göktuğ Karpat** (@goktugkarpat) ile yapay zekâ yardımcıları **Claude Code** (Anthropic), **Codex** (OpenAI) ve **Antigravity** (Google) birlikte çalışarak yapılmıştır.
+Fikirler ve kararlar ailenindir; kod, 3B modeller, pistler ve seslendirme düzenlemeleri bu yardımcılarla birlikte yazılmıştır.
+Oyun yalnızca Feza için, kâr amacı olmadan yapılmış bir aile projesidir.
