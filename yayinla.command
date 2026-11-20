@@ -1,7 +1,7 @@
 #!/bin/bash
 # Çift tıkla: bu klasördeki tüm değişiklikleri GitHub'a gönderir (ilk seferde depoyu oluşturup GitHub Pages'ı açar).
 cd "$(dirname "$0")" || exit 1
-DEPO='goktugkarpat/feza-yaris'
+DEPO='goktugkarpat/feza-yarisiyor'
 if [ ! -d .git ]; then
   git init -q -b main
 fi
@@ -20,7 +20,7 @@ fi
 if ! git remote get-url origin >/dev/null 2>&1; then
   if gh repo create "$DEPO" --public --source . --remote origin --push; then
     gh api -X POST "repos/$DEPO/pages" -f 'source[branch]=main' -f 'source[path]=/' >/dev/null 2>&1
-    echo "Tamam! Oyun GitHub'a yüklendi: https://goktugkarpat.github.io/feza-yaris/"
+    echo "Tamam! Oyun GitHub'a yüklendi: https://goktugkarpat.github.io/feza-yarisiyor/"
     echo "(İlk yayın birkaç dakika sürebilir.)"
   else
     echo "Gönderilemedi. İnternet bağlantısını ve 'gh auth login' girişini kontrol edin."

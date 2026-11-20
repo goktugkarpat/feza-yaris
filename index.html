@@ -2,12 +2,12 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<title>Feza'nın Yarışı</title>
+<title>Feza Yarışıyor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Feza'nın Yarışı">
+<meta name="apple-mobile-web-app-title" content="Feza Yarışıyor">
 <meta name="theme-color" content="#7cc8f2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -36,6 +36,11 @@
   <symbol id="ui-oyna" viewBox="2 0 24 24"><path d="M8.5 5v14l11.5-7z" fill="currentColor" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></symbol>
 </svg>
 
+<div id="ilk-yukleme">
+  <div id="ilk-yukleme-simge" role="status" aria-label="Yarış hazırlanıyor"><svg viewBox="0 0 32 32" aria-hidden="true"><use href="#ui-bayrak"/></svg></div>
+  <button id="ilk-yukleme-tekrar" type="button" hidden>Tekrar dene</button>
+</div>
+
 <div id="hud" class="gizli">
   <div id="sol-ust">
     <div id="turlar" class="ui-kart"><span class="bayrak"><svg viewBox="0 0 32 32"><use href="#ui-bayrak"/></svg></span><span class="bayrak"><svg viewBox="0 0 32 32"><use href="#ui-bayrak"/></svg></span><span class="bayrak"><svg viewBox="0 0 32 32"><use href="#ui-bayrak"/></svg></span></div>
@@ -58,10 +63,10 @@
 <div id="ui-git" class="gizli" aria-hidden="true"><i class="sol"><svg viewBox="0 0 64 64"><rect x="6" y="4" width="6" height="58" rx="3" fill="#8a5a2b" stroke="#17335c" stroke-width="2.5"/><path d="M12 7q12-5 24 0t24 0v28q-12 5-24 0t-24 0z" fill="#fff" stroke="#17335c" stroke-width="3" stroke-linejoin="round"/><path d="M12 7q6-2.5 12-1.6V14q-6-.9-12 1.6zM36 7v8.1q6 1.4 12 .9V7.5Q42 8.4 36 7zM24 14v8q6 .9 12-1v-8q-6 1.9-12 1zM48 16v8q6-.6 12-3v-8q-6 2.4-12 3zM12 23.6q6-2.5 12-1.6v8q-6-.9-12 1.6zM36 23v8q6 1.4 12 .9v-8q-6 .5-12-.9z" fill="#17335c"/></svg></i><i class="sag"><svg viewBox="0 0 64 64"><rect x="6" y="4" width="6" height="58" rx="3" fill="#8a5a2b" stroke="#17335c" stroke-width="2.5"/><path d="M12 7q12-5 24 0t24 0v28q-12 5-24 0t-24 0z" fill="#fff" stroke="#17335c" stroke-width="3" stroke-linejoin="round"/><path d="M12 7q6-2.5 12-1.6V14q-6-.9-12 1.6zM36 7v8.1q6 1.4 12 .9V7.5Q42 8.4 36 7zM24 14v8q6 .9 12-1v-8q-6 1.9-12 1zM48 16v8q6-.6 12-3v-8q-6 2.4-12 3zM12 23.6q6-2.5 12-1.6v8q-6-.9-12 1.6zM36 23v8q6 1.4 12 .9v-8q-6 .5-12-.9z" fill="#17335c"/></svg></i></div>
 <div id="ui-gecis" class="gizli" aria-hidden="true"></div>
 
-<div id="baslik" class="perde">
-  <h1 aria-label="Feza'nın Yarışı"><span class="ui-ust">Feza'nın</span><span class="ui-alt">Yarışı</span></h1>
+<div id="baslik" class="perde" inert>
+  <h1 aria-label="Feza Yarışıyor"><span class="ui-ust">Feza</span> <span class="ui-alt">Yarışıyor</span></h1>
   <div class="ui-serit"></div>
-  <button id="oyna" class="buyuk" aria-label="Oyna"><svg viewBox="0 0 24 24"><use href="#ui-oyna"/></svg></button>
+  <button id="oyna" class="buyuk" disabled aria-label="Oyna"><svg viewBox="0 0 24 24"><use href="#ui-oyna"/></svg></button>
   <div id="garaj-kose" class="gizli"><!--SECIM: garaj düğmesi araba adımına taşındı (süsle); başlıkta yalnız kavanoz--><div id="garaj-kavanoz" class="kv-kap" aria-hidden="true"></div></div>
 </div>
 
@@ -159,6 +164,19 @@ if (/[?&]kucuk(&|=|$)/.test(location.search)) document.documentElement.classList
 (function () { try { if (/[?&]pist=/.test(location.search)) return; var p = localStorage.getItem('feza-yaris-pist'); if (!p || !/^[a-z]{2,12}$/.test(p)) return;
   var u = new URL(location.href); u.searchParams.set('pist', p); history.replaceState(null, '', u.href); } catch (e) { /* kayıt ya da adres değişimi yoksa orman açılır */ } })();
 </script>
+<script>
+(() => {
+  const yukleme = document.getElementById('ilk-yukleme');
+  const tekrar = document.getElementById('ilk-yukleme-tekrar');
+  tekrar.addEventListener('click', () => location.reload());
+  window.addEventListener('error', e => {
+    if (yukleme.hidden || (e.target !== window && e.target?.tagName !== 'SCRIPT')) return;
+    document.getElementById('ilk-yukleme-simge').setAttribute('aria-label', 'Yarış yüklenemedi');
+    tekrar.hidden = false;
+  }, true);
+})();
+</script>
+
 <script src="vendor/three.js"></script>
 <script src="ses.js"></script>
 <script src="cekirdek.js"></script>

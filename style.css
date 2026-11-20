@@ -7,6 +7,15 @@ button{border:0;padding:0;margin:0;cursor:pointer;font:inherit;touch-action:mani
 svg{display:block;width:100%;height:100%;fill:currentColor;overflow:visible}
 svg.ui-depo{position:absolute;width:0;height:0}
 
+/* Başlangıç katmanı ilk 3B kare hazır olana kadar sahneyi örter. */
+#ilk-yukleme{position:fixed;inset:0;z-index:70;display:grid;place-content:center;justify-items:center;gap:18px;background:linear-gradient(#87d4fa,#d9f3ff 68%,#c8ed9d);color:var(--lac);text-align:center}
+#ilk-yukleme[hidden],#ilk-yukleme [hidden]{display:none}
+#ilk-yukleme-simge{width:84px;height:84px;display:grid;place-items:center;background:#fff;border:4px solid var(--lac);border-radius:24px;box-shadow:0 6px 0 #17335c44;animation:ilk-yukleme-salla 1s ease-in-out infinite alternate}
+#ilk-yukleme-simge svg{width:54px;height:54px;--b1:#fff;--b2:#17335c;--b3:#17335c}
+#ilk-yukleme-tekrar{padding:12px 20px;border-radius:22px;background:#fff;color:var(--lac);font-weight:800}
+@keyframes ilk-yukleme-salla{to{transform:translateY(-8px) rotate(8deg)}}
+@media (prefers-reduced-motion:reduce){#ilk-yukleme-simge{animation:none}}
+
 /* ortak "çıkartma" görünümü: beyaz, lacivert kenarlı, yuvarlak */
 .ui-kart{background:#fff;border:4px solid var(--lac);border-radius:999px;box-shadow:0 5px 0 rgba(15,35,70,.35);color:var(--lac);font-weight:900;box-sizing:border-box}
 

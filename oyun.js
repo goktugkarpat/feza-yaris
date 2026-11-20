@@ -282,6 +282,7 @@ function oySecCiz(dt, gdt) {
     s.kam.position.set(0, 1.05 + uz * Math.sin(eg), uz * Math.cos(eg)); s.kam.lookAt(0, 1.05, 0); s.kam.updateProjectionMatrix();
   }
   renderer.render(s.sahne, s.kam);
+  oyIlkKareHazir();
   if (!s.hazir) { s.hazir = true; OY_SECIM.classList.add('sec-3b'); }
 }
 function oySecBirak(sok) {   // arabayı pist sahnesine geri koy; sok = sahneyi de bırak (yarışa geçiş)
@@ -881,6 +882,14 @@ function sahneGuncelle(dt, gdt) {   // dt = oyun zamanı (ağır çekimde küç�
 }
 
 // ───────── ana döngü ─────────
+const oyIlkYukleme = $('ilk-yukleme');
+function oyIlkKareHazir() {
+  if (oyIlkYukleme.hidden) return;
+  $('baslik').inert = false;
+  $('oyna').disabled = false;
+  oyIlkYukleme.hidden = true;
+}
+
 function dongu(simdi) {
   requestAnimationFrame(dongu);
   let ham = (simdi - son) / 1000; son = simdi; if (!(ham > 0)) ham = 0.001;
@@ -916,11 +925,12 @@ function dongu(simdi) {
   if (durum === 'baslik' && oyEkran === 'araba') { oySecCiz(dt, ham); return; }  // araba adımı: yalnız döner tabladaki araba
   sahneGuncelle(dt, ham);
   renderer.render(scene, camera);
+  oyIlkKareHazir();
 }
 dongu.n = -1;
 izgarayaDiz(); oyBaslikDiz(); for (const a of A) arabaYerlestir(a, 0);
 // Pist kartlarının resimleri hazır dosyalardır (icons/pist_<ad>.jpg). Yalnız ?kucuk ile açılınca (geliştirici) bu pistin resmi bir kez çizilir; oyun döngüsü başlamaz.
-if (Q.has('kucuk')) oyKucukCek();
+if (Q.has('kucuk')) { oyKucukCek(); oyIlkKareHazir(); }
 else {
   if (Q.has('atla')) basla(); else if (Q.get('adim') === 'araba') oyEkranAc('araba'); else P.bitti = true;
   // açılışta araba arada bir küçük bir "merhaba" zıplaması yapar (seçim ekranındaki selamın aynısı)
