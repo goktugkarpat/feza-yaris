@@ -23,7 +23,17 @@ function uiZipla(el, kat, sure, don) {
   let n = 0;
   h.querySelectorAll('span').forEach(s => {
     const yazi = s.textContent; s.textContent = '';
-    for (const c of yazi) { const b = document.createElement('b'); b.textContent = c; b.className = 'ui-h' + (n % 6); b.style.setProperty('--i', n); n++; s.appendChild(b); }
+    for (const c of yazi) {
+      if (c === ' ') {
+        s.append(c);
+        continue;
+      }
+      const b = document.createElement('b');
+      b.textContent = c;
+      b.className = 'ui-h' + (n % 6);
+      b.style.setProperty('--i', n++);
+      s.appendChild(b);
+    }
   });
 })();
 
