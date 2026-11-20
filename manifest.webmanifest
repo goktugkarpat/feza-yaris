@@ -1,6 +1,6 @@
 {
-  "name": "Feza Yarışıyor",
-  "short_name": "Feza Yarışıyor",
+  "name": "Yarış Ekibi",
+  "short_name": "Yarış Ekibi",
   "lang": "tr",
   "start_url": "./index.html",
   "scope": "./",
