@@ -1,4 +1,4 @@
-# Yarış Ekibi – çalışma notları
+# Feza'nın Yarış Ekibi – çalışma notları
 
 5 yaşındaki Feza için 3B araba yarışı. `../CLAUDE.md` (bütün Feza oyunlarının kuralları) geçerlidir.
 
@@ -26,8 +26,8 @@
 - Performans hedefi: M1 iPad Pro'da 60 kare. Gölge haritası yok, süsler çoklu kopya (InstancedMesh), ışık 2 adet.
   Kare süresi uzarsa çizim oranı kendiliğinden düşer (`oran`).
 - Test: `?sessiz` (her zaman), `?atla` (başlığı geç), `?hiz=4` (hızlı zaman), `?oto` (araba kendi sürer; `?oto=iyi|orta|zayif` beceri), `YARIS.bilgi()`.
-- Dosya eklenince `sw.js` `CORE` listesine ekle ve `CACHE` sürümünü artır. Önek `yaris-ekibi-`; başka oyunların önbelleğine dokunma.
-- GitHub'a yalnız ebeveyn "gönder" deyince gönder (depo: goktugkarpat/yaris-ekibi, `main`).
+- Dosya eklenince `sw.js` `CORE` listesine ekle ve `CACHE` sürümünü artır. Önek `feza-yaris-ekibi-`; başka oyunların önbelleğine dokunma.
+- GitHub'a yalnız ebeveyn "gönder" deyince gönder (depo: goktugkarpat/feza-yaris-ekibi, `main`).
 - Dokuz pist: `?pist=orman|kiyi|kar|seker|uzay|col|gokkusagi|dino|sehir` (`PIST_TEMA`, liste `PIST_TEMALARI`; varsayılan orman). `PIST_NOKTALARI` yol biçimleri.
   orman/kiyi/kar çevresi `cevre.js`'te; diğer altı pistin çevresi `cevre_<ad>.js` (yalnız o pistte yüklenir, `cevreEkGuncelle`). Yol renkleri `pist.js` `psTEMALAR`, müzik `ses.js` `SES_TEMALAR`.
   Yeni pist = `PIST_TEMALARI` + `PIST_NOKTALARI` + `cevre_<ad>.js` + `index.html`'deki yükleme listesi ve kart + `psTEMALAR` + `SES_TEMALAR` + `giris_<ad>` kaydı + `sw.js`.

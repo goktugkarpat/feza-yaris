@@ -1,10 +1,10 @@
-# Yarış Ekibi 🏎️⭐
+# Feza'nın Yarış Ekibi 🏎️⭐
 
 5 yaşındaki Feza için yapılmış, çizgi film tarzında üç boyutlu bir araba yarışı. Feza; peluş ejderhası Pırıl, köpeği Bilbo, annesi ve babasıyla
 on beş farklı pistte üçer tur yarışır. Kaybetmek yoktur: Feza her yarışı ilk üçte bitirir. Feza okuma bilmediği için her şey resimlerle,
 simgelerle ve anlatıcının sesiyle anlatılır.
 
-**Oyna:** https://goktugkarpat.github.io/yaris-ekibi/
+**Oyna:** https://goktugkarpat.github.io/feza-yaris-ekibi/
 
 ![Pist seçimi](ekran/pistler.jpg)
 
@@ -59,7 +59,7 @@ Gücün ne kadar kaldığı ekranın üstünde küçülen renkli bir halkayla g�
 
 ## Nasıl açılır
 
-- **İnternette:** https://goktugkarpat.github.io/yaris-ekibi/
+- **İnternette:** https://goktugkarpat.github.io/feza-yaris-ekibi/
 - **iPad'de uygulama gibi:** Safari'de aç › Paylaş › **Ana Ekrana Ekle**. İlk açılıştan sonra internetsiz de çalışır.
 - **Bilgisayarda:** klasördeki `index.html` dosyasına çift tıkla. Kurulum gerekmez.
 - **Sessiz açma:** adresin sonuna `?sessiz` ekle.
